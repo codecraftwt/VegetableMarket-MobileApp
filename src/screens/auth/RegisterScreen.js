@@ -1,0 +1,575 @@
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  ImageBackground,
+  KeyboardAvoidingView,
+  Platform,
+  Alert,
+  ActivityIndicator,
+  ScrollView,
+  StatusBar,
+} from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { useDispatch, useSelector } from 'react-redux';
+import { registerUser, clearError, ROLES } from '../../redux/slices/authSlice';
+import { getFontFamily, fontSizes } from '../../utils/fonts';
+import Icon from 'react-native-vector-icons/FontAwesome';
+import { p } from '../../utils/Responsive';
+
+const RegisterScreen = () => {
+  const navigation = useNavigation();
+  const dispatch = useDispatch();
+  const { loading, error, isLoggedIn } = useSelector(state => state.auth);
+  
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    role: '',
+    password: '',
+    confirmPassword: '',
+  });
+  const [isFocused, setIsFocused] = useState({
+    name: false,
+    email: false,
+    phone: false,
+    role: false,
+    password: false,
+    confirmPassword: false,
+  });
+  const [errors, setErrors] = useState({});
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showRoleDropdown, setShowRoleDropdown] = useState(false);
+
+  // Get roles from the auth slice
+  const roles = Object.values(ROLES).map(role => role.name);
+
+  // Handle successful registration
+  useEffect(() => {
+    if (isLoggedIn) {
+      Alert.alert(
+        'Registration Successful!',
+        'Your account has been created successfully.',
+        [
+          {
+            text: 'OK',
+            onPress: () => navigation.navigate('Login'),
+          },
+        ],
+      );
+    }
+  }, [isLoggedIn, navigation]);
+
+  // Handle registration errors
+  useEffect(() => {
+    if (error) {
+      Alert.alert('Registration Failed', error);
+      dispatch(clearError());
+    }
+  }, [error, dispatch]);
+
+  const validateForm = () => {
+    const newErrors = {};
+
+    if (!formData.name.trim()) {
+      newErrors.name = 'Name is required';
+    }
+
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = 'Please enter a valid email address';
+    }
+
+    if (!formData.phone.trim()) {
+      newErrors.phone = 'Phone number is required';
+    } else if (formData.phone.length < 10) {
+      newErrors.phone = 'Please enter a valid phone number';
+    }
+
+    if (!formData.role) {
+      newErrors.role = 'Please select a role';
+    }
+
+    if (!formData.password.trim()) {
+      newErrors.password = 'Password is required';
+    } else if (formData.password.length < 8) {
+      newErrors.password = 'Password must be at least 8 characters';
+    }
+
+    if (!formData.confirmPassword.trim()) {
+      newErrors.confirmPassword = 'Please confirm your password';
+    } else if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleRegister = async () => {
+    if (!validateForm()) {
+      return;
+    }
+
+    // Dispatch the register action
+    dispatch(registerUser(formData));
+  };
+
+  const handleFocus = field => {
+    setIsFocused({ ...isFocused, [field]: true });
+    setErrors({ ...errors, [field]: null });
+  };
+
+  const handleBlur = field => {
+    setIsFocused({ ...isFocused, [field]: false });
+  };
+
+  const handleInputChange = (field, value) => {
+    setFormData({ ...formData, [field]: value });
+    if (errors[field]) {
+      setErrors({ ...errors, [field]: null });
+    }
+  };
+
+  const handleRoleSelect = (role) => {
+    setFormData({ ...formData, role });
+    setShowRoleDropdown(false);
+    setErrors({ ...errors, role: null });
+  };
+
+  return (
+    <>
+      <StatusBar barStyle="light-content" backgroundColor="#019a34" />
+      <ImageBackground
+        source={require('../../assets/vegebg.png')}
+        style={styles.container}
+        blurRadius={0.8}
+      >
+        <View style={styles.overlay} />
+
+        <KeyboardAvoidingView
+          style={styles.content}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
+          <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            <View style={styles.formContainer}>
+              <Text style={styles.title}>Register</Text>
+              <Text style={styles.subtitle}>
+                Create your account to access the fresh vegetable marketplace
+              </Text>
+
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Name</Text>
+                <TextInput
+                  style={[
+                    styles.input,
+                    isFocused.name && styles.inputFocused,
+                    errors.name && styles.inputError,
+                  ]}
+                  placeholder="Enter your full name"
+                  placeholderTextColor="#888"
+                  value={formData.name}
+                  onChangeText={(text) => handleInputChange('name', text)}
+                  onFocus={() => handleFocus('name')}
+                  onBlur={() => handleBlur('name')}
+                  autoCapitalize="words"
+                  autoCorrect={false}
+                  editable={!loading}
+                  returnKeyType="next"
+                />
+                {errors.name && (
+                  <Text style={styles.errorText}>{errors.name}</Text>
+                )}
+              </View>
+
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Email Address</Text>
+                <TextInput
+                  style={[
+                    styles.input,
+                    isFocused.email && styles.inputFocused,
+                    errors.email && styles.inputError,
+                  ]}
+                  placeholder="Enter your email"
+                  placeholderTextColor="#888"
+                  value={formData.email}
+                  onChangeText={(text) => handleInputChange('email', text)}
+                  onFocus={() => handleFocus('email')}
+                  onBlur={() => handleBlur('email')}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  editable={!loading}
+                  returnKeyType="next"
+                />
+                {errors.email && (
+                  <Text style={styles.errorText}>{errors.email}</Text>
+                )}
+              </View>
+
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Phone</Text>
+                <TextInput
+                  style={[
+                    styles.input,
+                    isFocused.phone && styles.inputFocused,
+                    errors.phone && styles.inputError,
+                  ]}
+                  placeholder="Enter your phone number"
+                  placeholderTextColor="#888"
+                  value={formData.phone}
+                  onChangeText={(text) => handleInputChange('phone', text)}
+                  onFocus={() => handleFocus('phone')}
+                  onBlur={() => handleBlur('phone')}
+                  keyboardType="phone-pad"
+                  editable={!loading}
+                  returnKeyType="next"
+                />
+                {errors.phone && (
+                  <Text style={styles.errorText}>{errors.phone}</Text>
+                )}
+              </View>
+
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Register As</Text>
+                <TouchableOpacity
+                  style={[
+                    styles.input,
+                    styles.roleInput,
+                    isFocused.role && styles.inputFocused,
+                    errors.role && styles.inputError,
+                  ]}
+                  onPress={() => setShowRoleDropdown(!showRoleDropdown)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[
+                    styles.roleText,
+                    !formData.role && styles.placeholderText
+                  ]}>
+                    {formData.role || '-- Select Role --'}
+                  </Text>
+                  <Icon
+                    name={showRoleDropdown ? 'chevron-up' : 'chevron-down'}
+                    size={16}
+                    color="#666"
+                  />
+                </TouchableOpacity>
+                {showRoleDropdown && (
+                  <View style={styles.dropdown}>
+                    {roles.map((role) => (
+                      <TouchableOpacity
+                        key={role}
+                        style={styles.dropdownItem}
+                        onPress={() => handleRoleSelect(role)}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={styles.dropdownItemText}>{role}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
+                {errors.role && (
+                  <Text style={styles.errorText}>{errors.role}</Text>
+                )}
+              </View>
+
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Password</Text>
+                <View style={styles.passwordInputWrapper}>
+                  <TextInput
+                    style={[
+                      styles.input,
+                      styles.passwordInput,
+                      isFocused.password && styles.inputFocused,
+                      errors.password && styles.inputError,
+                    ]}
+                    placeholder="Enter your password"
+                    placeholderTextColor="#888"
+                    value={formData.password}
+                    onChangeText={(text) => handleInputChange('password', text)}
+                    onFocus={() => handleFocus('password')}
+                    onBlur={() => handleBlur('password')}
+                    secureTextEntry={!showPassword}
+                    editable={!loading}
+                    returnKeyType="next"
+                  />
+                  <TouchableOpacity
+                    style={styles.eyeIcon}
+                    onPress={() => setShowPassword(!showPassword)}
+                    activeOpacity={0.7}
+                  >
+                    <Icon
+                      name={showPassword ? 'eye-slash' : 'eye'}
+                      size={20}
+                      color="#666"
+                    />
+                  </TouchableOpacity>
+                </View>
+                {errors.password && (
+                  <Text style={styles.errorText}>{errors.password}</Text>
+                )}
+              </View>
+
+              {formData.password.length >= 5 && (
+                <View style={styles.inputContainer}>
+                  <Text style={styles.inputLabel}>Confirm Password</Text>
+                  <View style={styles.passwordInputWrapper}>
+                    <TextInput
+                      style={[
+                        styles.input,
+                        styles.passwordInput,
+                        isFocused.confirmPassword && styles.inputFocused,
+                        errors.confirmPassword && styles.inputError,
+                      ]}
+                      placeholder="Confirm your password"
+                      placeholderTextColor="#888"
+                      value={formData.confirmPassword}
+                      onChangeText={(text) => handleInputChange('confirmPassword', text)}
+                      onFocus={() => handleFocus('confirmPassword')}
+                      onBlur={() => handleBlur('confirmPassword')}
+                      secureTextEntry={!showConfirmPassword}
+                      editable={!loading}
+                      returnKeyType="done"
+                      onSubmitEditing={handleRegister}
+                    />
+                    <TouchableOpacity
+                      style={styles.eyeIcon}
+                      onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                      activeOpacity={0.7}
+                    >
+                      <Icon
+                        name={showConfirmPassword ? 'eye-slash' : 'eye'}
+                        size={20}
+                        color="#666"
+                      />
+                    </TouchableOpacity>
+                  </View>
+                  {errors.confirmPassword && (
+                    <Text style={styles.errorText}>{errors.confirmPassword}</Text>
+                  )}
+                </View>
+              )}
+
+              <TouchableOpacity
+                style={[
+                  styles.registerButton,
+                  loading && styles.registerButtonDisabled,
+                ]}
+                onPress={handleRegister}
+                activeOpacity={0.8}
+                disabled={loading}
+              >
+                {loading ? (
+                  <ActivityIndicator color="white" size="small" />
+                ) : (
+                  <Text style={styles.buttonText}>Register</Text>
+                )}
+              </TouchableOpacity>
+
+              <View style={styles.loginContainer}>
+                <Text style={styles.loginText}>Already have an account?</Text>
+                <TouchableOpacity 
+                  activeOpacity={0.7}
+                  onPress={() => navigation.navigate('Login')}
+                >
+                  <Text style={styles.loginLink}> Sign In</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </ImageBackground>
+    </>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#019a34',
+  },
+  content: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    padding: p(16),
+  },
+  formContainer: {
+    backgroundColor: 'rgba(255, 255, 255, 0.97)',
+    borderRadius: p(24),
+    padding: p(28),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 20 },
+    shadowOpacity: 0.25,
+    shadowRadius: p(30),
+    elevation: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.4)',
+  },
+  title: {
+    fontSize: fontSizes['3xl'],
+    fontFamily: 'Montserrat-Bold',
+    color: '#019a34',
+    marginBottom: 10,
+    textAlign: 'center',
+    letterSpacing: 0.4,
+  },
+  subtitle: {
+    fontSize: fontSizes.sm,
+    fontFamily: 'Poppins-Regular',
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: p(20),
+    lineHeight: p(20),
+    paddingHorizontal: p(8),
+  },
+  inputContainer: {
+    marginBottom: p(16),
+  },
+  inputLabel: {
+    fontSize: fontSizes.sm,
+    fontFamily: 'Poppins-SemiBold',
+    color: '#019a34',
+    marginBottom: p(6),
+    marginLeft: p(4),
+  },
+  input: {
+    height: p(52),
+    backgroundColor: '#f8f9fa',
+    borderWidth: 2,
+    borderColor: '#e1e5e9',
+    borderRadius: p(14),
+    paddingHorizontal: p(18),
+    fontSize: fontSizes.base,
+    fontFamily: 'Poppins-Regular',
+    color: '#333',
+    position: 'relative',
+  },
+  inputFocused: {
+    borderColor: '#019a34',
+    borderWidth: 2.5,
+    backgroundColor: '#fff',
+    shadowColor: '#019a34',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.2,
+    shadowRadius: p(12),
+    elevation: 8,
+  },
+  inputError: {
+    borderColor: '#ff4757',
+    borderWidth: 2.5,
+    backgroundColor: '#fff5f5',
+  },
+  errorText: {
+    color: '#ff4757',
+    fontSize: fontSizes.xs,
+    fontFamily: 'Poppins-Regular',
+    marginTop: p(4),
+    marginLeft: p(4),
+  },
+  roleInput: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  roleText: {
+    fontSize: fontSizes.base,
+    fontFamily: 'Poppins-Regular',
+    color: '#333',
+    flex: 1,
+  },
+  placeholderText: {
+    color: '#888',
+  },
+  dropdown: {
+    backgroundColor: '#fff',
+    borderRadius: p(10),
+    marginTop: p(3),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: p(8),
+    elevation: 4,
+    zIndex: 1000,
+  },
+  dropdownItem: {
+    paddingVertical: p(10),
+    paddingHorizontal: p(18),
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  dropdownItemText: {
+    fontSize: fontSizes.base,
+    fontFamily: 'Poppins-Regular',
+    color: '#333',
+  },
+  passwordInputWrapper: {
+    position: 'relative',
+  },
+  passwordInput: {
+    paddingRight: p(56),
+  },
+  eyeIcon: {
+    position: 'absolute',
+    right: p(18),
+    top: '50%',
+    transform: [{ translateY: -p(12) }],
+    padding: p(6),
+    zIndex: 1,
+  },
+  registerButton: {
+    backgroundColor: '#019a34',
+    height: p(52),
+    borderRadius: p(14),
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: p(6),
+    shadowColor: '#019a34',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: p(16),
+    elevation: 12,
+  },
+  registerButtonDisabled: {
+    backgroundColor: '#7fb892',
+    shadowOpacity: 0.1,
+  },
+  buttonText: {
+    color: 'white',
+    fontSize: fontSizes.lg,
+    fontFamily: 'Poppins-SemiBold',
+    letterSpacing: 0.6,
+  },
+  loginContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: p(20),
+  },
+  loginText: {
+    color: '#666',
+    fontSize: fontSizes.sm,
+    fontFamily: 'Poppins-Regular',
+  },
+  loginLink: {
+    color: '#019a34',
+    fontFamily: 'Poppins-SemiBold',
+    fontSize: fontSizes.sm,
+  },
+});
+
+export default RegisterScreen;

@@ -1,45 +1,33 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- */
-
-import { NewAppScreen } from '@react-native/new-app-screen';
-import { StatusBar, StyleSheet, useColorScheme, View } from 'react-native';
-import Icon from 'react-native-vector-icons/Ionicons';
+import React from 'react';
 import AppNavigator from './src/navigation/AppNavigator';
 
-function App() {
-  const isDarkMode = useColorScheme() === 'dark';
+// Redux
+import { Provider } from 'react-redux';
+import { PersistGate } from 'redux-persist/integration/react';
+import { persistor, store } from './src/redux/store';
+import { StatusBar, StyleSheet, View } from 'react-native';
 
-  // return (
-  //   // <View style={styles.container}>
-  //   //   <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-  //   //   <NewAppScreen templateFileName="App.tsx" />
-  //   //   <Icon name="home" size={50} color={isDarkMode ? 'white' : 'black'} />
-  //   // </View>
-    
-    
-  // );
-  return <AppNavigator />;
-}
+const LoadingComponent = () => <View style={styles.loadingContainer}></View>;
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-});
+const App = () => {
+  return (
+    <Provider store={store}>
+      <PersistGate loading={<LoadingComponent />} persistor={persistor}>
+        <StatusBar backgroundColor="#019a34" barStyle="light-content" />
+        <AppNavigator />
+      </PersistGate>
+    </Provider>
+  );
+};
 
 export default App;
-// // App.js
-// import React from 'react';
-// import AppNavigator from './src/navigation/AppNavigator';
-// // import AppNavigator from './src/navigation/AppNavigator';
 
-// const App = () => {
-//   return <AppNavigator/>;
-// };
-
-// export default App;
+const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#019a34',
+  },
+});
 
