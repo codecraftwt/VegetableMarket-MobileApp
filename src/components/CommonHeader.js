@@ -13,12 +13,13 @@ const CommonHeader = ({
   onNotificationPress,
   onEditPress,
   backgroundColor = '#019a34',
+  navigation,
 }) => {
   return (
     <View style={[styles.header, { backgroundColor }]}>
       {showBackButton ? (
         <TouchableOpacity style={styles.backButton} onPress={onBackPress}>
-          <Icon name="arrow-left" size={18} color="#fff" />
+          <Icon name="chevron-left" size={18} color="#fff" />
         </TouchableOpacity>
       ) : (
         <View style={styles.placeholder} />
@@ -36,9 +37,18 @@ const CommonHeader = ({
         ) : showNotification ? (
           <TouchableOpacity
             style={styles.notificationButton}
-            onPress={onNotificationPress}
+            onPress={() => {
+              console.log('Notification button pressed, navigation available:', !!navigation);
+              if (navigation) {
+                console.log('Navigating to Notification screen');
+                navigation.navigate('Notification');
+              } else if (onNotificationPress) {
+                console.log('Calling onNotificationPress fallback');
+                onNotificationPress();
+              }
+            }}
           >
-            <Icon name="bell" size={18} color="#fff" />
+            <Icon name="bell-o" size={18} color="#fff" />
           </TouchableOpacity>
         ) : (
           <View style={styles.placeholder} />
@@ -90,15 +100,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-//   editButton: {
-//     padding: p(10),
-//     width: p(38),
-//     height: p(38),
-//     alignItems: 'center',
-//     justifyContent: 'center',
-//     borderRadius: p(22),
-//     backgroundColor: 'rgba(255, 255, 255, 0.2)',
-//   },
+  //   editButton: {
+  //     padding: p(10),
+  //     width: p(38),
+  //     height: p(38),
+  //     alignItems: 'center',
+  //     justifyContent: 'center',
+  //     borderRadius: p(22),
+  //     backgroundColor: 'rgba(255, 255, 255, 0.2)',
+  //   },
   notificationButton: {
     padding: p(10),
     width: p(38),

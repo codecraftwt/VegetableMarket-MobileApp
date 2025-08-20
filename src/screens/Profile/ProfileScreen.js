@@ -14,7 +14,6 @@ const ProfileScreen = ({ navigation }) => {
   const userData = {
     name: 'John Doe',
     email: 'john.doe@example.com',
-    avatar: require('../../assets/vegebg.png'),
   };
 
   const handleNotificationPress = () => {
@@ -23,6 +22,18 @@ const ProfileScreen = ({ navigation }) => {
 
   const handleEditPress = () => {
     navigation.navigate('ProfileEdit');
+  };
+
+  const handleChangePasswordPress = () => {
+    navigation.navigate('ChangePassword');
+  };
+
+  const handleMyOrdersPress = () => {
+    navigation.navigate('MyOrders');
+  };
+
+  const handleFavoritesPress = () => {
+    navigation.navigate('Cart');
   };
 
   const handleLogout = () => {
@@ -52,7 +63,9 @@ const ProfileScreen = ({ navigation }) => {
   const ProfileHeader = () => (
     <View style={styles.profileHeader}>
       <View style={styles.avatarContainer}>
-        <Image source={userData.avatar} style={styles.avatar} />
+        <View style={styles.avatar}>
+          <Icon name="user" size={40} color="#019a34" />
+        </View>
         <View style={styles.cameraIconOverlay}>
           <Icon name="camera" size={16} color="#fff" />
         </View>
@@ -77,7 +90,7 @@ const ProfileScreen = ({ navigation }) => {
         <Icon name="chevron-right" size={16} color="#999" />
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.actionItem}>
+      <TouchableOpacity style={styles.actionItem} onPress={handleChangePasswordPress}>
         <View style={styles.actionIcon}>
           <Icon name="lock" size={20} color="#019a34" />
         </View>
@@ -88,7 +101,7 @@ const ProfileScreen = ({ navigation }) => {
         <Icon name="chevron-right" size={16} color="#999" />
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.actionItem}>
+      <TouchableOpacity style={styles.actionItem} onPress={handleMyOrdersPress}>
         <View style={styles.actionIcon}>
           <Icon name="shopping-bag" size={20} color="#019a34" />
         </View>
@@ -99,7 +112,7 @@ const ProfileScreen = ({ navigation }) => {
         <Icon name="chevron-right" size={16} color="#999" />
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.actionItem}>
+      <TouchableOpacity style={styles.actionItem} onPress={handleFavoritesPress}>
         <View style={styles.actionIcon}>
           <Icon name="heart" size={20} color="#019a34" />
         </View>
@@ -166,6 +179,9 @@ const styles = StyleSheet.create({
     borderRadius: p(50),
     borderWidth: 3,
     borderColor: '#019a34',
+    backgroundColor: '#f0f8f0',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   cameraIconOverlay: {
     position: 'absolute',

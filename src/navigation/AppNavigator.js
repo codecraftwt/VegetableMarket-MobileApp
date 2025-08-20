@@ -7,6 +7,13 @@ import DashboardScreen from '../screens/Dashboard/DashboardScreen';
 import LoginScreen from '../screens/auth/LoginScreen';
 import RegisterScreen from '../screens/auth/RegisterScreen';
 import ProfileEditScreen from '../screens/Profile/ProfileEditScreen';
+import ChangePasswordScreen from '../screens/Profile/ChangePasswordScreen';
+import MyOrdersScreen from '../screens/Profile/MyOrdersScreen';
+import ProductDetailScreen from '../screens/ProductDetail/ProductDetailScreen';
+import CheckoutScreen from '../screens/Checkout/CheckoutScreen';
+import NotificationScreen from '../screens/Notification/NotificationScreen';
+import CategoryProductsScreen from '../screens/Category/CategoryProductsScreen';
+import OrderDetailsScreen from '../screens/Profile/OrderDetailsScreen';
 import { Easing } from 'react-native';
 
 const Stack = createStackNavigator();
@@ -65,6 +72,13 @@ const AppNavigator = () => {
       transition: slideFromRight,
     },
     { name: 'ProfileEdit', component: ProfileEditScreen, transition: slideFromRight },
+    { name: 'ChangePassword', component: ChangePasswordScreen, transition: slideFromRight },
+    { name: 'MyOrders', component: MyOrdersScreen, transition: slideFromRight },
+    { name: 'ProductDetail', component: ProductDetailScreen, transition: slideFromRight },
+    { name: 'Checkout', component: CheckoutScreen, transition: slideFromRight },
+    { name: 'Notification', component: NotificationScreen, transition: slideFromRight },
+    { name: 'CategoryProducts', component: CategoryProductsScreen, transition: slideFromRight },
+    { name: 'OrderDetails', component: OrderDetailsScreen, transition: slideFromRight },
   ];
 
   return (

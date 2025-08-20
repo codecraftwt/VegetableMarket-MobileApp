@@ -47,7 +47,7 @@ const SplashScreen = () => {
     <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
       {/* Fixed background image without tint */}
       <ImageBackground
-        source={require('../../assets/vegebg.png')}
+        source={require('../../assets/vegebg1.png')}
         style={styles.bgContainer}
         resizeMode="cover"
         blurRadius={0.8} // Ensure no blur

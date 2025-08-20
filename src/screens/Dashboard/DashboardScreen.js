@@ -14,8 +14,10 @@ import Icon from 'react-native-vector-icons/FontAwesome';
 import { p } from '../../utils/Responsive';
 import { fontSizes } from '../../utils/fonts';
 import CommonHeader from '../../components/CommonHeader';
+import ProductCard from '../../components/ProductCard';
+import CategoryItem from '../../components/CategoryItem';
 
-const DashboardScreen = () => {
+const DashboardScreen = ({ navigation }) => {
   const [currentSlide, setCurrentSlide] = useState(0);
 
   // Search Bar Component
@@ -46,7 +48,7 @@ const DashboardScreen = () => {
         </View>
         <View style={styles.promoImageContainer}>
           <Image
-            source={require('../../assets/vegebg.png')}
+            source={require('../../assets/vegebg1.png')}
             style={styles.promoImage}
             resizeMode="cover"
           />
@@ -65,25 +67,31 @@ const DashboardScreen = () => {
   // Categories Component
   const Categories = () => {
     const categories = [
-      { name: 'Veggies', icon: 'carrot', color: '#4CAF50' },
-      { name: 'Fruits', icon: 'apple', color: '#FF9800' },
-      { name: 'Meat', icon: 'cutlery', color: '#F44336' },
-      { name: 'Dairy', icon: 'glass', color: '#2196F3' },
+      { id: 'all', name: 'All', icon: 'th-large', color: '#019a34' },
+      { id: 'veggies', name: 'Veggies', icon: 'carrot', color: '#4CAF50' },
+      { id: 'fruits', name: 'Fruits', icon: 'apple', color: '#FF9800' },
+      { id: 'meat', name: 'Meat', icon: 'cutlery', color: '#F44336' },
+      { id: 'dairy', name: 'Dairy', icon: 'glass', color: '#2196F3' },
     ];
+
+    const handleCategoryPress = (category) => {
+      console.log('Category pressed:', category.name);
+      navigation.navigate('CategoryProducts', { category });
+    };
 
     return (
       <View style={styles.categoriesContainer}>
         <Text style={styles.sectionTitle}>Categories</Text>
-        <View style={styles.categoriesList}>
-          {categories.map((category, index) => (
-            <TouchableOpacity key={index} style={styles.categoryItem}>
-              <View style={[styles.categoryIcon, { backgroundColor: category.color }]}>
-                <Icon name={category.icon} size={24} color="#fff" />
-              </View>
-              <Text style={styles.categoryName}>{category.name}</Text>
-            </TouchableOpacity>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          {categories.map((category) => (
+            <CategoryItem
+              key={category.id}
+              category={category}
+              onPress={handleCategoryPress}
+              size="medium"
+            />
           ))}
-        </View>
+        </ScrollView>
       </View>
     );
   };
@@ -92,38 +100,44 @@ const DashboardScreen = () => {
   const PopularItems = () => {
     const popularItems = [
       {
+        id: 1,
         name: 'Fresh Oranges',
         price: '$4.99',
+        unit: 'KG',
+        rating: 4.5,
         image: require('../../assets/vegebg.png'),
-        isFavorite: true,
       },
       {
+        id: 2,
         name: 'Ripe Avocados',
         price: '$6.99',
+        unit: 'KG',
+        rating: 4.2,
         image: require('../../assets/vegebg.png'),
-        isFavorite: true,
       },
     ];
+
+    const handleProductPress = (item) => {
+      navigation.navigate('ProductDetail', { product: item });
+    };
+
+    const handleAddToCart = (item) => {
+      console.log('Added to cart:', item.name);
+      // Add to cart logic here
+    };
 
     return (
       <View style={styles.popularContainer}>
         <Text style={styles.sectionTitle}>Popular</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {popularItems.map((item, index) => (
-            <View key={index} style={styles.popularItem}>
-              <Image source={item.image} style={styles.itemImage} />
-              <TouchableOpacity style={styles.favoriteButton}>
-                <Icon 
-                  name={item.isFavorite ? "heart" : "heart-o"} 
-                  size={16} 
-                  color={item.isFavorite ? "#ff4757" : "#999"} 
-                />
-              </TouchableOpacity>
-              <View style={styles.itemInfo}>
-                <Text style={styles.itemName}>{item.name}</Text>
-                <Text style={styles.itemPrice}>{item.price}</Text>
-              </View>
-            </View>
+          {popularItems.map((item) => (
+            <ProductCard
+              key={item.id}
+              item={item}
+              onPress={() => handleProductPress(item)}
+              onAddToCart={handleAddToCart}
+              size="medium"
+            />
           ))}
         </ScrollView>
       </View>
@@ -144,6 +158,7 @@ const DashboardScreen = () => {
         showBackButton={false}
         showNotification={true}
         onNotificationPress={handleNotificationPress}
+        navigation={navigation}
       />
       
       <SearchBar />
@@ -172,9 +187,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#f8f9fa',
-    borderRadius: p(25),
+    borderRadius: p(20),
     paddingHorizontal: p(20),
-    paddingVertical: p(8),
+    paddingVertical: p(5),
     borderWidth: 1,
     borderColor: '#e9ecef',
   },
@@ -195,6 +210,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#019a34',
     borderRadius: p(20),
     padding: p(20),
+    marginBottom: p(0),
     marginVertical: p(10),
   },
   promoContent: {
@@ -251,6 +267,7 @@ const styles = StyleSheet.create({
   },
   // Categories Styles
   categoriesContainer: {
+    marginBottom: p(0),
     marginVertical: p(20),
   },
   sectionTitle: {
@@ -259,77 +276,10 @@ const styles = StyleSheet.create({
     marginBottom: p(15),
     fontFamily: 'Poppins-SemiBold',
   },
-  categoriesList: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  categoryItem: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  categoryIcon: {
-    width: p(60),
-    height: p(60),
-    borderRadius: p(30),
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: p(10),
-  },
-  categoryName: {
-    fontSize: fontSizes.sm,
-    color: '#333',
-    textAlign: 'center',
-    fontFamily: 'Poppins-SemiBold',
-  },
   // Popular Items Styles
   popularContainer: {
     marginVertical: p(20),
-  },
-  popularItem: {
-    backgroundColor: '#fff',
-    borderRadius: p(15),
-    padding: p(15),
-    marginRight: p(15),
-    width: p(160),
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  itemImage: {
-    width: '100%',
-    height: p(100),
-    borderRadius: p(10),
-    marginBottom: p(10),
-  },
-  favoriteButton: {
-    position: 'absolute',
-    top: p(20),
-    right: p(20),
-    backgroundColor: '#fff',
-    borderRadius: p(15),
-    padding: p(8),
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  itemInfo: {
-    alignItems: 'center',
-  },
-  itemName: {
-    fontSize: fontSizes.base,
-    color: '#333',
-    marginBottom: p(5),
-    textAlign: 'center',
-    fontFamily: 'Poppins-SemiBold',
-  },
-  itemPrice: {
-    fontSize: fontSizes.lg,
-    color: '#019a34',
-    fontFamily: 'Rubik-Bold',
+    paddingBottom: p(10),
   },
 });
 

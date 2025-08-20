@@ -128,7 +128,7 @@ const LoginScreen = () => {
     <>
       <StatusBar barStyle="light-content" backgroundColor="#019a34" />
       <ImageBackground
-        source={require('../../assets/vegebg.png')}
+        source={require('../../assets/vegebg1.png')}
         style={styles.container}
         blurRadius={0.8}
       >

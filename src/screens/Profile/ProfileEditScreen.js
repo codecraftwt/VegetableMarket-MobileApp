@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, StatusBar, ScrollView, TouchableOpacity, TextInput, Alert } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, StatusBar, ScrollView, TouchableOpacity, TextInput, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import CommonHeader from '../../components/CommonHeader';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { p } from '../../utils/Responsive';
@@ -13,17 +13,21 @@ const ProfileEditScreen = ({ navigation }) => {
     name: 'John Doe',
     email: 'john.doe@example.com',
     phone: '+1 234 567 8900',
+    bio: 'I love fresh vegetables and healthy living!',
   });
 
   // Address data - now an array to support multiple addresses
   const [addresses, setAddresses] = useState([
     {
       id: 1,
-      street: '123 Main Street',
-      city: 'New York',
-      state: 'NY',
-      zipCode: '10001',
-      country: 'USA',
+      addressLabel: 'Home',
+      addressLine: '123 Main Street',
+      city: 'Mumbai',
+      taluka: 'Andheri',
+      district: 'Mumbai Suburban',
+      state: 'Maharashtra',
+      country: 'India',
+      pincode: '400058',
       isDefault: true,
     }
   ]);
@@ -45,11 +49,14 @@ const ProfileEditScreen = ({ navigation }) => {
   const addNewAddress = () => {
     const newAddress = {
       id: Date.now(), // Simple ID generation
-      street: '',
+      addressLabel: '',
+      addressLine: '',
       city: '',
+      taluka: '',
+      district: '',
       state: '',
-      zipCode: '',
       country: '',
+      pincode: '',
       isDefault: false,
     };
     setAddresses([...addresses, newAddress]);
@@ -89,148 +96,203 @@ const ProfileEditScreen = ({ navigation }) => {
   );
 
   const ProfileTab = () => (
-    <View style={styles.tabContent}>
-      <Text style={styles.sectionTitle}>Personal Information</Text>
-      
-      <View style={styles.inputGroup}>
-        <Text style={styles.inputLabel}>Full Name</Text>
-        <TextInput
-          style={styles.textInput}
-          value={userData.name}
-          onChangeText={(text) => setUserData({...userData, name: text})}
-          placeholder="Enter your full name"
-        />
-      </View>
+    <KeyboardAvoidingView 
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={{ flex: 1 }}
+    >
+      <View style={styles.tabContent}>
+        <Text style={styles.sectionTitle}>Personal Information</Text>
+        
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>Full Name</Text>
+          <TextInput
+            style={styles.textInput}
+            value={userData.name}
+            onChangeText={(text) => setUserData({...userData, name: text})}
+            placeholder="Enter your full name"
+          />
+        </View>
 
-      <View style={styles.inputGroup}>
-        <Text style={styles.inputLabel}>Email</Text>
-        <TextInput
-          style={styles.textInput}
-          value={userData.email}
-          onChangeText={(text) => setUserData({...userData, email: text})}
-          placeholder="Enter your email"
-          keyboardType="email-address"
-        />
-      </View>
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>Email</Text>
+          <TextInput
+            style={styles.textInput}
+            value={userData.email}
+            onChangeText={(text) => setUserData({...userData, email: text})}
+            placeholder="Enter your email"
+            keyboardType="email-address"
+          />
+        </View>
 
-      <View style={styles.inputGroup}>
-        <Text style={styles.inputLabel}>Phone</Text>
-        <TextInput
-          style={styles.textInput}
-          value={userData.phone}
-          onChangeText={(text) => setUserData({...userData, phone: text})}
-          placeholder="Enter your phone number"
-          keyboardType="phone-pad"
-        />
-      </View>
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>Phone</Text>
+          <TextInput
+            style={styles.textInput}
+            value={userData.phone}
+            onChangeText={(text) => setUserData({...userData, phone: text})}
+            placeholder="Enter your phone number"
+            keyboardType="phone-pad"
+          />
+        </View>
 
-      <TouchableOpacity style={styles.saveButton} onPress={handleSaveProfile}>
-        <Text style={styles.saveButtonText}>Save Profile</Text>
-      </TouchableOpacity>
-    </View>
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>Bio</Text>
+          <TextInput
+            style={[styles.textInput, styles.bioInput]}
+            value={userData.bio}
+            onChangeText={(text) => setUserData({...userData, bio: text})}
+            placeholder="Tell us about yourself..."
+            multiline={true}
+            numberOfLines={4}
+            textAlignVertical="top"
+          />
+        </View>
+
+        <TouchableOpacity style={styles.saveButton} onPress={handleSaveProfile}>
+          <Text style={styles.saveButtonText}>Save Profile</Text>
+        </TouchableOpacity>
+      </View>
+    </KeyboardAvoidingView>
   );
 
   const AddressTab = () => (
-    <View style={styles.tabContent}>
-      <View style={styles.addressHeader}>
-        <Text style={styles.sectionTitle}>Delivery Addresses</Text>
-        <TouchableOpacity style={styles.addAddressButton} onPress={addNewAddress}>
-          <Icon name="plus" size={12} color="#fff" />
-          <Text style={styles.addAddressButtonText}>Add Address</Text>
-        </TouchableOpacity>
-      </View>
-      
-      {addresses.map((address, index) => (
-        <View key={address.id} style={styles.addressCard}>
-          <View style={styles.addressCardHeader}>
-            <Text style={styles.addressTitle}>Address {index + 1}</Text>
-            <View style={styles.addressActions}>
-              {address.isDefault && (
-                <View style={styles.defaultBadge}>
-                  <Text style={styles.defaultBadgeText}>Default</Text>
-                </View>
-              )}
-              {!address.isDefault && (
-                <TouchableOpacity 
-                  style={styles.setDefaultButton}
-                  onPress={() => setDefaultAddress(address.id)}
-                >
-                  <Text style={styles.setDefaultButtonText}>Set Default</Text>
-                </TouchableOpacity>
-              )}
-              {addresses.length > 1 && (
-                <TouchableOpacity 
-                  style={styles.removeButton}
-                  onPress={() => removeAddress(address.id)}
-                >
-                  <Icon name="trash" size={16} color="#dc3545" />
-                </TouchableOpacity>
-              )}
-            </View>
-          </View>
-          
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Street Address</Text>
-            <TextInput
-              style={styles.textInput}
-              value={address.street}
-              onChangeText={(text) => updateAddress(address.id, 'street', text)}
-              placeholder="Enter street address"
-            />
-          </View>
-
-          <View style={styles.row}>
-            <View style={[styles.inputGroup, { flex: 1, marginRight: p(10) }]}>
-              <Text style={styles.inputLabel}>City</Text>
-              <TextInput
-                style={styles.textInput}
-                value={address.city}
-                onChangeText={(text) => updateAddress(address.id, 'city', text)}
-                placeholder="Enter city"
-              />
-            </View>
-            <View style={[styles.inputGroup, { flex: 1 }]}>
-              <Text style={styles.inputLabel}>State</Text>
-              <TextInput
-                style={styles.textInput}
-                value={address.state}
-                onChangeText={(text) => updateAddress(address.id, 'state', text)}
-                placeholder="Enter state"
-              />
-            </View>
-          </View>
-
-          <View style={styles.row}>
-            <View style={[styles.inputGroup, { flex: 1, marginRight: p(10) }]}>
-              <Text style={styles.inputLabel}>ZIP Code</Text>
-              <TextInput
-                style={styles.textInput}
-                value={address.zipCode}
-                onChangeText={(text) => updateAddress(address.id, 'zipCode', text)}
-                placeholder="Enter ZIP code"
-                keyboardType="numeric"
-              />
-            </View>
-            <View style={[styles.inputGroup, { flex: 1 }]}>
-              <Text style={styles.inputLabel}>Country</Text>
-              <TextInput
-                style={styles.textInput}
-                value={address.country}
-                onChangeText={(text) => updateAddress(address.id, 'country', text)}
-                placeholder="Enter country"
-              />
-            </View>
-          </View>
-
-          <TouchableOpacity 
-            style={styles.saveButton} 
-            onPress={() => handleSaveAddress(address.id)}
-          >
-            <Text style={styles.saveButtonText}>Save Address</Text>
+    <KeyboardAvoidingView 
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={{ flex: 1 }}
+    >
+      <View style={styles.tabContent}>
+        <View style={styles.addressHeader}>
+          <Text style={styles.sectionTitle}>Delivery Addresses</Text>
+          <TouchableOpacity style={styles.addAddressButton} onPress={addNewAddress}>
+            <Icon name="plus" size={12} color="#fff" />
+            <Text style={styles.addAddressButtonText}>Add Address</Text>
           </TouchableOpacity>
         </View>
-      ))}
-    </View>
+        
+        {addresses.map((address, index) => (
+          <View key={address.id} style={styles.addressCard}>
+            <View style={styles.addressCardHeader}>
+              <Text style={styles.addressTitle}>Address {index + 1}</Text>
+              <View style={styles.addressActions}>
+                {address.isDefault && (
+                  <View style={styles.defaultBadge}>
+                    <Text style={styles.defaultBadgeText}>Default</Text>
+                  </View>
+                )}
+                {!address.isDefault && (
+                  <TouchableOpacity 
+                    style={styles.setDefaultButton}
+                    onPress={() => setDefaultAddress(address.id)}
+                  >
+                    <Text style={styles.setDefaultButtonText}>Set Default</Text>
+                  </TouchableOpacity>
+                )}
+                {addresses.length > 1 && (
+                  <TouchableOpacity 
+                    style={styles.removeButton}
+                    onPress={() => removeAddress(address.id)}
+                  >
+                    <Icon name="trash" size={16} color="#dc3545" />
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+            
+            {/* Left Column */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Address Label</Text>
+              <TextInput
+                style={styles.textInput}
+                value={address.addressLabel}
+                onChangeText={(text) => updateAddress(address.id, 'addressLabel', text)}
+                placeholder="Enter Address Label e.g. Home, Farm, etc"
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Address Line</Text>
+              <TextInput
+                style={styles.textInput}
+                value={address.addressLine}
+                onChangeText={(text) => updateAddress(address.id, 'addressLine', text)}
+                placeholder="Enter Address Line"
+              />
+            </View>
+
+            <View style={styles.row}>
+              <View style={[styles.inputGroup, { flex: 1, marginRight: p(10) }]}>
+                <Text style={styles.inputLabel}>City/Village</Text>
+                <TextInput
+                  style={styles.textInput}
+                  value={address.city}
+                  onChangeText={(text) => updateAddress(address.id, 'city', text)}
+                  placeholder="Enter City"
+                />
+              </View>
+              <View style={[styles.inputGroup, { flex: 1 }]}>
+                <Text style={styles.inputLabel}>Taluka</Text>
+                <TextInput
+                  style={styles.textInput}
+                  value={address.taluka}
+                  onChangeText={(text) => updateAddress(address.id, 'taluka', text)}
+                  placeholder="Enter Taluka"
+                />
+              </View>
+            </View>
+
+            <View style={styles.row}>
+              <View style={[styles.inputGroup, { flex: 1, marginRight: p(10) }]}>
+                <Text style={styles.inputLabel}>District</Text>
+                <TextInput
+                  style={styles.textInput}
+                  value={address.district}
+                  onChangeText={(text) => updateAddress(address.id, 'district', text)}
+                  placeholder="Enter District"
+                />
+              </View>
+              <View style={[styles.inputGroup, { flex: 1 }]}>
+                <Text style={styles.inputLabel}>State</Text>
+                <TextInput
+                  style={styles.textInput}
+                  value={address.state}
+                  onChangeText={(text) => updateAddress(address.id, 'state', text)}
+                  placeholder="Enter State"
+                />
+              </View>
+            </View>
+
+            <View style={styles.row}>
+              <View style={[styles.inputGroup, { flex: 1, marginRight: p(10) }]}>
+                <Text style={styles.inputLabel}>Country</Text>
+                <TextInput
+                  style={styles.textInput}
+                  value={address.country}
+                  onChangeText={(text) => updateAddress(address.id, 'country', text)}
+                  placeholder="Enter Country"
+                />
+              </View>
+              <View style={[styles.inputGroup, { flex: 1 }]}>
+                <Text style={styles.inputLabel}>Pincode</Text>
+                <TextInput
+                  style={styles.textInput}
+                  value={address.pincode}
+                  onChangeText={(text) => updateAddress(address.id, 'pincode', text)}
+                  placeholder="Enter Pincode"
+                  keyboardType="numeric"
+                />
+              </View>
+            </View>
+
+            <TouchableOpacity 
+              style={styles.saveButton} 
+              onPress={() => handleSaveAddress(address.id)}
+            >
+              <Text style={styles.saveButtonText}>Save Address</Text>
+            </TouchableOpacity>
+          </View>
+        ))}
+      </View>
+    </KeyboardAvoidingView>
   );
 
   return (
@@ -250,9 +312,21 @@ const ProfileEditScreen = ({ navigation }) => {
         <TabButton title="Address" tab="address" icon="map-marker" />
       </View>
       
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {activeTab === 'profile' ? <ProfileTab /> : <AddressTab />}
-      </ScrollView>
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      >
+        <ScrollView 
+          style={styles.content} 
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          bounces={false}
+        >
+          {activeTab === 'profile' ? <ProfileTab /> : <AddressTab />}
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
@@ -265,6 +339,10 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: p(20),
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: p(20),
   },
   
   // Tab Navigation
@@ -344,6 +422,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e9ecef',
     fontFamily: 'Poppins-Regular',
+  },
+  bioInput: {
+    height: p(100), // Adjust height for multiline text input
+    textAlignVertical: 'top',
   },
   row: {
     flexDirection: 'row',
