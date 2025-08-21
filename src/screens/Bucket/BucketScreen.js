@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
+  ActivityIndicator,
 } from 'react-native';
 import CommonHeader from '../../components/CommonHeader';
 import Icon from 'react-native-vector-icons/FontAwesome';
@@ -15,116 +16,122 @@ import { p } from '../../utils/Responsive';
 import { fontSizes } from '../../utils/fonts';
 import ProductCard from '../../components/ProductCard';
 import CategoryItem from '../../components/CategoryItem';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchVegetables, fetchVegetableCategories } from '../../redux/slices/vegetablesSlice';
+import { addToCart } from '../../redux/slices/cartSlice';
+import SuccessModal from '../../components/SuccessModal';
+import ErrorModal from '../../components/ErrorModal';
 
 const BucketScreen = ({ navigation }) => {
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [vegetables, setVegetables] = useState([
-    {
-      id: 1,
-      name: 'Kiwi',
-      price: '$1.50',
-      unit: 'KG',
-      rating: 4.5,
-      category: 'fruits',
-      image: require('../../assets/vegebg.png'),
-    },
-    {
-      id: 2,
-      name: 'Avocado',
-      price: '$5.99',
-      unit: 'KG',
-      rating: 3.5,
-      category: 'fruits',
-      image: require('../../assets/vegebg.png'),
-    },
-    {
-      id: 3,
-      name: 'Fresh Tomatoes',
-      price: '$2.99',
-      unit: 'KG',
-      rating: 4.0,
-      category: 'veggies',
-      image: require('../../assets/vegebg.png'),
-    },
-    {
-      id: 4,
-      name: 'Organic Carrots',
-      price: '$1.99',
-      unit: 'KG',
-      rating: 4.2,
-      category: 'veggies',
-      image: require('../../assets/vegebg.png'),
-    },
-    {
-      id: 5,
-      name: 'Green Bell Peppers',
-      price: '$3.49',
-      unit: 'KG',
-      rating: 4.1,
-      category: 'veggies',
-      image: require('../../assets/vegebg.png'),
-    },
-    {
-      id: 6,
-      name: 'Fresh Onions',
-      price: '$1.49',
-      unit: 'KG',
-      rating: 3.8,
-      category: 'veggies',
-      image: require('../../assets/vegebg.png'),
-    },
-  ]);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+  const dispatch = useDispatch();
+  const { vegetables, categories, loading, categoriesLoading } = useSelector(state => state.vegetables);
+  const { addLoading } = useSelector(state => state.cart);
+
+  // Fetch data when component mounts
+  useEffect(() => {
+    dispatch(fetchVegetables());
+    dispatch(fetchVegetableCategories());
+  }, [dispatch]);
 
   const handleNotificationPress = () => {
     console.log('Bucket notification pressed');
   };
 
   const handleCategoryPress = category => {
-    setSelectedCategory(category);
+    setSelectedCategory(category.id);
     navigation.navigate('CategoryProducts', { category });
   };
 
-  // Categories data
-  const categories = [
-    { id: 'all', name: 'All', icon: 'th-large', color: '#019a34' },
-    { id: 'veggies', name: 'Veggies', icon: 'carrot', color: '#4CAF50' },
-    { id: 'fruits', name: 'Fruits', icon: 'apple', color: '#FF9800' },
-    { id: 'meat', name: 'Meat', color: '#F44336' },
-    { id: 'dairy', name: 'Dairy', icon: 'glass', color: '#2196F3' },
-  ];
-
-  // Sample vegetables data
+  // Filter vegetables by selected category
   const filteredVegetables =
     selectedCategory === 'all'
       ? vegetables
-      : vegetables.filter(item => item.category === selectedCategory);
+      : vegetables.filter(item => 
+          item.category?.id === selectedCategory || 
+          item.category?.name?.toLowerCase() === categories.find(c => c.id === selectedCategory)?.name?.toLowerCase()
+        );
 
-  const CategoriesSection = () => (
-    <View style={styles.categoriesContainer}>
-      <Text style={styles.sectionTitle}>Categories</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-        {categories.map(category => (
+  const CategoriesSection = () => {
+    if (categoriesLoading) {
+      return (
+        <View style={styles.categoriesContainer}>
+          <Text style={styles.sectionTitle}>Categories</Text>
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#019a34" />
+            <Text style={styles.loadingText}>Loading categories...</Text>
+          </View>
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.categoriesContainer}>
+        <Text style={styles.sectionTitle}>Categories</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          {/* Add "All" category */}
           <CategoryItem
-            key={category.id}
-            category={category}
-            isSelected={selectedCategory === category.id}
-            onPress={() => handleCategoryPress(category)}
+            category={{ id: 'all', name: 'All' }}
+            isSelected={selectedCategory === 'all'}
+            onPress={() => setSelectedCategory('all')}
             size="medium"
           />
-        ))}
-      </ScrollView>
-    </View>
-  );
+          {/* Map through API categories */}
+          {categories.map(category => (
+            <CategoryItem
+              key={category.id}
+              category={category}
+              isSelected={selectedCategory === category.id}
+              onPress={() => handleCategoryPress(category)}
+              size="medium"
+            />
+          ))}
+        </ScrollView>
+      </View>
+    );
+  };
 
   const VegetablesSection = () => {
     const handleProductPress = (item) => {
       navigation.navigate('ProductDetail', { product: item });
     };
 
-    const handleAddToCart = (item) => {
-      console.log('Added to cart:', item.name);
-      // Add to cart logic here
+    const handleAddToCart = async (item) => {
+      try {
+        await dispatch(addToCart({ 
+          vegetable_id: item.id, 
+          quantity: 1 
+        })).unwrap();
+        
+        // Show success modal
+        setSuccessMessage(`${item.name} added to cart successfully!`);
+        setShowSuccessModal(true);
+      } catch (error) {
+        // Show error modal
+        setErrorMessage(error.message || 'Failed to add item to cart. Please try again.');
+        setShowErrorModal(true);
+      }
     };
+
+    if (loading) {
+      return (
+        <View style={styles.vegetablesContainer}>
+          <Text style={styles.sectionTitle}>
+            {selectedCategory === 'all'
+              ? 'All Products'
+              : `${categories.find(c => c.id === selectedCategory)?.name} Products`}
+          </Text>
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#019a34" />
+            <Text style={styles.loadingText}>Loading products...</Text>
+          </View>
+        </View>
+      );
+    }
 
     return (
       <View style={styles.vegetablesContainer}>
@@ -133,26 +140,53 @@ const BucketScreen = ({ navigation }) => {
             ? 'All Products'
             : `${categories.find(c => c.id === selectedCategory)?.name} Products`}
         </Text>
-        <ScrollView 
-          style={styles.productsScrollView}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.productsScrollContent}
-        >
-          <View style={styles.vegetablesGrid}>
-            {filteredVegetables.map(item => (
-              <View key={item.id} style={styles.productCardWrapper}>
-                <ProductCard
-                  item={item}
-                  onPress={() => handleProductPress(item)}
-                  onAddToCart={handleAddToCart}
-                  size="medium"
-                />
-              </View>
-            ))}
+        {filteredVegetables.length > 0 ? (
+          <ScrollView 
+            style={styles.productsScrollView}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.productsScrollContent}
+          >
+            <View style={styles.vegetablesGrid}>
+              {filteredVegetables.map(item => (
+                <View key={item.id} style={styles.productCardWrapper}>
+                  <ProductCard
+                    item={item}
+                    onPress={() => handleProductPress(item)}
+                    onAddToCart={handleAddToCart}
+                    size="medium"
+                    navigation={navigation}
+                  />
+                </View>
+              ))}
+            </View>
+          </ScrollView>
+        ) : (
+          <View style={styles.emptyState}>
+            <Icon name="shopping-bag" size={80} color="#ccc" />
+            <Text style={styles.emptyStateTitle}>No Products Found</Text>
+            <Text style={styles.emptyStateSubtitle}>
+              No products available in this category at the moment
+            </Text>
           </View>
-        </ScrollView>
+        )}
       </View>
     );
+  };
+
+  const handleSuccessModalClose = () => {
+    setShowSuccessModal(false);
+  };
+
+  const handleErrorModalClose = () => {
+    setShowErrorModal(false);
+  };
+
+  const handleViewCart = () => {
+    console.log('BucketScreen: handleViewCart called');
+    console.log('BucketScreen: navigation prop:', navigation);
+    setShowSuccessModal(false);
+    console.log('BucketScreen: Navigating to Cart screen');
+    navigation.navigate('Cart');
   };
 
   return (
@@ -171,6 +205,31 @@ const BucketScreen = ({ navigation }) => {
         <CategoriesSection />
         <VegetablesSection />
       </View>
+
+      {/* Success Modal */}
+      <SuccessModal
+        visible={showSuccessModal}
+        onClose={handleSuccessModalClose}
+        title="Added to Cart!"
+        message={successMessage}
+        buttonText="Ok"
+        onButtonPress={handleSuccessModalClose}
+        showSecondaryButton={true}
+        secondaryButtonText="View Cart"
+        onSecondaryButtonPress={handleViewCart}
+      />
+
+      {/* Error Modal */}
+      <ErrorModal
+        visible={showErrorModal}
+        onClose={handleErrorModalClose}
+        title="Add to Cart Failed"
+        message={errorMessage}
+        buttonText="OK"
+        onButtonPress={handleErrorModalClose}
+        showRetry={true}
+        onRetry={() => setShowErrorModal(false)}
+      />
     </SafeAreaView>
   );
 };
@@ -195,6 +254,18 @@ const styles = StyleSheet.create({
     marginBottom: p(15),
     fontFamily: 'Montserrat-Bold',
   },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: p(20),
+  },
+  loadingText: {
+    marginLeft: p(10),
+    fontSize: fontSizes.base,
+    color: '#666',
+    fontFamily: 'Poppins-Regular',
+  },
 
   // Vegetables Styles
   vegetablesContainer: {
@@ -215,6 +286,25 @@ const styles = StyleSheet.create({
   },
   productsScrollContent: {
     // Add any specific styles for the ScrollView content if needed
+  },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: p(50),
+    marginTop: p(20),
+  },
+  emptyStateTitle: {
+    fontSize: fontSizes.lg,
+    color: '#666',
+    marginTop: p(20),
+    fontFamily: 'Montserrat-Bold',
+  },
+  emptyStateSubtitle: {
+    fontSize: fontSizes.base,
+    color: '#999',
+    marginTop: p(10),
+    textAlign: 'center',
+    paddingHorizontal: p(20),
+    fontFamily: 'Poppins-Regular',
   },
 });
 

@@ -1,48 +1,96 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, StatusBar, ScrollView, TouchableOpacity, TextInput, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, StatusBar, ScrollView, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import CommonHeader from '../../components/CommonHeader';
+import { SuccessModal, ErrorModal } from '../../components';
 import { p } from '../../utils/Responsive';
 import { fontSizes } from '../../utils/fonts';
+import { useDispatch, useSelector } from 'react-redux';
+import { changePassword } from '../../redux/slices/profileSlice';
 
 const ChangePasswordScreen = ({ navigation }) => {
+  const dispatch = useDispatch();
+  const { changePasswordLoading, changePasswordError } = useSelector(state => state.profile);
   const [passwords, setPasswords] = useState({
     currentPassword: '',
     newPassword: '',
     confirmPassword: '',
   });
 
+  // Modal states
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+
+  // Monitor changePasswordError and show error modal
+  useEffect(() => {
+    if (changePasswordError && !changePasswordLoading) {
+      setErrorMessage(changePasswordError.message || 'Failed to change password. Please try again.');
+      setShowErrorModal(true);
+    }
+  }, [changePasswordError, changePasswordLoading]);
+
   const handleBackPress = () => {
     navigation.goBack();
   };
 
-  const handleChangePassword = () => {
+  const handleSuccessModalClose = () => {
+    // Clear form and navigate back
+    setPasswords({
+      currentPassword: '',
+      newPassword: '',
+      confirmPassword: '',
+    });
+    navigation.goBack();
+  };
+
+  const handleChangePassword = async () => {
     // Validate passwords
     if (!passwords.currentPassword || !passwords.newPassword || !passwords.confirmPassword) {
-      Alert.alert('Error', 'Please fill in all fields');
+      setErrorMessage('Please fill in all fields');
+      setShowErrorModal(true);
       return;
     }
 
     if (passwords.newPassword !== passwords.confirmPassword) {
-      Alert.alert('Error', 'New password and confirm password do not match');
+      setErrorMessage('New password and confirm password do not match');
+      setShowErrorModal(true);
       return;
     }
 
     if (passwords.newPassword.length < 6) {
-      Alert.alert('Error', 'New password must be at least 6 characters long');
+      setErrorMessage('New password must be at least 6 characters long');
+      setShowErrorModal(true);
       return;
     }
 
-    // Here you would call API to change password
-    Alert.alert(
-      'Success', 
-      'Password changed successfully!',
-      [
-        {
-          text: 'OK',
-          onPress: () => navigation.goBack(),
-        },
-      ]
-    );
+    // Additional password validation
+    if (passwords.newPassword === passwords.currentPassword) {
+      setErrorMessage('New password must be different from current password');
+      setShowErrorModal(true);
+      return;
+    }
+
+    // Check if new password contains at least one letter and one number
+    const hasLetter = /[a-zA-Z]/.test(passwords.newPassword);
+    const hasNumber = /\d/.test(passwords.newPassword);
+    
+    if (!hasLetter || !hasNumber) {
+      setErrorMessage('New password must contain at least one letter and one number');
+      setShowErrorModal(true);
+      return;
+    }
+
+    try {
+      // Call API to change password
+      await dispatch(changePassword(passwords)).unwrap();
+      
+      // Show success modal
+      setShowSuccessModal(true);
+    } catch (error) {
+      // Handle error
+      setErrorMessage(error.message || 'Failed to change password. Please try again.');
+      setShowErrorModal(true);
+    }
   };
 
   const updatePassword = (field, value) => {
@@ -112,12 +160,40 @@ const ChangePasswordScreen = ({ navigation }) => {
               />
             </View>
 
-            <TouchableOpacity style={styles.changePasswordButton} onPress={handleChangePassword}>
-              <Text style={styles.changePasswordButtonText}>Change Password</Text>
+            <TouchableOpacity 
+              style={[styles.changePasswordButton, changePasswordLoading && styles.changePasswordButtonDisabled]} 
+              onPress={handleChangePassword}
+              disabled={changePasswordLoading}
+            >
+              {changePasswordLoading ? (
+                <ActivityIndicator size="small" color="#000" />
+              ) : (
+                <Text style={styles.changePasswordButtonText}>Change Password</Text>
+              )}
             </TouchableOpacity>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Success Modal */}
+      <SuccessModal
+        visible={showSuccessModal}
+        onClose={handleSuccessModalClose}
+        title="Password Changed!"
+        message="Your password has been changed successfully."
+        buttonText="Continue"
+        onButtonPress={handleSuccessModalClose}
+      />
+
+      {/* Error Modal */}
+      <ErrorModal
+        visible={showErrorModal}
+        onClose={() => setShowErrorModal(false)}
+        title="Error"
+        message={errorMessage}
+        buttonText="OK"
+        onButtonPress={() => setShowErrorModal(false)}
+      />
     </SafeAreaView>
   );
 };
@@ -197,6 +273,10 @@ const styles = StyleSheet.create({
     color: '#000', // Black text as shown in the image
     fontSize: fontSizes.base,
     fontFamily: 'Poppins-Bold',
+  },
+  
+  changePasswordButtonDisabled: {
+    opacity: 0.7,
   },
 });
 

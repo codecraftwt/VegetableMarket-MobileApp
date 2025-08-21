@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,26 +8,44 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
+  ActivityIndicator,
 } from 'react-native';
 import CommonHeader from '../../components/CommonHeader';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { p } from '../../utils/Responsive';
 import { fontSizes } from '../../utils/fonts';
 import ProductCard from '../../components/ProductCard';
+import { useSelector, useDispatch } from 'react-redux';
+import { fetchVegetables } from '../../redux/slices/vegetablesSlice';
+import { addToCart } from '../../redux/slices/cartSlice';
+import SuccessModal from '../../components/SuccessModal';
+import ErrorModal from '../../components/ErrorModal';
 
 const ProductDetailScreen = ({ navigation, route }) => {
   const [quantity, setQuantity] = useState(1);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+  const dispatch = useDispatch();
+  const { vegetables } = useSelector(state => state.vegetables);
+  const { addLoading } = useSelector(state => state.cart);
   
   // Get product data from navigation params or use default
   const product = route.params?.product || {
     id: 1,
     name: 'Fresh Orange',
-    price: '$2.99',
+    price: '₹2.99',
     unit: 'KG',
     rating: 4.0,
     image: require('../../assets/vegebg.png'),
     description: 'Orange is a vibrant and juicy citrus fruit, known for its refreshing flavor and bright color. With a tangy savory sweetness, it adds a burst of freshness to both sweet and savory dishes. The peel of an orange is often used in cooking and baking to impart a zesty',
   };
+
+  // Fetch vegetables when component mounts
+  useEffect(() => {
+    dispatch(fetchVegetables());
+  }, [dispatch]);
 
   const handleBackPress = () => {
     navigation.goBack();
@@ -45,9 +63,34 @@ const ProductDetailScreen = ({ navigation, route }) => {
     }
   };
 
-  const handleAddToCart = () => {
-    console.log('Added to cart:', product.name, 'Quantity:', quantity);
-    // Add to cart logic here
+  const handleAddToCart = async () => {
+    try {
+      await dispatch(addToCart({ 
+        vegetable_id: product.id, 
+        quantity: quantity 
+      })).unwrap();
+      
+      // Show success modal
+      setSuccessMessage(`${product.name} added to cart successfully!`);
+      setShowSuccessModal(true);
+    } catch (error) {
+      // Show error modal
+      setErrorMessage(error.message || 'Failed to add item to cart. Please try again.');
+      setShowErrorModal(true);
+    }
+  };
+
+  const handleSuccessModalClose = () => {
+    setShowSuccessModal(false);
+  };
+
+  const handleErrorModalClose = () => {
+    setShowErrorModal(false);
+  };
+
+  const handleViewCart = () => {
+    setShowSuccessModal(false);
+    navigation.navigate('Cart');
   };
 
   const StarRating = ({ rating }) => {
@@ -85,40 +128,14 @@ const ProductDetailScreen = ({ navigation, route }) => {
   };
 
   const RelatedProducts = () => {
-    const relatedItems = [
-      { 
-        id: 1, 
-        name: 'Lemon', 
-        price: '$1.20', 
-        unit: 'KG',
-        rating: 4.0,
-        image: require('../../assets/vegebg.png') 
-      },
-      { 
-        id: 2, 
-        name: 'Apple', 
-        price: '$3.99', 
-        unit: 'KG',
-        rating: 4.2,
-        image: require('../../assets/vegebg.png') 
-      },
-      { 
-        id: 3, 
-        name: 'Banana', 
-        price: '$2.49', 
-        unit: 'KG',
-        rating: 4.1,
-        image: require('../../assets/vegebg.png') 
-      },
-      { 
-        id: 4, 
-        name: 'Grapes', 
-        price: '$4.99', 
-        unit: 'KG',
-        rating: 4.3,
-        image: require('../../assets/vegebg.png') 
-      },
-    ];
+    // Get related products from the same category (7-8 products)
+    const relatedItems = vegetables
+      .filter(item => 
+        item.id !== product.id && 
+        (item.category?.id === product.category?.id || 
+         item.category?.name?.toLowerCase() === product.category?.name?.toLowerCase())
+      )
+      .slice(0, 8);
 
     const handleRelatedProductPress = (item) => {
       console.log('Navigating to product detail:', item.name);
@@ -129,6 +146,10 @@ const ProductDetailScreen = ({ navigation, route }) => {
       console.log('Added related product to cart:', item.name);
       // Add to cart logic here
     };
+
+    if (relatedItems.length === 0) {
+      return null; // Don't show related products section if none available
+    }
 
     return (
       <View style={styles.relatedSection}>
@@ -141,11 +162,38 @@ const ProductDetailScreen = ({ navigation, route }) => {
               onPress={() => handleRelatedProductPress(item)}
               onAddToCart={handleRelatedAddToCart}
               size="medium"
+              navigation={navigation}
             />
           ))}
         </ScrollView>
       </View>
     );
+  };
+
+  // Helper function to get product image
+  const getProductImage = () => {
+    if (product?.images && product.images.length > 0) {
+      return { uri: `https://vegetables.walstarmedia.com/storage/${product.images[0].image_path}` };
+    }
+    return product.image || require('../../assets/vegebg.png');
+  };
+
+  // Helper function to get product price
+  const getPriceDisplay = () => {
+    if (product.price_per_kg) {
+      return `₹${parseFloat(product.price_per_kg).toFixed(2)}`;
+    }
+    return product?.price || '₹0.00';
+  };
+
+  // Helper function to get product unit
+  const getProductUnit = () => {
+    return product?.unit_type || product?.unit || 'kg';
+  };
+
+  // Helper function to get product description
+  const getProductDescription = () => {
+    return product?.description || 'No description available for this product.';
   };
 
   return (
@@ -164,18 +212,18 @@ const ProductDetailScreen = ({ navigation, route }) => {
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Product Image Section */}
         <View style={styles.imageSection}>
-          <Image source={product.image} style={styles.productImage} />
+          <Image source={getProductImage()} style={styles.productImage} />
         </View>
         
         {/* Product Information Card */}
         <View style={styles.productCard}>
           {/* Product Name and Rating */}
-          <Text style={styles.productName}>{product.name}</Text>
-          <StarRating rating={product.rating} />
+          <Text style={styles.productName}>{product?.name || 'Unknown Product'}</Text>
+          <StarRating rating={product?.rating || 0} />
           
           {/* Price and Quantity Selector */}
           <View style={styles.priceQuantityRow}>
-            <Text style={styles.productPrice}>{product.price}/{product.unit}</Text>
+            <Text style={styles.productPrice}>{getPriceDisplay()}/{getProductUnit()}</Text>
             <View style={styles.quantitySelector}>
               <TouchableOpacity 
                 style={styles.quantityButton} 
@@ -183,7 +231,7 @@ const ProductDetailScreen = ({ navigation, route }) => {
               >
                 <Icon name="minus" size={16} color="#666" />
               </TouchableOpacity>
-              <Text style={styles.quantityText}>{quantity} {product.unit}</Text>
+              <Text style={styles.quantityText}>{quantity} {getProductUnit()}</Text>
               <TouchableOpacity 
                 style={styles.quantityButton} 
                 onPress={() => handleQuantityChange('increase')}
@@ -197,8 +245,7 @@ const ProductDetailScreen = ({ navigation, route }) => {
           <View style={styles.detailsSection}>
             <Text style={styles.detailsTitle}>Product Details</Text>
             <Text style={styles.detailsText}>
-              {product.description}
-              <Text style={styles.readMoreText}> Read More</Text>
+              {getProductDescription()}
             </Text>
           </View>
           
@@ -211,12 +258,41 @@ const ProductDetailScreen = ({ navigation, route }) => {
       <View style={styles.bottomBar}>
         <View style={styles.totalSection}>
           <Text style={styles.totalLabel}>Total Price</Text>
-          <Text style={styles.totalPrice}>{product.price}</Text>
+          <Text style={styles.totalPrice}>{getPriceDisplay()}</Text>
         </View>
-        <TouchableOpacity style={styles.addToCartButton} onPress={handleAddToCart}>
-          <Text style={styles.addToCartText}>Add to Cart</Text>
+        <TouchableOpacity style={styles.addToCartButton} onPress={handleAddToCart} disabled={addLoading}>
+          {addLoading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.addToCartText}>Add to Cart</Text>
+          )}
         </TouchableOpacity>
       </View>
+
+      {/* Success Modal */}
+      <SuccessModal
+        visible={showSuccessModal}
+        onClose={handleSuccessModalClose}
+        title="Added to Cart!"
+        message={successMessage}
+        buttonText="OK"
+        onButtonPress={handleSuccessModalClose}
+        showSecondaryButton={true}
+        secondaryButtonText="View Cart"
+        onSecondaryButtonPress={handleViewCart}
+      />
+
+      {/* Error Modal */}
+      <ErrorModal
+        visible={showErrorModal}
+        onClose={handleErrorModalClose}
+        title="Add to Cart Failed"
+        message={errorMessage}
+        buttonText="OK"
+        onButtonPress={handleErrorModalClose}
+        showRetry={true}
+        onRetry={handleAddToCart}
+      />
     </SafeAreaView>
   );
 };

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   View, 
   Text, 
@@ -8,45 +8,115 @@ import {
   ScrollView, 
   TouchableOpacity, 
   TextInput,
-  Image
+  Image,
+  ActivityIndicator,
 } from 'react-native';
 import CommonHeader from '../../components/CommonHeader';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { p } from '../../utils/Responsive';
 import { fontSizes } from '../../utils/fonts';
+import { useDispatch, useSelector } from 'react-redux';
+import { useFocusEffect } from '@react-navigation/native';
+import { fetchCart, updateCartQuantity, clearCartErrors, removeFromCart } from '../../redux/slices/cartSlice';
+import SuccessModal from '../../components/SuccessModal';
+import ErrorModal from '../../components/ErrorModal';
+import ConfirmationModal from '../../components/ConfirmationModal';
 
 const CartScreen = ({ navigation }) => {
-  const [cartItems, setCartItems] = useState([
-    {
-      id: 1,
-      name: 'Orange',
-      category: 'Fruits',
-      price: 2.99,
-      unit: 'KG',
-      quantity: 1,
-      image: require('../../assets/vegebg.png'),
-    },
-    {
-      id: 2,
-      name: 'Cauli Flower',
-      category: 'Veggies',
-      price: 1.20,
-      unit: 'KG',
-      quantity: 1,
-      image: require('../../assets/vegebg.png'),
-    },
-    {
-      id: 3,
-      name: 'Kiwi',
-      category: 'Fruits',
-      price: 1.50,
-      unit: 'KG',
-      quantity: 1,
-      image: require('../../assets/vegebg.png'),
-    },
-  ]);
+  const dispatch = useDispatch();
+  const { 
+    cartItems: reduxCartItems, 
+    totalAmount: reduxTotalAmount, 
+    loading, 
+    error, 
+    updateLoading, 
+    updateError,
+    removeLoading,
+    removeError
+  } = useSelector(state => state.cart);
 
-  const [promoCode, setPromoCode] = useState('');
+  // Local state for immediate updates
+  // This prevents unnecessary API calls and provides instant UI feedback
+  const [localCartItems, setLocalCartItems] = useState([]);
+  const [localTotalAmount, setLocalTotalAmount] = useState(0);
+  const [forceUpdate, setForceUpdate] = useState(0); // Force re-render
+
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [showConfirmationModal, setShowConfirmationModal] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+  const [itemToRemove, setItemToRemove] = useState(null);
+  const [updatingItems, setUpdatingItems] = useState(new Set()); // Track which items are being updated
+
+  // Fetch cart when component mounts and when screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      console.log('CartScreen: Screen focused, fetching cart...');
+      dispatch(fetchCart());
+      
+      // Clear any previous errors when screen comes into focus
+      dispatch(clearCartErrors());
+      
+      // Reset local state to ensure fresh data
+      setLocalCartItems([]);
+      setLocalTotalAmount(0);
+      setUpdatingItems(new Set());
+      setForceUpdate(0);
+    }, [dispatch])
+  );
+
+  // Manual refresh function for when we need to sync with server
+  const refreshCart = () => {
+    console.log('CartScreen: Manually refreshing cart...');
+    dispatch(fetchCart());
+  };
+
+  // Additional focus effect for immediate cart refresh when returning from other screens
+  useFocusEffect(
+    React.useCallback(() => {
+      // This will run every time the screen comes into focus
+      // Useful for refreshing cart after adding items from other screens
+      const refreshCartOnFocus = () => {
+        console.log('CartScreen: Refreshing cart on focus...');
+        refreshCart();
+      };
+      
+      // Small delay to ensure smooth navigation
+      const timer = setTimeout(refreshCartOnFocus, 100);
+      
+      return () => clearTimeout(timer);
+    }, [dispatch])
+  );
+
+  // Handle cleanup when screen loses focus
+  useFocusEffect(
+    React.useCallback(() => {
+      return () => {
+        // Cleanup function when screen loses focus
+        console.log('CartScreen: Screen losing focus, cleaning up...');
+        dispatch(clearCartErrors());
+      };
+    }, [dispatch])
+  );
+
+  // Update local state when Redux state changes
+  useEffect(() => {
+    if (reduxCartItems.length > 0 || reduxTotalAmount > 0) {
+      console.log('CartScreen: Updating local state from Redux - Items:', reduxCartItems.length, 'Total:', reduxTotalAmount);
+      setLocalCartItems([...reduxCartItems]); // Create new array reference
+      setLocalTotalAmount(reduxTotalAmount);
+      setForceUpdate(prev => prev + 1); // Force re-render
+    }
+  }, [reduxCartItems, reduxTotalAmount]);
+
+  // Debug: Monitor local cart state changes
+  useEffect(() => {
+    console.log('CartScreen: Local cart state updated - Items:', localCartItems.length, 'Total:', localTotalAmount);
+    localCartItems.forEach(item => {
+      console.log(`CartScreen: Item ${item.name} - Quantity: ${item.quantity_kg}, Price: ${item.price_per_kg}`);
+    });
+  }, [localCartItems, localTotalAmount]);
 
   const handleNotificationPress = () => {
     console.log('Cart notification pressed');
@@ -56,74 +126,221 @@ const CartScreen = ({ navigation }) => {
     navigation.goBack();
   };
 
-  const handleQuantityChange = (itemId, change) => {
-    setCartItems(prevItems =>
-      prevItems.map(item =>
-        item.id === itemId
-          ? { ...item, quantity: Math.max(1, item.quantity + change) }
-          : item
-      )
+  const handleQuantityChange = async (itemId, change) => {
+    // Prevent multiple simultaneous updates for the same item
+    if (updatingItems.has(itemId)) {
+      console.log('CartScreen: Item already being updated, skipping:', itemId);
+      return;
+    }
+    
+    const currentItem = localCartItems.find(item => item.id === itemId);
+    if (!currentItem) return;
+
+    const newQuantity = Math.max(1, currentItem.quantity_kg + change);
+    console.log('CartScreen: Updating quantity for item:', currentItem.name, 'from', currentItem.quantity_kg, 'to', newQuantity);
+    
+    // Don't allow quantity less than 1
+    if (newQuantity < 1) {
+      setErrorMessage('Quantity cannot be less than 1');
+      setShowErrorModal(true);
+      return;
+    }
+    
+    // Don't allow quantity more than 99 (reasonable limit)
+    if (newQuantity > 99) {
+      setErrorMessage('Quantity cannot be more than 99');
+      setShowErrorModal(true);
+      return;
+    }
+    
+    // Mark this item as being updated
+    setUpdatingItems(prev => new Set(prev).add(itemId));
+    
+    // Store original values for rollback on error
+    const originalQuantity = currentItem.quantity_kg;
+    const originalTotal = localTotalAmount;
+    
+    // Update local state immediately for instant feedback (optimistic update)
+    const updatedLocalCartItems = localCartItems.map(item => 
+      item.id === itemId 
+        ? { ...item, quantity_kg: newQuantity }
+        : item
     );
+    
+    // Calculate new total amount
+    const newLocalTotalAmount = updatedLocalCartItems.reduce((sum, item) => 
+      sum + (parseFloat(item.price_per_kg) * item.quantity_kg), 0
+    );
+    
+    console.log('CartScreen: Updating local state - new quantity:', newQuantity, 'new total:', newLocalTotalAmount);
+    
+    // Update local state immediately - this will trigger re-render
+    setLocalCartItems([...updatedLocalCartItems]); // Create new array reference
+    setLocalTotalAmount(newLocalTotalAmount);
+    setForceUpdate(prev => prev + 1); // Force re-render
+    
+    // Add small delay to prevent rapid successive clicks
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    try {
+      console.log('CartScreen: Making API call to update quantity');
+      await dispatch(updateCartQuantity({ id: itemId, quantity: newQuantity })).unwrap();
+      console.log('CartScreen: API call successful, quantity updated');
+      setSuccessMessage('Quantity updated successfully!');
+      setShowSuccessModal(true);
+    } catch (error) {
+      console.error('CartScreen: Quantity update error:', error);
+      // Show specific error message from API
+      const errorMsg = error.message || error.error || 'Failed to update quantity. Please try again.';
+      setErrorMessage(errorMsg);
+      setShowErrorModal(true);
+      
+      console.log('CartScreen: Rolling back optimistic update due to error');
+      // Revert local state on error (rollback optimistic update)
+      const revertedLocalCartItems = localCartItems.map(item => 
+        item.id === itemId 
+          ? { ...item, quantity_kg: originalQuantity }
+          : item
+      );
+      
+      setLocalCartItems([...revertedLocalCartItems]); // Create new array reference
+      setLocalTotalAmount(originalTotal);
+      setForceUpdate(prev => prev + 1); // Force re-render
+    } finally {
+      // Remove this item from updating set
+      setUpdatingItems(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(itemId);
+        return newSet;
+      });
+    }
   };
 
-  const handleRemoveItem = (itemId) => {
-    setCartItems(prevItems => prevItems.filter(item => item.id !== itemId));
+  const handleRemoveItem = (item) => {
+    console.log('CartScreen: handleRemoveItem called for item:', item);
+    setItemToRemove(item);
+    setShowConfirmationModal(true);
   };
 
-  const handleApplyPromo = () => {
-    console.log('Applying promo code:', promoCode);
-    // Add promo code logic here
+  const confirmRemoveItem = async () => {
+    if (!itemToRemove) return;
+    
+    console.log('CartScreen: confirmRemoveItem called for item:', itemToRemove);
+    
+    try {
+      await dispatch(removeFromCart(itemToRemove.id)).unwrap();
+      console.log('CartScreen: Item removed successfully');
+      setSuccessMessage(`${itemToRemove.name} removed from cart successfully!`);
+      setShowSuccessModal(true);
+      
+      // Update local state immediately after successful removal
+      // No need to refresh entire cart - just remove the item locally
+      const updatedLocalCartItems = localCartItems.filter(item => item.id !== itemToRemove.id);
+      const newLocalTotalAmount = updatedLocalCartItems.reduce((sum, item) => 
+        sum + (parseFloat(item.price_per_kg) * item.quantity_kg), 0
+      );
+      
+      setLocalCartItems([...updatedLocalCartItems]); // Create new array reference
+      setLocalTotalAmount(newLocalTotalAmount);
+      setForceUpdate(prev => prev + 1); // Force re-render
+      
+      // Clear the item to remove
+      setItemToRemove(null);
+      setShowConfirmationModal(false);
+    } catch (error) {
+      console.error('CartScreen: Remove from cart error:', error);
+      setErrorMessage(error.message || 'Failed to remove item from cart. Please try again.');
+      setShowErrorModal(true);
+      
+      // Clear the item to remove on error
+      setItemToRemove(null);
+      setShowConfirmationModal(false);
+    }
   };
 
   const handleCheckout = () => {
+    if (localCartItems.length === 0) {
+      setErrorMessage('Please add items to your cart before checkout.');
+      setShowErrorModal(true);
+      return;
+    }
     console.log('Proceeding to checkout');
-    navigation.navigate('Checkout', { totalPrice: finalTotal });
+    navigation.navigate('Checkout', { totalPrice: localTotalAmount });
   };
 
-  // Calculate totals
-  const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const deliveryCharges = 2.00;
-  const discount = 0.00;
-  const finalTotal = subtotal + deliveryCharges - discount;
-
   // Cart Item Component
-  const CartItem = ({ item }) => (
-    <View style={styles.cartItemCard}>
-      <View style={styles.itemLeft}>
-        <Image source={item.image} style={styles.itemImage} />
-        <View style={styles.itemInfo}>
-          <Text style={styles.itemName}>{item.name}</Text>
-          <Text style={styles.itemCategory}>{item.category}</Text>
-          <Text style={styles.itemPrice}>${item.price.toFixed(2)}/{item.unit}</Text>
-        </View>
-      </View>
-      
-      <View style={styles.itemRight}>
-        <View style={styles.quantitySelector}>
-          <TouchableOpacity 
-            style={styles.quantityButton} 
-            onPress={() => handleQuantityChange(item.id, -1)}
-          >
-            <Icon name="minus" size={16} color="#666" />
-          </TouchableOpacity>
-          <Text style={styles.quantityText}>{item.quantity} {item.unit}</Text>
-          <TouchableOpacity 
-            style={styles.quantityButton} 
-            onPress={() => handleQuantityChange(item.id, 1)}
-          >
-            <Icon name="plus" size={16} color="#019a34" />
-          </TouchableOpacity>
+  const CartItem = ({ item }) => {
+    // Helper function to get product image
+    // Note: Cart API doesn't provide image data, so we use fallback
+    const getProductImage = () => {
+      // For now, use fallback image since cart API doesn't provide images
+      // In a real app, you might want to fetch product details separately or modify the cart API
+      return require('../../assets/vegebg.png');
+    };
+
+    const isItemUpdating = updatingItems.has(item.id);
+
+    return (
+      <View style={styles.cartItemCard}>
+        <View style={styles.itemLeft}>
+          <Image 
+            source={getProductImage()} 
+            style={styles.itemImage}
+          />
+          <View style={styles.itemInfo}>
+            <Text style={styles.itemName}>{item.name}</Text>
+            <Text style={styles.itemCategory}>{item.unit_type}</Text>
+            <Text style={styles.itemPrice}>₹{parseFloat(item.price_per_kg).toFixed(2)}/{item.unit_type}</Text>
+          </View>
         </View>
         
-        <TouchableOpacity 
-          style={styles.removeButton}
-          onPress={() => handleRemoveItem(item.id)}
-        >
-          <Icon name="trash" size={16} color="#F44336" />
-        </TouchableOpacity>
+        <View style={styles.itemRight}>
+          <View style={styles.quantitySelector}>
+            <TouchableOpacity 
+              style={[styles.quantityButton, isItemUpdating && styles.disabledButton]} 
+              onPress={() => handleQuantityChange(item.id, -1)}
+              disabled={isItemUpdating || item.quantity_kg <= 1}
+            >
+              {isItemUpdating ? (
+                <ActivityIndicator size={14} color="#666" />
+              ) : (
+                <Icon name="minus" size={16} color={item.quantity_kg <= 1 ? "#ccc" : "#666"} />
+              )}
+            </TouchableOpacity>
+            <Text style={[
+              styles.quantityText, 
+              (item.quantity_kg <= 1 || item.quantity_kg >= 99) && styles.quantityTextLimit
+            ]}>
+              {item.quantity_kg} {item.unit_type}
+            </Text>
+            <TouchableOpacity 
+              style={[styles.quantityButton, isItemUpdating && styles.disabledButton]} 
+              onPress={() => handleQuantityChange(item.id, 1)}
+              disabled={isItemUpdating || item.quantity_kg >= 99}
+            >
+              {isItemUpdating ? (
+                <ActivityIndicator size={14} color="#019a34" />
+              ) : (
+                <Icon name="plus" size={16} color={item.quantity_kg >= 99 ? "#ccc" : "#019a34"} />
+              )}
+            </TouchableOpacity>
+          </View>
+          
+          <TouchableOpacity 
+            style={styles.removeButton}
+            onPress={() => handleRemoveItem(item)}
+            disabled={removeLoading}
+          >
+            {removeLoading ? (
+              <ActivityIndicator size={16} color="#F44336" />
+            ) : (
+              <Icon name="trash" size={16} color="#F44336" />
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
-    </View>
-  );
+    );
+  };
 
   // Empty Cart View
   const EmptyCart = () => (
@@ -146,50 +363,67 @@ const CartScreen = ({ navigation }) => {
       {/* Cart Items */}
       <View style={styles.cartItemsSection}>
         <Text style={styles.sectionTitle}>Cart Items</Text>
-        {cartItems.map(item => (
+        {localCartItems.map(item => (
           <CartItem key={item.id} item={item} />
         ))}
       </View>
-
-      {/* Promo Code Section */}
-      {/* <View style={styles.promoSection}>
-        <Text style={styles.sectionTitle}>Promo Code</Text>
-        <View style={styles.promoInputContainer}>
-          <TextInput
-            style={styles.promoInput}
-            placeholder="Enter Promo Code"
-            placeholderTextColor="#999"
-            value={promoCode}
-            onChangeText={setPromoCode}
-          />
-          <TouchableOpacity style={styles.applyButton} onPress={handleApplyPromo}>
-            <Text style={styles.applyButtonText}>Apply</Text>
-          </TouchableOpacity>
-        </View>
-      </View> */}
 
       {/* Price Breakdown */}
       <View style={styles.priceBreakdownSection}>
         <Text style={styles.sectionTitle}>Price Details</Text>
         <View style={styles.priceRow}>
           <Text style={styles.priceLabel}>Sub Total</Text>
-          <Text style={styles.priceValue}>${subtotal.toFixed(2)}</Text>
+          <Text style={styles.priceValue}>₹{localTotalAmount.toFixed(2)}</Text>
         </View>
         <View style={styles.priceRow}>
           <Text style={styles.priceLabel}>Delivery Charges</Text>
-          <Text style={styles.priceValue}>${deliveryCharges.toFixed(2)}</Text>
+          <Text style={styles.priceValue}>₹0.00</Text>
         </View>
         <View style={styles.priceRow}>
           <Text style={styles.priceLabel}>Discount</Text>
-          <Text style={styles.priceValue}>${discount.toFixed(2)}</Text>
+          <Text style={styles.priceValue}>₹0.00</Text>
         </View>
         <View style={[styles.priceRow, styles.finalTotalRow]}>
           <Text style={styles.finalTotalLabel}>Final Total</Text>
-          <Text style={styles.finalTotalValue}>${finalTotal.toFixed(2)}</Text>
+          <Text style={styles.finalTotalValue}>₹{localTotalAmount.toFixed(2)}</Text>
         </View>
       </View>
     </>
   );
+
+  const handleSuccessModalClose = () => {
+    setShowSuccessModal(false);
+    // No need to refresh cart - local state is already updated
+  };
+
+  const handleErrorModalClose = () => {
+    setShowErrorModal(false);
+  };
+
+  const handleConfirmationModalClose = () => {
+    setShowConfirmationModal(false);
+    setItemToRemove(null);
+  };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="light-content" backgroundColor="#019a34" />
+        <CommonHeader 
+          screenName="Cart"
+          showBackButton={true}
+          onBackPress={handleBackPress}
+          showNotification={true}
+          onNotificationPress={handleNotificationPress}
+          navigation={navigation}
+        />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#019a34" />
+          <Text style={styles.loadingText}>Loading cart...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -205,21 +439,56 @@ const CartScreen = ({ navigation }) => {
       />
       
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {cartItems.length === 0 ? <EmptyCart /> : <CartWithItems />}
+        {localCartItems.length === 0 ? <EmptyCart /> : <CartWithItems />}
       </ScrollView>
 
       {/* Bottom Checkout Bar */}
-      {cartItems.length > 0 && (
+      {localCartItems.length > 0 && (
         <View style={styles.bottomBar}>
           <View style={styles.totalSection}>
             <Text style={styles.totalLabel}>Total Price</Text>
-            <Text style={styles.totalPrice}>${finalTotal.toFixed(2)}</Text>
+            <Text style={styles.totalPrice}>₹{localTotalAmount.toFixed(2)}</Text>
           </View>
           <TouchableOpacity style={styles.checkoutButton} onPress={handleCheckout}>
             <Text style={styles.checkoutButtonText}>Checkout</Text>
           </TouchableOpacity>
         </View>
       )}
+
+      {/* Success Modal */}
+      <SuccessModal
+        visible={showSuccessModal}
+        onClose={handleSuccessModalClose}
+        title="Success!"
+        message={successMessage}
+        buttonText="OK"
+        onButtonPress={handleSuccessModalClose}
+      />
+
+      {/* Error Modal */}
+      <ErrorModal
+        visible={showErrorModal}
+        onClose={handleErrorModalClose}
+        title="Error"
+        message={errorMessage}
+        buttonText="OK"
+        onButtonPress={handleErrorModalClose}
+        showRetry={true}
+        onRetry={() => setShowErrorModal(false)}
+      />
+
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        visible={showConfirmationModal}
+        onClose={handleConfirmationModalClose}
+        title="Remove Item"
+        message={`Are you sure you want to remove ${itemToRemove?.name} from your cart?`}
+        confirmText="Remove"
+        cancelText="Cancel"
+        onConfirm={confirmRemoveItem}
+        onCancel={handleConfirmationModalClose}
+        confirmButtonStyle="destructive"
+      />
     </SafeAreaView>
   );
 };
@@ -356,8 +625,15 @@ const styles = StyleSheet.create({
     marginHorizontal: p(12),
     fontFamily: 'Poppins-SemiBold',
   },
+  quantityTextLimit: {
+    color: '#F44336', // Red color for limits
+  },
   removeButton: {
     padding: p(8),
+  },
+  disabledButton: {
+    opacity: 0.5,
+    backgroundColor: '#f0f0f0',
   },
 
   // Promo Code Section
@@ -478,6 +754,20 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: fontSizes.base,
     fontFamily: 'Poppins-Bold',
+  },
+
+  // Loading Styles
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: p(50),
+  },
+  loadingText: {
+    marginTop: p(20),
+    fontSize: fontSizes.base,
+    color: '#666',
+    fontFamily: 'Poppins-Regular',
   },
 });
 

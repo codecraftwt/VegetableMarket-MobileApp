@@ -1,9 +1,20 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Image,
+  ActivityIndicator,
+} from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import Icon1 from 'react-native-vector-icons/Feather';
 import { p } from '../utils/Responsive';
 import { fontSizes } from '../utils/fonts';
+import { useDispatch, useSelector } from 'react-redux';
+import { addToCart } from '../redux/slices/cartSlice';
+import SuccessModal from './SuccessModal';
+import ErrorModal from './ErrorModal';
 
 const ProductCard = ({
   item,
@@ -11,7 +22,102 @@ const ProductCard = ({
   onAddToCart,
   showAddToCart = true,
   size = 'medium', // 'small', 'medium', 'large'
+  navigation, // Add navigation prop for cart navigation
 }) => {
+  const dispatch = useDispatch();
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+  const [isAddingToCart, setIsAddingToCart] = useState(false); // Individual loading state
+
+  // Helper function to get product image
+  const getProductImage = () => {
+    if (item?.images && item.images.length > 0) {
+      // Use the first image from the API
+      return {
+        uri: `https://vegetables.walstarmedia.com/storage/${item.images[0].image_path}`,
+      };
+    }
+    // Fallback to local image
+    return require('../assets/vegebg.png');
+  };
+
+  // Helper function to get product price
+  const getPriceDisplay = () => {
+    if (item.price_per_kg) {
+      return `₹${parseFloat(item.price_per_kg).toFixed(2)}`;
+    }
+    return item?.price || '₹0.00';
+  };
+
+  // Helper function to get product unit
+  const getProductUnit = () => {
+    return item?.unit_type || item?.unit || 'kg';
+  };
+
+  const handleAddToCart = async e => {
+    e.stopPropagation();
+    if (onAddToCart) {
+      // Use the provided onAddToCart function with individual loading
+      try {
+        setIsAddingToCart(true); // Start individual loading
+        await onAddToCart(item);
+      } catch (error) {
+        // Handle error if onAddToCart throws
+        setErrorMessage(
+          error.message || 'Failed to add item to cart. Please try again.',
+        );
+        setShowErrorModal(true);
+      } finally {
+        setIsAddingToCart(false); // Stop individual loading
+      }
+    } else {
+      // Default add to cart behavior
+      try {
+        setIsAddingToCart(true); // Start individual loading
+        await dispatch(
+          addToCart({
+            vegetable_id: item.id,
+            quantity: 1,
+          }),
+        ).unwrap();
+
+        // Show success modal
+        setSuccessMessage(`${item.name} added to cart successfully!`);
+        setShowSuccessModal(true);
+      } catch (error) {
+        // Show error modal
+        setErrorMessage(
+          error.message || 'Failed to add item to cart. Please try again.',
+        );
+        setShowErrorModal(true);
+      } finally {
+        setIsAddingToCart(false); // Stop individual loading
+      }
+    }
+  };
+
+  const handleSuccessModalClose = () => {
+    setShowSuccessModal(false);
+  };
+
+  const handleErrorModalClose = () => {
+    setShowErrorModal(false);
+  };
+
+  const handleViewCart = () => {
+    console.log('ProductCard: handleViewCart called');
+    console.log('ProductCard: navigation prop:', navigation);
+    setShowSuccessModal(false);
+    if (navigation) {
+      console.log('ProductCard: Navigating to Cart screen');
+      navigation.navigate('Cart');
+    } else {
+      console.log('ProductCard: No navigation prop available');
+    }
+  };
+
   const StarRating = ({ rating }) => {
     const stars = [];
     const fullStars = Math.floor(rating);
@@ -77,40 +183,73 @@ const ProductCard = ({
   const imageHeight = getImageHeight();
 
   return (
-    <TouchableOpacity
-      style={[styles.productCard, cardStyles]}
-      onPress={onPress}
-      activeOpacity={0.8}
-    >
-      {/* Product Image */}
-      <View style={[styles.imageContainer, { height: imageHeight }]}>
-        <Image source={item.image} style={styles.productImage} />
-      </View>
+    <>
+      <TouchableOpacity
+        style={[styles.productCard, cardStyles]}
+        onPress={onPress}
+        activeOpacity={0.8}
+      >
+        {/* Product Image */}
+        <View style={[styles.imageContainer, { height: imageHeight }]}>
+          <Image
+            source={getProductImage()}
+            style={styles.productImage}
+            defaultSource={require('../assets/vegebg.png')}
+          />
+        </View>
 
-      {/* Product Info */}
-      <View style={styles.productInfo}>
-        <Text style={styles.productName} numberOfLines={2}>
-          {item.name}
-        </Text>
-        <StarRating rating={item.rating} />
-        <Text style={styles.productPrice}>
-          {item.price}/{item.unit}
-        </Text>
-      </View>
+        {/* Product Info */}
+        <View style={styles.productInfo}>
+          <Text style={styles.productName} numberOfLines={2}>
+            {item?.name || 'Unknown Product'}
+          </Text>
+          <StarRating rating={item?.rating || 0} />
+          <Text style={styles.productPrice}>
+            {getPriceDisplay()}/{getProductUnit()}
+          </Text>
+        </View>
 
-      {/* Add to Cart Button */}
-      {showAddToCart && (
-        <TouchableOpacity
-          style={styles.addToCartButton}
-          onPress={e => {
-            e.stopPropagation();
-            onAddToCart && onAddToCart(item);
-          }}
-        >
-          <Icon1 name="plus" size={16} color="#fff" />
-        </TouchableOpacity>
-      )}
-    </TouchableOpacity>
+        {/* Add to Cart Button */}
+        {showAddToCart && (
+          <TouchableOpacity
+            style={styles.addToCartButton}
+            onPress={handleAddToCart}
+            disabled={isAddingToCart}
+          >
+            {isAddingToCart ? (
+              <ActivityIndicator size={16} color="#fff" />
+            ) : (
+              <Icon1 name="plus" size={16} color="#fff" />
+            )}
+          </TouchableOpacity>
+        )}
+      </TouchableOpacity>
+
+      {/* Success Modal */}
+      <SuccessModal
+        visible={showSuccessModal}
+        onClose={handleSuccessModalClose}
+        title="Added to Cart!"
+        message={successMessage}
+        buttonText="OK"
+        onButtonPress={handleSuccessModalClose}
+        showSecondaryButton={true}
+        secondaryButtonText="View Cart"
+        onSecondaryButtonPress={handleViewCart}
+      />
+
+      {/* Error Modal */}
+      <ErrorModal
+        visible={showErrorModal}
+        onClose={handleErrorModalClose}
+        title="Add to Cart Failed"
+        message={errorMessage}
+        buttonText="OK"
+        onButtonPress={handleErrorModalClose}
+        showRetry={true}
+        onRetry={handleAddToCart}
+      />
+    </>
   );
 };
 

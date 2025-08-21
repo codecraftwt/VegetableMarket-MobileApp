@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   Image,
   StatusBar,
   SafeAreaView,
+  ActivityIndicator,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { p } from '../../utils/Responsive';
@@ -16,9 +17,40 @@ import { fontSizes } from '../../utils/fonts';
 import CommonHeader from '../../components/CommonHeader';
 import ProductCard from '../../components/ProductCard';
 import CategoryItem from '../../components/CategoryItem';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchVegetables, fetchVegetableCategories } from '../../redux/slices/vegetablesSlice';
+import { addToCart } from '../../redux/slices/cartSlice';
+import SuccessModal from '../../components/SuccessModal';
+import ErrorModal from '../../components/ErrorModal';
 
 const DashboardScreen = ({ navigation }) => {
+  const dispatch = useDispatch();
+  const { vegetables, categories, loading, categoriesLoading } = useSelector(state => state.vegetables);
+  const { addError } = useSelector(state => state.cart);
   const [currentSlide, setCurrentSlide] = useState(0);
+  
+  // Modal states
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+
+  // Fetch data when component mounts
+  useEffect(() => {
+    dispatch(fetchVegetables());
+    dispatch(fetchVegetableCategories());
+  }, [dispatch]);
+
+  // Monitor cart errors and show error modal automatically
+  useEffect(() => {
+    if (addError) {
+      setErrorMessage(addError.message || addError.error || 'Failed to add item to cart');
+      setShowErrorModal(true);
+    }
+  }, [addError]);
+
+  // Get popular items (first 4 items from all vegetables)
+  const popularItems = vegetables.slice(0, 4);
 
   // Search Bar Component
   const SearchBar = () => (
@@ -66,23 +98,34 @@ const DashboardScreen = ({ navigation }) => {
 
   // Categories Component
   const Categories = () => {
-    const categories = [
-      { id: 'all', name: 'All', icon: 'th-large', color: '#019a34' },
-      { id: 'veggies', name: 'Veggies', icon: 'carrot', color: '#4CAF50' },
-      { id: 'fruits', name: 'Fruits', icon: 'apple', color: '#FF9800' },
-      { id: 'meat', name: 'Meat', icon: 'cutlery', color: '#F44336' },
-      { id: 'dairy', name: 'Dairy', icon: 'glass', color: '#2196F3' },
-    ];
-
     const handleCategoryPress = (category) => {
       console.log('Category pressed:', category.name);
       navigation.navigate('CategoryProducts', { category });
     };
 
+    if (categoriesLoading) {
+      return (
+        <View style={styles.categoriesContainer}>
+          <Text style={styles.sectionTitle}>Categories</Text>
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#019a34" />
+            <Text style={styles.loadingText}>Loading categories...</Text>
+          </View>
+        </View>
+      );
+    }
+
     return (
       <View style={styles.categoriesContainer}>
         <Text style={styles.sectionTitle}>Categories</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          {/* Add "All" category */}
+          <CategoryItem
+            category={{ id: 'all', name: 'All' }}
+            onPress={handleCategoryPress}
+            size="medium"
+          />
+          {/* Map through API categories */}
           {categories.map((category) => (
             <CategoryItem
               key={category.id}
@@ -98,48 +141,63 @@ const DashboardScreen = ({ navigation }) => {
 
   // Popular Items Component
   const PopularItems = () => {
-    const popularItems = [
-      {
-        id: 1,
-        name: 'Fresh Oranges',
-        price: '$4.99',
-        unit: 'KG',
-        rating: 4.5,
-        image: require('../../assets/vegebg.png'),
-      },
-      {
-        id: 2,
-        name: 'Ripe Avocados',
-        price: '$6.99',
-        unit: 'KG',
-        rating: 4.2,
-        image: require('../../assets/vegebg.png'),
-      },
-    ];
-
     const handleProductPress = (item) => {
       navigation.navigate('ProductDetail', { product: item });
     };
 
-    const handleAddToCart = (item) => {
-      console.log('Added to cart:', item.name);
-      // Add to cart logic here
+    const handleAddToCart = async (item) => {
+      try {
+        console.log('Adding to cart:', item.name);
+        await dispatch(addToCart({ 
+          vegetable_id: item.id, 
+          quantity: 1 
+        })).unwrap();
+        
+        // Show success modal
+        setSuccessMessage(`${item.name} added to cart successfully!`);
+        setShowSuccessModal(true);
+      } catch (error) {
+        console.error('Add to cart error:', error);
+        // Show error modal
+        const errorMsg = error.message || error.error || 'Failed to add item to cart. Please try again.';
+        setErrorMessage(errorMsg);
+        setShowErrorModal(true);
+      }
     };
+
+    if (loading) {
+      return (
+        <View style={styles.popularContainer}>
+          <Text style={styles.sectionTitle}>Popular</Text>
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#019a34" />
+            <Text style={styles.loadingText}>Loading products...</Text>
+          </View>
+        </View>
+      );
+    }
 
     return (
       <View style={styles.popularContainer}>
         <Text style={styles.sectionTitle}>Popular</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {popularItems.map((item) => (
-            <ProductCard
-              key={item.id}
-              item={item}
-              onPress={() => handleProductPress(item)}
-              onAddToCart={handleAddToCart}
-              size="medium"
-            />
-          ))}
-        </ScrollView>
+        {popularItems.length > 0 ? (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            {popularItems.map((item) => (
+              <ProductCard
+                key={item.id}
+                item={item}
+                onPress={() => handleProductPress(item)}
+                onAddToCart={handleAddToCart}
+                size="medium"
+              />
+            ))}
+          </ScrollView>
+        ) : (
+          <View style={styles.emptyState}>
+            <Icon name="shopping-bag" size={50} color="#ccc" />
+            <Text style={styles.emptyStateText}>No products available</Text>
+          </View>
+        )}
       </View>
     );
   };
@@ -147,6 +205,14 @@ const DashboardScreen = ({ navigation }) => {
   const handleNotificationPress = () => {
     // Handle notification press
     console.log('Notification pressed');
+  };
+
+  const handleSuccessModalClose = () => {
+    setShowSuccessModal(false);
+  };
+
+  const handleErrorModalClose = () => {
+    setShowErrorModal(false);
   };
 
   return (
@@ -168,6 +234,34 @@ const DashboardScreen = ({ navigation }) => {
         <Categories />
         <PopularItems />
       </ScrollView>
+
+      {/* Success Modal */}
+      <SuccessModal
+        visible={showSuccessModal}
+        onClose={handleSuccessModalClose}
+        title="Added to Cart!"
+        message={successMessage}
+        buttonText="Ok"
+        onButtonPress={handleSuccessModalClose}
+        showSecondaryButton={true}
+        secondaryButtonText="View Cart"
+        onSecondaryButtonPress={() => {
+          setShowSuccessModal(false);
+          navigation.navigate('Cart');
+        }}
+      />
+
+      {/* Error Modal */}
+      <ErrorModal
+        visible={showErrorModal}
+        onClose={handleErrorModalClose}
+        title="Error"
+        message={errorMessage}
+        buttonText="OK"
+        onButtonPress={handleErrorModalClose}
+        showRetry={true}
+        onRetry={() => setShowErrorModal(false)}
+      />
     </SafeAreaView>
   );
 };
@@ -280,6 +374,28 @@ const styles = StyleSheet.create({
   popularContainer: {
     marginVertical: p(20),
     paddingBottom: p(10),
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: p(20),
+  },
+  loadingText: {
+    marginLeft: p(10),
+    fontSize: fontSizes.base,
+    color: '#666',
+    fontFamily: 'Poppins-Regular',
+  },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: p(30),
+  },
+  emptyStateText: {
+    marginTop: p(10),
+    fontSize: fontSizes.base,
+    color: '#999',
+    fontFamily: 'Poppins-Regular',
   },
 });
 

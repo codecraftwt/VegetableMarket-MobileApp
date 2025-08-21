@@ -11,6 +11,7 @@ import ChangePasswordScreen from '../screens/Profile/ChangePasswordScreen';
 import MyOrdersScreen from '../screens/Profile/MyOrdersScreen';
 import ProductDetailScreen from '../screens/ProductDetail/ProductDetailScreen';
 import CheckoutScreen from '../screens/Checkout/CheckoutScreen';
+import CartScreen from '../screens/Cart/CartScreen';
 import NotificationScreen from '../screens/Notification/NotificationScreen';
 import CategoryProductsScreen from '../screens/Category/CategoryProductsScreen';
 import OrderDetailsScreen from '../screens/Profile/OrderDetailsScreen';
@@ -76,6 +77,7 @@ const AppNavigator = () => {
     { name: 'MyOrders', component: MyOrdersScreen, transition: slideFromRight },
     { name: 'ProductDetail', component: ProductDetailScreen, transition: slideFromRight },
     { name: 'Checkout', component: CheckoutScreen, transition: slideFromRight },
+    { name: 'Cart', component: CartScreen, transition: slideFromRight },
     { name: 'Notification', component: NotificationScreen, transition: slideFromRight },
     { name: 'CategoryProducts', component: CategoryProductsScreen, transition: slideFromRight },
     { name: 'OrderDetails', component: OrderDetailsScreen, transition: slideFromRight },
@@ -84,6 +86,7 @@ const AppNavigator = () => {
   return (
     <NavigationContainer>
       <Stack.Navigator
+        initialRouteName="Splash"
         screenOptions={{
           headerShown: false,
           cardStyle: { backgroundColor: '#019a34' },

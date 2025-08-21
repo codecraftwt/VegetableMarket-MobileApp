@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,120 +8,51 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
+  ActivityIndicator,
 } from 'react-native';
 import CommonHeader from '../../components/CommonHeader';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { p } from '../../utils/Responsive';
 import { fontSizes } from '../../utils/fonts';
 import ProductCard from '../../components/ProductCard';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchVegetables } from '../../redux/slices/vegetablesSlice';
+import { addToCart } from '../../redux/slices/cartSlice';
+import SuccessModal from '../../components/SuccessModal';
+import ErrorModal from '../../components/ErrorModal';
 
 const CategoryProductsScreen = ({ navigation, route }) => {
   const { category } = route.params;
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+  const dispatch = useDispatch();
+  const { vegetables, loading } = useSelector(state => state.vegetables);
+  const { addLoading } = useSelector(state => state.cart);
   const [searchQuery, setSearchQuery] = useState('');
-  
-  // Sample products data (this would come from Redux/API)
-  const allProducts = [
-    {
-      id: 1,
-      name: 'Fresh Tomatoes',
-      price: '$2.99',
-      unit: 'KG',
-      rating: 4.0,
-      category: 'veggies',
-      image: require('../../assets/vegebg.png'),
-    },
-    {
-      id: 2,
-      name: 'Organic Carrots',
-      price: '$1.99',
-      unit: 'KG',
-      rating: 4.2,
-      category: 'veggies',
-      image: require('../../assets/vegebg.png'),
-    },
-    {
-      id: 3,
-      name: 'Green Bell Peppers',
-      price: '$3.49',
-      unit: 'KG',
-      rating: 4.1,
-      category: 'veggies',
-      image: require('../../assets/vegebg.png'),
-    },
-    {
-      id: 4,
-      name: 'Fresh Onions',
-      price: '$1.49',
-      unit: 'KG',
-      rating: 3.8,
-      category: 'veggies',
-      image: require('../../assets/vegebg.png'),
-    },
-    {
-      id: 5,
-      name: 'Fresh Oranges',
-      price: '$4.99',
-      unit: 'KG',
-      rating: 4.5,
-      category: 'fruits',
-      image: require('../../assets/vegebg.png'),
-    },
-    {
-      id: 6,
-      name: 'Ripe Avocados',
-      price: '$6.99',
-      unit: 'KG',
-      rating: 4.2,
-      category: 'fruits',
-      image: require('../../assets/vegebg.png'),
-    },
-    {
-      id: 7,
-      name: 'Kiwi',
-      price: '$1.50',
-      unit: 'KG',
-      rating: 4.5,
-      category: 'fruits',
-      image: require('../../assets/vegebg.png'),
-    },
-    {
-      id: 8,
-      name: 'Fresh Apples',
-      price: '$3.99',
-      unit: 'KG',
-      rating: 4.3,
-      category: 'fruits',
-      image: require('../../assets/vegebg.png'),
-    },
-    {
-      id: 9,
-      name: 'Organic Spinach',
-      price: '$2.49',
-      unit: 'KG',
-      rating: 4.0,
-      category: 'veggies',
-      image: require('../../assets/vegebg.png'),
-    },
-    {
-      id: 10,
-      name: 'Fresh Broccoli',
-      price: '$3.99',
-      unit: 'KG',
-      rating: 4.1,
-      category: 'veggies',
-      image: require('../../assets/vegebg.png'),
-    },
-  ];
+
+  // Fetch vegetables when component mounts
+  useEffect(() => {
+    dispatch(fetchVegetables());
+  }, [dispatch]);
 
   // Filter products by category and search query
   const filteredProducts = (() => {
-    let products = category.id === 'all' 
-      ? allProducts 
-      : allProducts.filter(product => product.category === category.id);
+    let products = vegetables;
     
+    // Filter by category if not "all"
+    if (category.id !== 'all') {
+      products = products.filter(product => 
+        product.category?.id === category.id || 
+        product.category?.name?.toLowerCase() === category.name?.toLowerCase()
+      );
+    }
+    
+    // Filter by search query
     if (searchQuery.trim()) {
       products = products.filter(product => 
-        product.name.toLowerCase().includes(searchQuery.toLowerCase())
+        product.name?.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
     
@@ -136,9 +67,21 @@ const CategoryProductsScreen = ({ navigation, route }) => {
     navigation.navigate('ProductDetail', { product: item });
   };
 
-  const handleAddToCart = (item) => {
-    console.log('Added to cart:', item.name);
-    // Add to cart logic here
+  const handleAddToCart = async (item) => {
+    try {
+      await dispatch(addToCart({ 
+        vegetable_id: item.id, 
+        quantity: 1 
+      })).unwrap();
+      
+      // Show success modal
+      setSuccessMessage(`${item.name} added to cart successfully!`);
+      setShowSuccessModal(true);
+    } catch (error) {
+      // Show error modal
+      setErrorMessage(error.message || 'Failed to add item to cart. Please try again.');
+      setShowErrorModal(true);
+    }
   };
 
   const handleSearch = (text) => {
@@ -149,34 +92,17 @@ const CategoryProductsScreen = ({ navigation, route }) => {
     setSearchQuery('');
   };
 
-  const getCategoryIcon = (categoryId) => {
-    switch (categoryId) {
-      case 'veggies':
-        return 'carrot';
-      case 'fruits':
-        return 'apple';
-      case 'meat':
-        return 'cutlery';
-      case 'dairy':
-        return 'glass';
-      default:
-        return 'leaf';
-    }
+  const handleSuccessModalClose = () => {
+    setShowSuccessModal(false);
   };
 
-  const getCategoryColor = (categoryId) => {
-    switch (categoryId) {
-      case 'veggies':
-        return '#4CAF50';
-      case 'fruits':
-        return '#FF9800';
-      case 'meat':
-        return '#F44336';
-      case 'dairy':
-        return '#2196F3';
-      default:
-        return '#019a34';
-    }
+  const handleErrorModalClose = () => {
+    setShowErrorModal(false);
+  };
+
+  const handleViewCart = () => {
+    setShowSuccessModal(false);
+    navigation.navigate('Cart');
   };
 
   return (
@@ -224,7 +150,12 @@ const CategoryProductsScreen = ({ navigation, route }) => {
             }
           </Text>
           
-          {filteredProducts.length > 0 ? (
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#019a34" />
+              <Text style={styles.loadingText}>Loading products...</Text>
+            </View>
+          ) : filteredProducts.length > 0 ? (
             <View style={styles.productsGrid}>
               {filteredProducts.map(item => (
                 <View key={item.id} style={styles.productCardWrapper}>
@@ -233,6 +164,7 @@ const CategoryProductsScreen = ({ navigation, route }) => {
                     onPress={() => handleProductPress(item)}
                     onAddToCart={handleAddToCart}
                     size="medium"
+                    navigation={navigation}
                   />
                 </View>
               ))}
@@ -242,12 +174,40 @@ const CategoryProductsScreen = ({ navigation, route }) => {
               <Icon name="shopping-bag" size={80} color="#ccc" />
               <Text style={styles.emptyStateTitle}>No Products Found</Text>
               <Text style={styles.emptyStateSubtitle}>
-                No products available in this category at the moment
+                {searchQuery.trim() 
+                  ? 'No products match your search criteria'
+                  : 'No products available in this category at the moment'
+                }
               </Text>
             </View>
           )}
         </View>
       </ScrollView>
+
+      {/* Success Modal */}
+      <SuccessModal
+        visible={showSuccessModal}
+        onClose={handleSuccessModalClose}
+        title="Added to Cart!"
+        message={successMessage}
+        buttonText="Ok"
+        onButtonPress={handleSuccessModalClose}
+        showSecondaryButton={true}
+        secondaryButtonText="View Cart"
+        onSecondaryButtonPress={handleViewCart}
+      />
+
+      {/* Error Modal */}
+      <ErrorModal
+        visible={showErrorModal}
+        onClose={handleErrorModalClose}
+        title="Add to Cart Failed"
+        message={errorMessage}
+        buttonText="OK"
+        onButtonPress={handleErrorModalClose}
+        showRetry={true}
+        onRetry={() => setShowErrorModal(false)}
+      />
     </SafeAreaView>
   );
 };
@@ -335,6 +295,18 @@ const styles = StyleSheet.create({
     color: '#666',
     textAlign: 'center',
     lineHeight: p(22),
+    fontFamily: 'Poppins-Regular',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: p(60),
+  },
+  loadingText: {
+    marginTop: p(20),
+    fontSize: fontSizes.base,
+    color: '#666',
     fontFamily: 'Poppins-Regular',
   },
 });

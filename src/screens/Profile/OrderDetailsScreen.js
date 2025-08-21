@@ -103,7 +103,7 @@ const OrderDetailsScreen = ({ navigation, route }) => {
             </View>
             <View style={styles.orderTotal}>
               <Text style={styles.totalLabel}>Total Amount</Text>
-              <Text style={styles.totalAmount}>${order.finalTotal.toFixed(2)}</Text>
+              <Text style={styles.totalAmount}>₹{order.finalTotal.toFixed(2)}</Text>
             </View>
           </View>
         </View>
@@ -181,12 +181,12 @@ const OrderDetailsScreen = ({ navigation, route }) => {
                   <Text style={styles.itemName}>{item.name}</Text>
                   <Text style={styles.itemQuantity}>Quantity: {item.quantity}</Text>
                   <Text style={styles.itemFarmer}>Farmer: {item.farmer}</Text>
-                  <Text style={styles.itemUnitPrice}>Unit Price: ${item.unitPrice.toFixed(2)}</Text>
+                  <Text style={styles.itemUnitPrice}>Unit Price: ₹{item.unitPrice.toFixed(2)}</Text>
                 </View>
               </View>
               
               <View style={styles.itemRight}>
-                <Text style={styles.itemTotalPrice}>${item.totalPrice.toFixed(2)}</Text>
+                <Text style={styles.itemTotalPrice}>₹{item.totalPrice.toFixed(2)}</Text>
                 <View style={[
                   styles.itemStatusBadge,
                   { backgroundColor: getStatusColor(order.deliveryStatus) + '20' }
@@ -209,22 +209,22 @@ const OrderDetailsScreen = ({ navigation, route }) => {
           
           <View style={styles.priceRow}>
             <Text style={styles.priceLabel}>Subtotal:</Text>
-            <Text style={styles.priceValue}>${order.finalTotal.toFixed(2)}</Text>
+            <Text style={styles.priceValue}>₹{order.finalTotal.toFixed(2)}</Text>
           </View>
           
           <View style={styles.priceRow}>
             <Text style={styles.priceLabel}>Delivery Fee:</Text>
-            <Text style={styles.priceValue}>$0.00</Text>
+            <Text style={styles.priceValue}>₹0.00</Text>
           </View>
           
           <View style={styles.priceRow}>
             <Text style={styles.priceLabel}>Tax:</Text>
-            <Text style={styles.priceValue}>$0.00</Text>
+            <Text style={styles.priceValue}>₹0.00</Text>
           </View>
           
           <View style={[styles.priceRow, styles.totalRow]}>
             <Text style={styles.totalPriceLabel}>Total:</Text>
-            <Text style={styles.totalPriceValue}>${order.finalTotal.toFixed(2)}</Text>
+            <Text style={styles.totalPriceValue}>₹{order.finalTotal.toFixed(2)}</Text>
           </View>
         </View>
 

@@ -10,6 +10,26 @@ const CategoryItem = ({
   onPress,
   size = 'medium', // 'small', 'medium', 'large'
 }) => {
+  // Helper function to get icon and color based on category name
+  const getCategoryConfig = (categoryName) => {
+    const name = categoryName?.toLowerCase();
+    switch (name) {
+      case 'veggies':
+      case 'vegetables':
+        return { icon: 'leaf', color: '#4CAF50' };
+      case 'fruits':
+        return { icon: 'apple', color: '#FF9800' };
+      case 'meat':
+        return { icon: 'cutlery', color: '#F44336' };
+      case 'dairy':
+        return { icon: 'glass', color: '#2196F3' };
+      case 'all':
+        return { icon: 'th-large', color: '#019a34' };
+      default:
+        return { icon: 'leaf', color: '#019a34' };
+    }
+  };
+
   const getSizeStyles = () => {
     switch (size) {
       case 'small':
@@ -37,6 +57,7 @@ const CategoryItem = ({
   };
 
   const sizeStyles = getSizeStyles();
+  const categoryConfig = getCategoryConfig(category?.name);
 
   return (
     <TouchableOpacity
@@ -55,12 +76,12 @@ const CategoryItem = ({
             width: sizeStyles.iconSize,
             height: sizeStyles.iconSize,
             borderRadius: sizeStyles.iconSize / 2,
-            backgroundColor: category.color || '#019a34',
+            backgroundColor: categoryConfig.color,
           },
         ]}
       >
         <Icon
-          name={category.icon || 'leaf'}
+          name={categoryConfig.icon}
           size={sizeStyles.iconFontSize}
           color="#fff"
         />
@@ -72,7 +93,7 @@ const CategoryItem = ({
           isSelected && styles.selectedCategoryName,
         ]}
       >
-        {category.name}
+        {category?.name || 'Unknown'}
       </Text>
     </TouchableOpacity>
   );

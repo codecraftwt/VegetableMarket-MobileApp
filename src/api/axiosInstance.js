@@ -1,5 +1,4 @@
 import axios from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const api = axios.create({
   baseURL: 'https://vegetables.walstarmedia.com/api/',
@@ -10,9 +9,15 @@ const api = axios.create({
 
 api.interceptors.request.use(
   async config => {
-    const token = await AsyncStorage.getItem('token'); 
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    try {
+      const AsyncStorage = await import('@react-native-async-storage/async-storage');
+      const token = await AsyncStorage.default.getItem('token'); 
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+    } catch (error) {
+      console.warn('Failed to get token from AsyncStorage:', error);
+      // Continue without token if AsyncStorage fails
     }
     return config;
   },

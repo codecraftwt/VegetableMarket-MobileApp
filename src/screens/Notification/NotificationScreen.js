@@ -49,7 +49,7 @@ const NotificationScreen = ({ navigation }) => {
       id: 4,
       type: 'payment',
       title: 'Payment Successful',
-      message: 'Your payment of $15.99 has been processed successfully.',
+      message: 'Your payment of ₹15.99 has been processed successfully.',
       time: '5 hours ago',
       isRead: true,
       icon: 'credit-card',

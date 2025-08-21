@@ -1,5 +1,4 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../../api/axiosInstance';
 
 // Role mapping with IDs
@@ -73,9 +72,15 @@ const authSlice = createSlice({
       state.token = null;
       state.isLoggedIn = false;
       state.error = null;
-      // Clear AsyncStorage
-      AsyncStorage.removeItem('token');
-      AsyncStorage.removeItem('user');
+      // Clear AsyncStorage with lazy import
+      import('@react-native-async-storage/async-storage').then(AsyncStorage => {
+        try {
+          AsyncStorage.default.removeItem('token');
+          AsyncStorage.default.removeItem('user');
+        } catch (error) {
+          console.warn('Failed to clear AsyncStorage:', error);
+        }
+      });
     },
   },
   extraReducers: builder => {
@@ -92,9 +97,15 @@ const authSlice = createSlice({
         state.token = action.payload.data.token;
         state.isLoggedIn = true;
         state.error = null;
-        // Store token in AsyncStorage
-        AsyncStorage.setItem('token', action.payload.data.token);
-        AsyncStorage.setItem('user', JSON.stringify(action.payload.data.user));
+        // Store token in AsyncStorage with lazy import
+        import('@react-native-async-storage/async-storage').then(AsyncStorage => {
+          try {
+            AsyncStorage.default.setItem('token', action.payload.data.token);
+            AsyncStorage.default.setItem('user', JSON.stringify(action.payload.data.user));
+          } catch (error) {
+            console.warn('Failed to store data in AsyncStorage:', error);
+          }
+        });
       })
       .addCase(registerUser.rejected, (state, action) => {
         state.loading = false;
@@ -114,9 +125,15 @@ const authSlice = createSlice({
         state.token = action.payload.data.token;
         state.isLoggedIn = true;
         state.error = null;
-        // Store token in AsyncStorage
-        AsyncStorage.setItem('token', action.payload.data.token);
-        AsyncStorage.setItem('user', JSON.stringify(action.payload.data.user));
+        // Store token in AsyncStorage with lazy import
+        import('@react-native-async-storage/async-storage').then(AsyncStorage => {
+          try {
+            AsyncStorage.default.setItem('token', action.payload.data.token);
+            AsyncStorage.default.setItem('user', JSON.stringify(action.payload.data.user));
+          } catch (error) {
+            console.warn('Failed to store data in AsyncStorage:', error);
+          }
+        });
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.loading = false;

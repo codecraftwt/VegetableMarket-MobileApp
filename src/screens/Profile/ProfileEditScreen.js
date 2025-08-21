@@ -1,86 +1,137 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, StatusBar, ScrollView, TouchableOpacity, TextInput, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, StatusBar, ScrollView, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import CommonHeader from '../../components/CommonHeader';
+import { SuccessModal, ErrorModal, ConfirmationModal } from '../../components';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { p } from '../../utils/Responsive';
 import { fontSizes } from '../../utils/fonts';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchProfile, updateProfile, updateAddress } from '../../redux/slices/profileSlice';
 
 const ProfileEditScreen = ({ navigation }) => {
+  const dispatch = useDispatch();
+  const profileState = useSelector(state => state.profile);
+  const { user, address, profile, loading, updateLoading, updateError } = profileState;
   const [activeTab, setActiveTab] = useState('profile'); // 'profile' or 'address'
   
-  // User data (this would come from Redux/API)
-  const [userData, setUserData] = useState({
-    name: 'John Doe',
-    email: 'john.doe@example.com',
-    phone: '+1 234 567 8900',
-    bio: 'I love fresh vegetables and healthy living!',
+  // Debug logging
+  console.log('ProfileEditScreen - Redux State:', profileState);
+  console.log('ProfileEditScreen - Error:', profileState.error);
+  
+  // Local state for form data
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    bio: '',
   });
 
-  // Address data - now an array to support multiple addresses
-  const [addresses, setAddresses] = useState([
-    {
-      id: 1,
-      addressLabel: 'Home',
-      addressLine: '123 Main Street',
-      city: 'Mumbai',
-      taluka: 'Andheri',
-      district: 'Mumbai Suburban',
-      state: 'Maharashtra',
-      country: 'India',
-      pincode: '400058',
-      isDefault: true,
+  // Local state for address data
+  const [addressData, setAddressData] = useState({
+    addressLabel: '',
+    addressLine: '',
+    city: '',
+    taluka: '',
+    district: '',
+    state: '',
+    country: '',
+    pincode: '',
+  });
+
+  // Modal states
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [showConfirmProfileModal, setShowConfirmProfileModal] = useState(false);
+  const [showConfirmAddressModal, setShowConfirmAddressModal] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        name: user.name || '',
+        email: user.email || '',
+        phone: user.phone || '',
+        bio: profile?.bio || '',
+      });
     }
-  ]);
+  }, [user, profile]);
+
+  useEffect(() => {
+    if (address) {
+      setAddressData({
+        addressLabel: address.address_label || '',
+        addressLine: address.address_line || '',
+        city: address.city || '',
+        taluka: address.taluka || '',
+        district: address.district || '',
+        state: address.state || '',
+        country: address.country || '',
+        pincode: address.pincode || '',
+      });
+    }
+  }, [address]);
+
+  // Fetch profile data when component mounts
+  useEffect(() => {
+    dispatch(fetchProfile());
+  }, [dispatch]);
 
   const handleBackPress = () => {
     navigation.goBack();
   };
 
-  const handleSaveProfile = () => {
-    // Here you would save to API
-    Alert.alert('Success', 'Profile updated successfully!');
-  };
-
-  const handleSaveAddress = (addressId) => {
-    // Here you would save to API
-    Alert.alert('Success', 'Address updated successfully!');
-  };
-
-  const addNewAddress = () => {
-    const newAddress = {
-      id: Date.now(), // Simple ID generation
-      addressLabel: '',
-      addressLine: '',
-      city: '',
-      taluka: '',
-      district: '',
-      state: '',
-      country: '',
-      pincode: '',
-      isDefault: false,
-    };
-    setAddresses([...addresses, newAddress]);
-  };
-
-  const removeAddress = (addressId) => {
-    if (addresses.length > 1) {
-      setAddresses(addresses.filter(addr => addr.id !== addressId));
-    } else {
-      Alert.alert('Error', 'You must have at least one address');
+  const handleSaveProfile = async () => {
+    try {
+      // Combine profile and address data for the API call
+      const updateData = {
+        ...formData,
+        ...addressData,
+      };
+      
+      await dispatch(updateProfile(updateData)).unwrap();
+      
+      // Refresh profile data after successful update
+      dispatch(fetchProfile());
+      
+      // Show success modal
+      setSuccessMessage('Profile updated successfully!');
+      setShowSuccessModal(true);
+    } catch (error) {
+      // Show error modal
+      setErrorMessage(error.message || 'Failed to update profile');
+      setShowErrorModal(true);
     }
   };
 
-  const setDefaultAddress = (addressId) => {
-    setAddresses(addresses.map(addr => ({
-      ...addr,
-      isDefault: addr.id === addressId
-    })));
+  const handleSaveAddress = async () => {
+    try {
+      await dispatch(updateAddress(addressData)).unwrap();
+      
+      // Show success modal
+      setSuccessMessage('Address updated successfully!');
+      setShowSuccessModal(true);
+    } catch (error) {
+      // Show error modal
+      setErrorMessage(error.message || 'Failed to update address');
+      setShowErrorModal(true);
+    }
   };
 
-  const updateAddress = (addressId, field, value) => {
-    setAddresses(addresses.map(addr => 
-      addr.id === addressId ? { ...addr, [field]: value } : addr
-    ));
+  // Modal handlers
+  const handleSuccessModalClose = () => {
+    setShowSuccessModal(false);
+    navigation.goBack();
+  };
+
+  const handleConfirmProfileSave = () => {
+    setShowConfirmProfileModal(false);
+    handleSaveProfile();
+  };
+
+  const handleConfirmAddressSave = () => {
+    setShowConfirmAddressModal(false);
+    handleSaveAddress();
   };
 
   const TabButton = ({ title, tab, icon }) => (
@@ -107,8 +158,8 @@ const ProfileEditScreen = ({ navigation }) => {
           <Text style={styles.inputLabel}>Full Name</Text>
           <TextInput
             style={styles.textInput}
-            value={userData.name}
-            onChangeText={(text) => setUserData({...userData, name: text})}
+            value={formData.name}
+            onChangeText={(text) => setFormData({...formData, name: text})}
             placeholder="Enter your full name"
           />
         </View>
@@ -117,8 +168,8 @@ const ProfileEditScreen = ({ navigation }) => {
           <Text style={styles.inputLabel}>Email</Text>
           <TextInput
             style={styles.textInput}
-            value={userData.email}
-            onChangeText={(text) => setUserData({...userData, email: text})}
+            value={formData.email}
+            onChangeText={(text) => setFormData({...formData, email: text})}
             placeholder="Enter your email"
             keyboardType="email-address"
           />
@@ -128,8 +179,8 @@ const ProfileEditScreen = ({ navigation }) => {
           <Text style={styles.inputLabel}>Phone</Text>
           <TextInput
             style={styles.textInput}
-            value={userData.phone}
-            onChangeText={(text) => setUserData({...userData, phone: text})}
+            value={formData.phone}
+            onChangeText={(text) => setFormData({...formData, phone: text})}
             placeholder="Enter your phone number"
             keyboardType="phone-pad"
           />
@@ -139,8 +190,8 @@ const ProfileEditScreen = ({ navigation }) => {
           <Text style={styles.inputLabel}>Bio</Text>
           <TextInput
             style={[styles.textInput, styles.bioInput]}
-            value={userData.bio}
-            onChangeText={(text) => setUserData({...userData, bio: text})}
+            value={formData.bio}
+            onChangeText={(text) => setFormData({...formData, bio: text})}
             placeholder="Tell us about yourself..."
             multiline={true}
             numberOfLines={4}
@@ -148,8 +199,16 @@ const ProfileEditScreen = ({ navigation }) => {
           />
         </View>
 
-        <TouchableOpacity style={styles.saveButton} onPress={handleSaveProfile}>
-          <Text style={styles.saveButtonText}>Save Profile</Text>
+        <TouchableOpacity 
+          style={[styles.saveButton, updateLoading && styles.saveButtonDisabled]} 
+          onPress={() => setShowConfirmProfileModal(true)}
+          disabled={updateLoading}
+        >
+          {updateLoading ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <Text style={styles.saveButtonText}>Save Profile</Text>
+          )}
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
@@ -161,136 +220,103 @@ const ProfileEditScreen = ({ navigation }) => {
       style={{ flex: 1 }}
     >
       <View style={styles.tabContent}>
-        <View style={styles.addressHeader}>
-          <Text style={styles.sectionTitle}>Delivery Addresses</Text>
-          <TouchableOpacity style={styles.addAddressButton} onPress={addNewAddress}>
-            <Icon name="plus" size={12} color="#fff" />
-            <Text style={styles.addAddressButtonText}>Add Address</Text>
-          </TouchableOpacity>
-        </View>
+        <Text style={styles.sectionTitle}>Delivery Address</Text>
         
-        {addresses.map((address, index) => (
-          <View key={address.id} style={styles.addressCard}>
-            <View style={styles.addressCardHeader}>
-              <Text style={styles.addressTitle}>Address {index + 1}</Text>
-              <View style={styles.addressActions}>
-                {address.isDefault && (
-                  <View style={styles.defaultBadge}>
-                    <Text style={styles.defaultBadgeText}>Default</Text>
-                  </View>
-                )}
-                {!address.isDefault && (
-                  <TouchableOpacity 
-                    style={styles.setDefaultButton}
-                    onPress={() => setDefaultAddress(address.id)}
-                  >
-                    <Text style={styles.setDefaultButtonText}>Set Default</Text>
-                  </TouchableOpacity>
-                )}
-                {addresses.length > 1 && (
-                  <TouchableOpacity 
-                    style={styles.removeButton}
-                    onPress={() => removeAddress(address.id)}
-                  >
-                    <Icon name="trash" size={16} color="#dc3545" />
-                  </TouchableOpacity>
-                )}
-              </View>
-            </View>
-            
-            {/* Left Column */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Address Label</Text>
-              <TextInput
-                style={styles.textInput}
-                value={address.addressLabel}
-                onChangeText={(text) => updateAddress(address.id, 'addressLabel', text)}
-                placeholder="Enter Address Label e.g. Home, Farm, etc"
-              />
-            </View>
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>Address Label</Text>
+          <TextInput
+            style={styles.textInput}
+            value={addressData.addressLabel}
+            onChangeText={(text) => setAddressData({...addressData, addressLabel: text})}
+            placeholder="Enter Address Label e.g. Home, Farm, etc"
+          />
+        </View>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Address Line</Text>
-              <TextInput
-                style={styles.textInput}
-                value={address.addressLine}
-                onChangeText={(text) => updateAddress(address.id, 'addressLine', text)}
-                placeholder="Enter Address Line"
-              />
-            </View>
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>Address Line</Text>
+          <TextInput
+            style={styles.textInput}
+            value={addressData.addressLine}
+            onChangeText={(text) => setAddressData({...addressData, addressLine: text})}
+            placeholder="Enter Address Line"
+          />
+        </View>
 
-            <View style={styles.row}>
-              <View style={[styles.inputGroup, { flex: 1, marginRight: p(10) }]}>
-                <Text style={styles.inputLabel}>City/Village</Text>
-                <TextInput
-                  style={styles.textInput}
-                  value={address.city}
-                  onChangeText={(text) => updateAddress(address.id, 'city', text)}
-                  placeholder="Enter City"
-                />
-              </View>
-              <View style={[styles.inputGroup, { flex: 1 }]}>
-                <Text style={styles.inputLabel}>Taluka</Text>
-                <TextInput
-                  style={styles.textInput}
-                  value={address.taluka}
-                  onChangeText={(text) => updateAddress(address.id, 'taluka', text)}
-                  placeholder="Enter Taluka"
-                />
-              </View>
-            </View>
-
-            <View style={styles.row}>
-              <View style={[styles.inputGroup, { flex: 1, marginRight: p(10) }]}>
-                <Text style={styles.inputLabel}>District</Text>
-                <TextInput
-                  style={styles.textInput}
-                  value={address.district}
-                  onChangeText={(text) => updateAddress(address.id, 'district', text)}
-                  placeholder="Enter District"
-                />
-              </View>
-              <View style={[styles.inputGroup, { flex: 1 }]}>
-                <Text style={styles.inputLabel}>State</Text>
-                <TextInput
-                  style={styles.textInput}
-                  value={address.state}
-                  onChangeText={(text) => updateAddress(address.id, 'state', text)}
-                  placeholder="Enter State"
-                />
-              </View>
-            </View>
-
-            <View style={styles.row}>
-              <View style={[styles.inputGroup, { flex: 1, marginRight: p(10) }]}>
-                <Text style={styles.inputLabel}>Country</Text>
-                <TextInput
-                  style={styles.textInput}
-                  value={address.country}
-                  onChangeText={(text) => updateAddress(address.id, 'country', text)}
-                  placeholder="Enter Country"
-                />
-              </View>
-              <View style={[styles.inputGroup, { flex: 1 }]}>
-                <Text style={styles.inputLabel}>Pincode</Text>
-                <TextInput
-                  style={styles.textInput}
-                  value={address.pincode}
-                  onChangeText={(text) => updateAddress(address.id, 'pincode', text)}
-                  placeholder="Enter Pincode"
-                  keyboardType="numeric"
-                />
-              </View>
-            </View>
-
-            <TouchableOpacity 
-              style={styles.saveButton} 
-              onPress={() => handleSaveAddress(address.id)}
-            >
-              <Text style={styles.saveButtonText}>Save Address</Text>
-            </TouchableOpacity>
+        <View style={styles.row}>
+          <View style={[styles.inputGroup, { flex: 1, marginRight: p(10) }]}>
+            <Text style={styles.inputLabel}>City/Village</Text>
+            <TextInput
+              style={styles.textInput}
+              value={addressData.city}
+              onChangeText={(text) => setAddressData({...addressData, city: text})}
+              placeholder="Enter City"
+            />
           </View>
-        ))}
+          <View style={[styles.inputGroup, { flex: 1 }]}>
+            <Text style={styles.inputLabel}>Taluka</Text>
+            <TextInput
+              style={styles.textInput}
+              value={addressData.taluka}
+              onChangeText={(text) => setAddressData({...addressData, taluka: text})}
+              placeholder="Enter Taluka"
+            />
+          </View>
+        </View>
+
+        <View style={styles.row}>
+          <View style={[styles.inputGroup, { flex: 1, marginRight: p(10) }]}>
+            <Text style={styles.inputLabel}>District</Text>
+            <TextInput
+              style={styles.textInput}
+              value={addressData.district}
+              onChangeText={(text) => setAddressData({...addressData, district: text})}
+              placeholder="Enter District"
+            />
+          </View>
+          <View style={[styles.inputGroup, { flex: 1 }]}>
+            <Text style={styles.inputLabel}>State</Text>
+            <TextInput
+              style={styles.textInput}
+              value={addressData.state}
+              onChangeText={(text) => setAddressData({...addressData, state: text})}
+              placeholder="Enter State"
+            />
+          </View>
+        </View>
+
+        <View style={styles.row}>
+          <View style={[styles.inputGroup, { flex: 1, marginRight: p(10) }]}>
+            <Text style={styles.inputLabel}>Country</Text>
+            <TextInput
+              style={styles.textInput}
+              value={addressData.country}
+              onChangeText={(text) => setAddressData({...addressData, country: text})}
+              placeholder="Enter Country"
+            />
+          </View>
+          <View style={[styles.inputGroup, { flex: 1 }]}>
+            <Text style={styles.inputLabel}>Pincode</Text>
+            <TextInput
+              style={styles.textInput}
+              value={addressData.pincode}
+              onChangeText={(text) => setAddressData({...addressData, pincode: text})}
+              placeholder="Enter Pincode"
+              keyboardType="numeric"
+            />
+          </View>
+        </View>
+
+        <TouchableOpacity 
+          style={[styles.saveButton, updateLoading && styles.saveButtonDisabled]} 
+          onPress={() => setShowConfirmAddressModal(true)}
+          disabled={updateLoading}
+        >
+          {updateLoading ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <Text style={styles.saveButtonText}>Save Address</Text>
+          )}
+        </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
   );
@@ -306,27 +332,90 @@ const ProfileEditScreen = ({ navigation }) => {
         showNotification={false}
       />
       
-      {/* Tab Navigation */}
-      <View style={styles.tabContainer}>
-        <TabButton title="Profile" tab="profile" icon="user" />
-        <TabButton title="Address" tab="address" icon="map-marker" />
-      </View>
-      
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={{ flex: 1 }}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
-      >
-        <ScrollView 
-          style={styles.content} 
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
-          bounces={false}
-        >
-          {activeTab === 'profile' ? <ProfileTab /> : <AddressTab />}
-        </ScrollView>
-      </KeyboardAvoidingView>
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#019a34" />
+          <Text style={styles.loadingText}>Loading profile...</Text>
+        </View>
+      ) : profileState.error ? (
+        <View style={styles.errorContainer}>
+          <Icon name="exclamation-triangle" size={50} color="#dc3545" />
+          <Text style={styles.errorText}>Failed to load profile</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={() => dispatch(fetchProfile())}>
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <>
+          {/* Tab Navigation */}
+          <View style={styles.tabContainer}>
+            <TabButton title="Profile" tab="profile" icon="user" />
+            <TabButton title="Address" tab="address" icon="map-marker" />
+          </View>
+          
+          <KeyboardAvoidingView 
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={{ flex: 1 }}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+          >
+            <ScrollView 
+              style={styles.content} 
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.scrollContent}
+              keyboardShouldPersistTaps="handled"
+              bounces={false}
+            >
+              {activeTab === 'profile' ? <ProfileTab /> : <AddressTab />}
+            </ScrollView>
+          </KeyboardAvoidingView>
+        </>
+      )}
+
+      {/* Success Modal */}
+      <SuccessModal
+        visible={showSuccessModal}
+        onClose={handleSuccessModalClose}
+        title="Success!"
+        message={successMessage}
+        buttonText="Continue"
+        onButtonPress={handleSuccessModalClose}
+      />
+
+      {/* Error Modal */}
+      <ErrorModal
+        visible={showErrorModal}
+        onClose={() => setShowErrorModal(false)}
+        title="Error"
+        message={errorMessage}
+        buttonText="OK"
+        onButtonPress={() => setShowErrorModal(false)}
+      />
+
+      {/* Confirm Profile Save Modal */}
+      <ConfirmationModal
+        visible={showConfirmProfileModal}
+        onClose={() => setShowConfirmProfileModal(false)}
+        title="Confirm Save"
+        message="Are you sure you want to save your profile changes?"
+        confirmText="Save"
+        cancelText="Cancel"
+        onConfirm={handleConfirmProfileSave}
+        onCancel={() => setShowConfirmProfileModal(false)}
+        type="info"
+      />
+
+      {/* Confirm Address Save Modal */}
+      <ConfirmationModal
+        visible={showConfirmAddressModal}
+        onClose={() => setShowConfirmAddressModal(false)}
+        title="Confirm Save"
+        message="Are you sure you want to save your address changes?"
+        confirmText="Save"
+        cancelText="Cancel"
+        onConfirm={handleConfirmAddressSave}
+        onCancel={() => setShowConfirmAddressModal(false)}
+        type="info"
+      />
     </SafeAreaView>
   );
 };
@@ -445,83 +534,49 @@ const styles = StyleSheet.create({
     fontSize: fontSizes.base,
     fontFamily: 'Poppins-Bold',
   },
+  saveButtonDisabled: {
+    backgroundColor: '#ccc',
+    opacity: 0.7,
+  },
 
-  // Address Specific Styles
-  addressHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  // Loading and Error States
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: p(20),
+    backgroundColor: '#f6fbf7',
   },
-  addAddressButton: {
-    backgroundColor: '#019a34',
-    paddingVertical: p(4),
-    paddingHorizontal: p(10),
-    borderRadius: p(15),
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: p(4),
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  addAddressButtonText: {
-    color: '#fff',
-    fontSize: fontSizes.xs,
+  loadingText: {
+    marginTop: p(20),
+    fontSize: fontSizes.base,
+    color: '#333',
     fontFamily: 'Poppins-SemiBold',
   },
-  addressCard: {
-    backgroundColor: '#f8f9fa',
-    borderRadius: p(15),
-    padding: p(20),
-    marginBottom: p(20),
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  addressCardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: p(15),
+    backgroundColor: '#f6fbf7',
+    padding: p(20),
   },
-  addressTitle: {
-    fontSize: fontSizes.lg,
-    color: '#333',
-    fontFamily: 'Montserrat-Bold',
+  errorText: {
+    marginTop: p(20),
+    fontSize: fontSizes.base,
+    color: '#dc3545',
+    fontFamily: 'Poppins-SemiBold',
+    textAlign: 'center',
   },
-  addressActions: {
-    flexDirection: 'row',
-    gap: p(10),
-  },
-  defaultBadge: {
+  retryButton: {
+    marginTop: p(20),
     backgroundColor: '#019a34',
-    paddingVertical: p(5),
-    paddingHorizontal: p(10),
-    borderRadius: p(10),
+    paddingVertical: p(10),
+    paddingHorizontal: p(30),
+    borderRadius: p(25),
   },
-  defaultBadgeText: {
+  retryButtonText: {
     color: '#fff',
-    fontSize: fontSizes.xs,
+    fontSize: fontSizes.base,
     fontFamily: 'Poppins-Bold',
-  },
-  setDefaultButton: {
-    backgroundColor: '#019a34',
-    paddingVertical: p(5),
-    paddingHorizontal: p(10),
-    borderRadius: p(10),
-  },
-  setDefaultButtonText: {
-    color: '#fff',
-    fontSize: fontSizes.xs,
-    fontFamily: 'Poppins-Bold',
-  },
-  removeButton: {
-    padding: p(5),
   },
 });
 
