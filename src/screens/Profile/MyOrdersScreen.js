@@ -1,92 +1,56 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, StatusBar, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, StatusBar, ScrollView, TouchableOpacity, Alert, ActivityIndicator, RefreshControl } from 'react-native';
 import CommonHeader from '../../components/CommonHeader';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { p } from '../../utils/Responsive';
 import { fontSizes } from '../../utils/fonts';
+import { useSelector, useDispatch } from 'react-redux';
+import { fetchMyOrders, clearOrdersError, cancelOrder, clearCancelOrderError, submitReview, clearSubmitReviewError } from '../../redux/slices/ordersSlice';
+import { ReviewModal } from '../../components';
 
 const MyOrdersScreen = ({ navigation }) => {
+  const dispatch = useDispatch();
+  const { orders, loading, error } = useSelector(state => state.orders);
+  const { cancelOrderLoading, cancelOrderError, submitReviewLoading, submitReviewError } = useSelector(state => state.orders);
+  const [refreshing, setRefreshing] = useState(false);
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState(null);
 
-  // Sample order data (this would come from Redux/API)
-  const orders = [
-    {
-      id: 1,
-      orderNumber: 'ORD-2024-001',
-      date: '2 minutes ago',
-      finalTotal: 45.00,
-      paymentStatus: 'Pending',
-      paymentStatusColor: '#FF9800',
-      deliveryStatus: 'Processing',
-      deliveryStatusColor: '#2196F3',
-      deliveryAddress: 'House 10, Road 5, Block J, Baridhara, Dhaka, 1212',
-      items: [
-        {
-          id: 1,
-          name: 'Fresh Tomatoes',
-          quantity: '2 KG',
-          unitPrice: 22.50,
-          farmer: 'Organic Farm Co.',
-          totalPrice: 45.00,
-          status: 'Processing',
-          image: require('../../assets/vegebg.png')
-        }
-      ]
-    },
-    {
-      id: 2,
-      orderNumber: 'ORD-2024-002',
-      date: '1 hour ago',
-      finalTotal: 120.00,
-      paymentStatus: 'Paid',
-      paymentStatusColor: '#4CAF50',
-      deliveryStatus: 'Out for Delivery',
-      deliveryStatusColor: '#FF9800',
-      deliveryAddress: 'Apartment B3, House 25, Road 10, Banani Dhaka, 1213',
-      items: [
-        {
-          id: 1,
-          name: 'Organic Carrots',
-          quantity: '3 KG',
-          unitPrice: 40.00,
-          farmer: 'Green Valley Farm',
-          totalPrice: 120.00,
-          status: 'Out for Delivery',
-          image: require('../../assets/vegebg.png')
-        }
-      ]
-    },
-    {
-      id: 3,
-      orderNumber: 'ORD-2024-003',
-      date: '3 hours ago',
-      finalTotal: 89.99,
-      paymentStatus: 'Paid',
-      paymentStatusColor: '#4CAF50',
-      deliveryStatus: 'Delivered',
-      deliveryStatusColor: '#6C757D',
-      deliveryAddress: 'House 15, Road 8, Block K, Gulshan, Dhaka, 1212',
-      items: [
-        {
-          id: 1,
-          name: 'Fresh Onions',
-          quantity: '2 KG',
-          unitPrice: 25.00,
-          farmer: 'Fresh Harvest',
-          totalPrice: 50.00,
-          image: require('../../assets/vegebg.png')
-        },
-        {
-          id: 2,
-          name: 'Green Bell Peppers',
-          quantity: '1 KG',
-          unitPrice: 39.99,
-          farmer: 'Organic Garden',
-          totalPrice: 39.99,
-          image: require('../../assets/vegebg.png')
-        }
-      ]
+  useEffect(() => {
+    dispatch(fetchMyOrders());
+  }, [dispatch]);
+
+  useEffect(() => {
+    if (error) {
+      Alert.alert('Error', error);
+      dispatch(clearOrdersError());
     }
-  ];
+  }, [error, dispatch]);
+
+  useEffect(() => {
+    if (cancelOrderError) {
+      Alert.alert('Error', cancelOrderError);
+      dispatch(clearCancelOrderError());
+    }
+  }, [cancelOrderError, dispatch]);
+
+  useEffect(() => {
+    if (submitReviewError) {
+      Alert.alert('Error', submitReviewError);
+      dispatch(clearSubmitReviewError());
+    }
+  }, [submitReviewError, dispatch]);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await dispatch(fetchMyOrders()).unwrap();
+    } catch (error) {
+      // Error is already handled by the slice
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   const handleBackPress = () => {
     navigation.goBack();
@@ -95,7 +59,7 @@ const MyOrdersScreen = ({ navigation }) => {
   const handleCancelOrder = (order) => {
     Alert.alert(
       'Cancel Order',
-      `Are you sure you want to cancel order ${order.orderNumber}? This action cannot be undone.`,
+      `Are you sure you want to cancel order ${order.order_id}? This action cannot be undone.`,
       [
         {
           text: 'No, Keep Order',
@@ -104,23 +68,45 @@ const MyOrdersScreen = ({ navigation }) => {
         {
           text: 'Yes, Cancel Order',
           style: 'destructive',
-          onPress: () => {
-            // Here you would typically make an API call to cancel the order
-            console.log('Order cancelled:', order.orderNumber);
-            // You could also update the local state to reflect the cancellation
+          onPress: async () => {
+            try {
+              await dispatch(cancelOrder(order.order_id)).unwrap();
+              Alert.alert('Success', 'Order cancelled successfully!');
+              // Refresh orders to get updated status
+              dispatch(fetchMyOrders());
+            } catch (error) {
+              // Error is already handled by the slice
+            }
           },
         },
       ]
     );
   };
 
+  const handleReviewOrder = (order) => {
+    setSelectedOrder(order);
+    setShowReviewModal(true);
+  };
 
+  const handleSubmitReview = async (reviewData) => {
+    try {
+      await dispatch(submitReview({ orderId: selectedOrder.order_id, reviewData })).unwrap();
+      Alert.alert('Success', 'Review submitted successfully!');
+      setShowReviewModal(false);
+      setSelectedOrder(null);
+      // Refresh orders to get updated review status
+      dispatch(fetchMyOrders());
+    } catch (error) {
+      // Error is already handled by the slice
+    }
+  };
 
   const getStatusIcon = (status) => {
     switch (status.toLowerCase()) {
       case 'pending':
-      case 'processing':
         return 'clock-o';
+      case 'processing':
+        return 'cog';
       case 'out for delivery':
         return 'truck';
       case 'delivered':
@@ -129,6 +115,23 @@ const MyOrdersScreen = ({ navigation }) => {
         return 'credit-card';
       default:
         return 'info-circle';
+    }
+  };
+
+  const getStatusColor = (status) => {
+    switch (status.toLowerCase()) {
+      case 'pending':
+        return '#FF9800';
+      case 'processing':
+        return '#2196F3';
+      case 'out for delivery':
+        return '#FF9800';
+      case 'delivered':
+        return '#4CAF50';
+      case 'paid':
+        return '#4CAF50';
+      default:
+        return '#666';
     }
   };
 
@@ -142,24 +145,24 @@ const MyOrdersScreen = ({ navigation }) => {
         {/* Order Header */}
         <View style={styles.orderHeader}>
           <View style={styles.orderInfo}>
-            <Text style={styles.orderNumber}>{order.orderNumber}</Text>
-            <Text style={styles.orderDate}>{order.date}</Text>
+            <Text style={styles.orderNumber}>ORD-{order.order_id}</Text>
+            <Text style={styles.orderDate}>{order.created_at}</Text>
           </View>
           <View style={styles.orderTotal}>
-            <Text style={styles.totalAmount}>₹{order.finalTotal.toFixed(2)}</Text>
+            <Text style={styles.totalAmount}>₹{order.total_amount}</Text>
           </View>
         </View>
 
         {/* Status Section */}
         <View style={styles.statusSection}>
           <View style={styles.statusItem}>
-            <Icon name="credit-card" size={14} color={order.paymentStatusColor} />
-            <Text style={styles.statusText}>{order.paymentStatus}</Text>
+            <Icon name="credit-card" size={14} color={order.is_paid ? '#4CAF50' : '#FF9800'} />
+            <Text style={styles.statusText}>{order.payment_status}</Text>
           </View>
           
           <View style={styles.statusItem}>
-            <Icon name={getStatusIcon(order.deliveryStatus)} size={14} color={order.deliveryStatusColor} />
-            <Text style={styles.statusText}>{order.deliveryStatus}</Text>
+            <Icon name={getStatusIcon(order.delivery_status)} size={14} color={getStatusColor(order.delivery_status)} />
+            <Text style={styles.statusText}>{order.delivery_status}</Text>
           </View>
         </View>
 
@@ -172,21 +175,65 @@ const MyOrdersScreen = ({ navigation }) => {
         </View>
 
         {/* Cancel Order Button - Only show for cancellable orders */}
-        {order.deliveryStatus !== 'Delivered' && order.deliveryStatus !== 'Cancelled' && (
+        {order.delivery_status !== 'delivered' && !order.is_canceled && (
           <View style={styles.cancelSection}>
             <TouchableOpacity 
-              style={styles.cancelButton}
+              style={[styles.cancelButton, cancelOrderLoading && styles.buttonDisabled]}
               onPress={() => handleCancelOrder(order)}
               activeOpacity={0.8}
+              disabled={cancelOrderLoading}
             >
               <Icon name="times-circle" size={14} color="#dc3545" />
-              <Text style={styles.cancelButtonText}>Cancel Order</Text>
+              <Text style={styles.cancelButtonText}>
+                {cancelOrderLoading ? 'Cancelling...' : 'Cancel Order'}
+              </Text>
             </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Review Order Button - Only show for delivered orders that haven't been reviewed */}
+        {order.delivery_status === 'delivered' && !order.is_reviewed && (
+          <View style={styles.reviewSection}>
+            <TouchableOpacity 
+              style={styles.reviewButton}
+              onPress={() => handleReviewOrder(order)}
+              activeOpacity={0.8}
+            >
+              <Icon name="star" size={14} color="#FFD700" />
+              <Text style={styles.reviewButtonText}>Review Order</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Already Reviewed Indicator */}
+        {order.is_reviewed && (
+          <View style={styles.reviewedSection}>
+            <Icon name="check-circle" size={14} color="#4CAF50" />
+            <Text style={styles.reviewedText}>Review Submitted</Text>
           </View>
         )}
       </TouchableOpacity>
     );
   };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="light-content" backgroundColor="#019a34" />
+        <CommonHeader 
+          screenName="My Orders"
+          showBackButton={true}
+          onBackPress={handleBackPress}
+          showNotification={true}
+          navigation={navigation}
+        />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#019a34" />
+          <Text style={styles.loadingText}>Loading orders...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -204,6 +251,9 @@ const MyOrdersScreen = ({ navigation }) => {
         style={styles.content} 
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#019a34']} />
+        }
       >
         {orders.length > 0 ? (
           <>
@@ -215,7 +265,7 @@ const MyOrdersScreen = ({ navigation }) => {
             </View>
             
             {orders.map((order) => (
-              <OrderCard key={order.id} order={order} />
+              <OrderCard key={order.order_id} order={order} />
             ))}
           </>
         ) : (
@@ -234,6 +284,18 @@ const MyOrdersScreen = ({ navigation }) => {
           </View>
         )}
       </ScrollView>
+
+      {/* Review Modal */}
+      <ReviewModal
+        visible={showReviewModal}
+        onClose={() => {
+          setShowReviewModal(false);
+          setSelectedOrder(null);
+        }}
+        onSubmit={handleSubmitReview}
+        order={selectedOrder}
+        loading={submitReviewLoading}
+      />
     </SafeAreaView>
   );
 };
@@ -371,6 +433,49 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-SemiBold',
     marginLeft: p(8),
   },
+  buttonDisabled: {
+    opacity: 0.7,
+  },
+
+  // Review Section
+  reviewSection: {
+    marginTop: p(15),
+    paddingTop: p(15),
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+    alignItems: 'center',
+  },
+  reviewButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: p(8),
+    paddingHorizontal: p(15),
+    borderRadius: p(20),
+    borderWidth: 1,
+    borderColor: '#FFD700',
+    backgroundColor: '#fff',
+  },
+  reviewButtonText: {
+    fontSize: fontSizes.sm,
+    color: '#FFD700',
+    fontFamily: 'Poppins-SemiBold',
+    marginLeft: p(8),
+  },
+
+  // Reviewed Section
+  reviewedSection: {
+    marginTop: p(15),
+    paddingTop: p(15),
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+    alignItems: 'center',
+  },
+  reviewedText: {
+    fontSize: fontSizes.sm,
+    color: '#4CAF50',
+    fontFamily: 'Poppins-Regular',
+    marginTop: p(8),
+  },
 
   // Empty State
   emptyState: {
@@ -408,6 +513,18 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: fontSizes.base,
     fontFamily: 'Poppins-Bold',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: p(50),
+  },
+  loadingText: {
+    marginTop: p(20),
+    fontSize: fontSizes.base,
+    color: '#666',
+    fontFamily: 'Poppins-Regular',
   },
 });
 

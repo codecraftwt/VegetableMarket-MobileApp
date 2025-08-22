@@ -6,18 +6,21 @@ import Icon from 'react-native-vector-icons/FontAwesome';
 import { p } from '../../utils/Responsive';
 import { fontSizes } from '../../utils/fonts';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchProfile, updateProfile, updateAddress } from '../../redux/slices/profileSlice';
+import { fetchProfile, updateProfile, updateAddress, addAddress } from '../../redux/slices/profileSlice';
 
-const ProfileEditScreen = ({ navigation }) => {
+const ProfileEditScreen = ({ navigation, route }) => {
   const dispatch = useDispatch();
   const profileState = useSelector(state => state.profile);
-  const { user, address, profile, loading, updateLoading, updateError } = profileState;
+  const { user, address, profile, loading, updateLoading, updateError, addAddressLoading, addAddressError } = profileState;
   const [activeTab, setActiveTab] = useState('profile'); // 'profile' or 'address'
   
-  // Debug logging
-  console.log('ProfileEditScreen - Redux State:', profileState);
-  console.log('ProfileEditScreen - Error:', profileState.error);
-  
+  // Check if we should start with address tab (e.g., from checkout)
+  useEffect(() => {
+    if (route.params?.activeTab) {
+      setActiveTab(route.params.activeTab);
+    }
+  }, [route.params]);
+
   // Local state for form data
   const [formData, setFormData] = useState({
     name: '',
@@ -43,6 +46,7 @@ const ProfileEditScreen = ({ navigation }) => {
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [showConfirmProfileModal, setShowConfirmProfileModal] = useState(false);
   const [showConfirmAddressModal, setShowConfirmAddressModal] = useState(false);
+  const [showConfirmAddAddressModal, setShowConfirmAddAddressModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -118,6 +122,20 @@ const ProfileEditScreen = ({ navigation }) => {
     }
   };
 
+  const handleAddAddress = async () => {
+    try {
+      await dispatch(addAddress(addressData)).unwrap();
+      
+      // Show success modal
+      setSuccessMessage('Address added successfully!');
+      setShowSuccessModal(true);
+    } catch (error) {
+      // Show error modal
+      setErrorMessage(error.message || 'Failed to add address');
+      setShowErrorModal(true);
+    }
+  };
+
   // Modal handlers
   const handleSuccessModalClose = () => {
     setShowSuccessModal(false);
@@ -132,6 +150,11 @@ const ProfileEditScreen = ({ navigation }) => {
   const handleConfirmAddressSave = () => {
     setShowConfirmAddressModal(false);
     handleSaveAddress();
+  };
+
+  const handleConfirmAddAddress = () => {
+    setShowConfirmAddAddressModal(false);
+    handleAddAddress();
   };
 
   const TabButton = ({ title, tab, icon }) => (
@@ -317,6 +340,18 @@ const ProfileEditScreen = ({ navigation }) => {
             <Text style={styles.saveButtonText}>Save Address</Text>
           )}
         </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={[styles.addButton, addAddressLoading && styles.addButtonDisabled]} 
+          onPress={() => setShowConfirmAddAddressModal(true)}
+          disabled={addAddressLoading}
+        >
+          {addAddressLoading ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <Text style={styles.addButtonText}>Add New Address</Text>
+          )}
+        </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
   );
@@ -414,6 +449,19 @@ const ProfileEditScreen = ({ navigation }) => {
         cancelText="Cancel"
         onConfirm={handleConfirmAddressSave}
         onCancel={() => setShowConfirmAddressModal(false)}
+        type="info"
+      />
+
+      {/* Confirm Add Address Modal */}
+      <ConfirmationModal
+        visible={showConfirmAddAddressModal}
+        onClose={() => setShowConfirmAddAddressModal(false)}
+        title="Confirm Add Address"
+        message="Are you sure you want to add this new address?"
+        confirmText="Add"
+        cancelText="Cancel"
+        onConfirm={handleConfirmAddAddress}
+        onCancel={() => setShowConfirmAddAddressModal(false)}
         type="info"
       />
     </SafeAreaView>
@@ -535,6 +583,25 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-Bold',
   },
   saveButtonDisabled: {
+    backgroundColor: '#ccc',
+    opacity: 0.7,
+  },
+
+  // Add Button
+  addButton: {
+    backgroundColor: '#007bff', // A different color for the add button
+    paddingVertical: p(15),
+    paddingHorizontal: p(30),
+    borderRadius: p(25),
+    alignItems: 'center',
+    marginTop: p(10), // Adjust spacing
+  },
+  addButtonText: {
+    color: '#fff',
+    fontSize: fontSizes.base,
+    fontFamily: 'Poppins-Bold',
+  },
+  addButtonDisabled: {
     backgroundColor: '#ccc',
     opacity: 0.7,
   },

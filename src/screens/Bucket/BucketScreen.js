@@ -21,6 +21,7 @@ import { fetchVegetables, fetchVegetableCategories } from '../../redux/slices/ve
 import { addToCart } from '../../redux/slices/cartSlice';
 import SuccessModal from '../../components/SuccessModal';
 import ErrorModal from '../../components/ErrorModal';
+import { useFocusEffect } from '@react-navigation/native';
 
 const BucketScreen = ({ navigation }) => {
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -37,6 +38,14 @@ const BucketScreen = ({ navigation }) => {
     dispatch(fetchVegetables());
     dispatch(fetchVegetableCategories());
   }, [dispatch]);
+
+  // Reset selected category to 'all' when screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      // Reset to show all products when returning to BucketScreen
+      setSelectedCategory('all');
+    }, [])
+  );
 
   const handleNotificationPress = () => {
     console.log('Bucket notification pressed');

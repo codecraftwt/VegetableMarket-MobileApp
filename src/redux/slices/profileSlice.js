@@ -71,6 +71,19 @@ export const updateAddress = createAsyncThunk(
   }
 );
 
+// Async thunk for adding new address
+export const addAddress = createAsyncThunk(
+  'profile/addAddress',
+  async (addressData, { rejectWithValue }) => {
+    try {
+      const response = await api.post('/addresses', addressData);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || 'Failed to add address');
+    }
+  }
+);
+
 // Async thunk for changing password
 export const changePassword = createAsyncThunk(
   'profile/changePassword',
@@ -91,6 +104,7 @@ export const changePassword = createAsyncThunk(
 const initialState = {
   user: null,
   address: null,
+  addresses: [], // Array to store multiple addresses
   profile: null,
   loading: false,
   error: null,
@@ -98,10 +112,9 @@ const initialState = {
   updateError: null,
   changePasswordLoading: false,
   changePasswordError: null,
+  addAddressLoading: false,
+  addAddressError: null,
 };
-
-// Debug logging
-console.log('ProfileSlice - Initial State:', initialState);
 
 const profileSlice = createSlice({
   name: 'profile',
@@ -110,7 +123,7 @@ const profileSlice = createSlice({
     clearProfile: (state) => {
       state.user = null;
       state.address = null;
-      state.profile = null;
+      state.addresses = [];
       state.error = null;
       state.updateError = null;
     },
@@ -118,6 +131,9 @@ const profileSlice = createSlice({
       if (state.profile) {
         state.profile.profile_picture = action.payload;
       }
+    },
+    setPrimaryAddress: (state, action) => {
+      state.address = action.payload;
     },
   },
   extraReducers: (builder) => {
@@ -131,6 +147,7 @@ const profileSlice = createSlice({
         state.loading = false;
         state.user = action.payload.data;
         state.address = action.payload.data.address;
+        state.addresses = action.payload.data.addresses || [action.payload.data.address].filter(Boolean);
         state.profile = action.payload.data.profile;
         state.error = null;
       })
@@ -171,6 +188,29 @@ const profileSlice = createSlice({
         state.updateError = null;
       });
 
+    // Add Address
+    builder
+      .addCase(addAddress.pending, (state) => {
+        state.addAddressLoading = true;
+        state.addAddressError = null;
+      })
+      .addCase(addAddress.fulfilled, (state, action) => {
+        state.addAddressLoading = false;
+        // Add the new address to the addresses array
+        if (action.payload.data) {
+          state.addresses.push(action.payload.data);
+          // If this is the first address, set it as the primary address
+          if (state.addresses.length === 1) {
+            state.address = action.payload.data;
+          }
+        }
+        state.addAddressError = null;
+      })
+      .addCase(addAddress.rejected, (state, action) => {
+        state.addAddressLoading = false;
+        state.addAddressError = action.payload;
+      });
+
     // Change Password
     builder
       .addCase(changePassword.pending, (state) => {
@@ -188,5 +228,5 @@ const profileSlice = createSlice({
   },
 });
 
-export const { clearProfile, setProfileImage } = profileSlice.actions;
+export const { clearProfile, setProfileImage, setPrimaryAddress } = profileSlice.actions;
 export default profileSlice.reducer;

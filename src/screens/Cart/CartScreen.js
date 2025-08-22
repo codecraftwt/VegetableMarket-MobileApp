@@ -40,6 +40,7 @@ const CartScreen = ({ navigation }) => {
   const [localCartItems, setLocalCartItems] = useState([]);
   const [localTotalAmount, setLocalTotalAmount] = useState(0);
   const [forceUpdate, setForceUpdate] = useState(0); // Force re-render
+  const [isInitialized, setIsInitialized] = useState(false); // Track if initial data is loaded
 
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
@@ -48,6 +49,7 @@ const CartScreen = ({ navigation }) => {
   const [errorMessage, setErrorMessage] = useState('');
   const [itemToRemove, setItemToRemove] = useState(null);
   const [updatingItems, setUpdatingItems] = useState(new Set()); // Track which items are being updated
+  const [removingItems, setRemovingItems] = useState(new Set()); // Track which items are being removed
 
   // Fetch cart when component mounts and when screen comes into focus
   useFocusEffect(
@@ -62,7 +64,9 @@ const CartScreen = ({ navigation }) => {
       setLocalCartItems([]);
       setLocalTotalAmount(0);
       setUpdatingItems(new Set());
+      setRemovingItems(new Set()); // Reset removing items state
       setForceUpdate(0);
+      setIsInitialized(false); // Reset initialization flag
     }, [dispatch])
   );
 
@@ -107,8 +111,13 @@ const CartScreen = ({ navigation }) => {
       setLocalCartItems([...reduxCartItems]); // Create new array reference
       setLocalTotalAmount(reduxTotalAmount);
       setForceUpdate(prev => prev + 1); // Force re-render
+      setIsInitialized(true); // Mark as initialized
+    } else if (!loading && reduxCartItems.length === 0 && reduxTotalAmount === 0) {
+      // Only mark as initialized if we're not loading and have confirmed empty cart
+      console.log('CartScreen: Confirmed empty cart, marking as initialized');
+      setIsInitialized(true);
     }
-  }, [reduxCartItems, reduxTotalAmount]);
+  }, [reduxCartItems, reduxTotalAmount, loading]);
 
   // Debug: Monitor local cart state changes
   useEffect(() => {
@@ -227,6 +236,9 @@ const CartScreen = ({ navigation }) => {
     
     console.log('CartScreen: confirmRemoveItem called for item:', itemToRemove);
     
+    // Mark this item as being removed
+    setRemovingItems(prev => new Set(prev).add(itemToRemove.id));
+    
     try {
       await dispatch(removeFromCart(itemToRemove.id)).unwrap();
       console.log('CartScreen: Item removed successfully');
@@ -255,6 +267,13 @@ const CartScreen = ({ navigation }) => {
       // Clear the item to remove on error
       setItemToRemove(null);
       setShowConfirmationModal(false);
+    } finally {
+      // Remove this item from removing set
+      setRemovingItems(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(itemToRemove.id);
+        return newSet;
+      });
     }
   };
 
@@ -279,6 +298,7 @@ const CartScreen = ({ navigation }) => {
     };
 
     const isItemUpdating = updatingItems.has(item.id);
+    const isItemRemoving = removingItems.has(item.id);
 
     return (
       <View style={styles.cartItemCard}>
@@ -329,9 +349,9 @@ const CartScreen = ({ navigation }) => {
           <TouchableOpacity 
             style={styles.removeButton}
             onPress={() => handleRemoveItem(item)}
-            disabled={removeLoading}
+            disabled={isItemRemoving}
           >
-            {removeLoading ? (
+            {isItemRemoving ? (
               <ActivityIndicator size={16} color="#F44336" />
             ) : (
               <Icon name="trash" size={16} color="#F44336" />
@@ -405,7 +425,8 @@ const CartScreen = ({ navigation }) => {
     setItemToRemove(null);
   };
 
-  if (loading) {
+  // Show loading state while initializing or if still loading
+  if (loading || !isInitialized) {
     return (
       <SafeAreaView style={styles.container}>
         <StatusBar barStyle="light-content" backgroundColor="#019a34" />

@@ -35,8 +35,6 @@ export const updateCartQuantity = createAsyncThunk(
   'cart/updateQuantity',
   async ({ id, quantity }, { rejectWithValue }) => {
     try {
-      console.log('Updating cart quantity for ID:', id, 'to:', quantity);
-      
       // Validate quantity before API call
       if (quantity < 1) {
         throw new Error('Quantity cannot be less than 1');
@@ -51,12 +49,9 @@ export const updateCartQuantity = createAsyncThunk(
       }
       
       const response = await api.patch(`/cart/${id}`, { quantity });
-      console.log('Update quantity response:', response.data);
       
       return { id, ...response.data };
     } catch (error) {
-      console.error('Update quantity error:', error);
-      
       // Handle different types of errors
       let errorMessage = 'Failed to update quantity';
       
@@ -83,14 +78,11 @@ export const removeFromCart = createAsyncThunk(
   'cart/removeFromCart',
   async (id, { rejectWithValue }) => {
     try {
-      console.log('Removing cart item with ID:', id);
       const response = await api.delete(`/cart/${id}`);
-      console.log('Delete cart response:', response.data);
       
       // Return the removed item ID for local state update
       return { id };
     } catch (error) {
-      console.error('Delete cart error:', error);
       return rejectWithValue(error.response?.data || 'Failed to remove item from cart');
     }
   }
@@ -160,6 +152,7 @@ const cartSlice = createSlice({
         state.addresses = action.payload.data.addresses || [];
         state.paymentSettings = action.payload.data.payment_settings || [];
         state.totalAmount = action.payload.data.total_amount || 0;
+        state.error = null;
       })
       .addCase(fetchCart.rejected, (state, action) => {
         state.loading = false;
@@ -184,7 +177,6 @@ const cartSlice = createSlice({
             sum + parseFloat(item.subtotal), 0
           );
         }
-        console.log('Cart state updated after quantity change:', state.cartItems.length, 'items, total:', state.totalAmount);
       })
       .addCase(updateCartQuantity.rejected, (state, action) => {
         state.updateLoading = false;
@@ -199,13 +191,11 @@ const cartSlice = createSlice({
       })
       .addCase(removeFromCart.fulfilled, (state, action) => {
         state.removeLoading = false;
-        console.log('Cart state after remove:', state.cartItems.length, 'items');
         // Cart will be refreshed automatically by the thunk
       })
       .addCase(removeFromCart.rejected, (state, action) => {
         state.removeLoading = false;
         state.removeError = action.payload;
-        console.error('Remove from cart rejected:', action.payload);
       });
   },
 });

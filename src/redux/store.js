@@ -1,10 +1,11 @@
 import { configureStore, combineReducers } from '@reduxjs/toolkit';
-// import { persistStore, persistReducer } from 'redux-persist';
-// import AsyncStorage from '@react-native-async-storage/async-storage';
+import { persistStore, persistReducer } from 'redux-persist';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import authReducer from './slices/authSlice';
 import profileReducer from './slices/profileSlice';
 import vegetablesReducer from './slices/vegetablesSlice';
 import cartReducer from './slices/cartSlice';
+import ordersReducer from './slices/ordersSlice';
 
 // Create root reducer
 const rootReducer = combineReducers({
@@ -12,6 +13,7 @@ const rootReducer = combineReducers({
   profile: profileReducer,
   vegetables: vegetablesReducer,
   cart: cartReducer,
+  orders: ordersReducer,
 });
 
 // Configure store

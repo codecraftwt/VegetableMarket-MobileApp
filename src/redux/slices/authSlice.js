@@ -52,6 +52,56 @@ export const loginUser = createAsyncThunk(
   },
 );
 
+// Async thunk to check authentication status on app launch
+export const checkAuthStatus = createAsyncThunk(
+  'auth/checkAuthStatus',
+  async (_, { rejectWithValue }) => {
+    try {
+      // Lazy import AsyncStorage to avoid blocking initialization
+      const AsyncStorage = await import('@react-native-async-storage/async-storage');
+      
+      // Check if token and user exist in AsyncStorage
+      const token = await AsyncStorage.default.getItem('token');
+      const userData = await AsyncStorage.default.getItem('user');
+      
+      if (token && userData) {
+        // Parse user data
+        const user = JSON.parse(userData);
+        
+        // Validate token with server
+        try {
+          const response = await api.get('profile', {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          
+          if (response.data.success) {
+            // Token is valid, return the stored data
+            return {
+              user,
+              token,
+            };
+          } else {
+            // Token is invalid, clear storage
+            await AsyncStorage.default.removeItem('token');
+            await AsyncStorage.default.removeItem('user');
+            return null;
+          }
+        } catch (error) {
+          // Token validation failed, clear storage
+          await AsyncStorage.default.removeItem('token');
+          await AsyncStorage.default.removeItem('user');
+          return null;
+        }
+      } else {
+        // No stored data, user is not logged in
+        return null;
+      }
+    } catch (error) {
+      return rejectWithValue('Failed to check authentication status');
+    }
+  },
+);
+
 const initialState = {
   user: null,
   token: null,
@@ -66,6 +116,21 @@ const authSlice = createSlice({
   reducers: {
     clearError: state => {
       state.error = null;
+    },
+    clearAuth: state => {
+      state.user = null;
+      state.token = null;
+      state.isLoggedIn = false;
+      state.error = null;
+      // Clear AsyncStorage with lazy import
+      import('@react-native-async-storage/async-storage').then(AsyncStorage => {
+        try {
+          AsyncStorage.default.removeItem('token');
+          AsyncStorage.default.removeItem('user');
+        } catch (error) {
+          console.warn('Failed to clear AsyncStorage:', error);
+        }
+      });
     },
     logout: state => {
       state.user = null;
@@ -139,8 +204,28 @@ const authSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       });
+
+    // Check auth status on app launch
+    builder
+      .addCase(checkAuthStatus.pending, state => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(checkAuthStatus.fulfilled, (state, action) => {
+        state.loading = false;
+        if (action.payload) {
+          state.user = action.payload.user;
+          state.token = action.payload.token;
+          state.isLoggedIn = true;
+          state.error = null;
+        }
+      })
+      .addCase(checkAuthStatus.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      });
   },
 });
 
-export const { clearError, logout } = authSlice.actions;
+export const { clearError, clearAuth, logout } = authSlice.actions;
 export default authSlice.reducer;
