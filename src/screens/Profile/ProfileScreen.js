@@ -10,8 +10,8 @@ import {
   Image,
   Platform,
   PermissionsAndroid,
-  ActivityIndicator,
 } from 'react-native';
+import SkeletonLoader from '../../components/SkeletonLoader';
 import CommonHeader from '../../components/CommonHeader';
 import { CustomModal, SuccessModal, ErrorModal, ConfirmationModal } from '../../components';
 import Icon from 'react-native-vector-icons/FontAwesome';
@@ -361,7 +361,7 @@ const ProfileScreen = ({ navigation }) => {
           disabled={isProcessingImage}
         >
           {isProcessingImage ? (
-            <ActivityIndicator size="small" color="#fff" />
+            <SkeletonLoader type="category" width={16} height={16} borderRadius={8} />
           ) : (
             <Icon name="camera" size={16} color="#fff" />
           )}
@@ -451,12 +451,37 @@ const ProfileScreen = ({ navigation }) => {
         showBackButton={false}
         showNotification={true}
         onNotificationPress={handleNotificationPress}
+        navigation={navigation}
       />
 
       {loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#019a34" />
-          <Text style={styles.loadingText}>Loading profile...</Text>
+        <View style={styles.content}>
+          {/* Skeleton loader for profile header */}
+          <View style={styles.skeletonProfileHeader}>
+            <View style={styles.skeletonAvatarContainer}>
+              <SkeletonLoader type="category" width={p(100)} height={p(100)} borderRadius={p(50)} />
+              <View style={styles.skeletonCameraIcon}>
+                <SkeletonLoader type="category" width={p(40)} height={p(40)} borderRadius={p(20)} />
+              </View>
+            </View>
+            <SkeletonLoader type="text" width="60%" height={p(24)} style={styles.skeletonUserName} />
+            <SkeletonLoader type="text" width="40%" height={p(16)} style={styles.skeletonUserEmail} />
+          </View>
+
+          {/* Skeleton loader for quick actions */}
+          <View style={styles.skeletonSection}>
+            <SkeletonLoader type="text" width="40%" height={p(20)} style={styles.skeletonSectionTitle} />
+            {[1, 2, 3, 4, 5].map((item) => (
+              <View key={item} style={styles.skeletonActionItem}>
+                <SkeletonLoader type="category" width={p(40)} height={p(40)} borderRadius={p(20)} />
+                <View style={styles.skeletonActionContent}>
+                  <SkeletonLoader type="text" width="70%" height={p(16)} style={styles.skeletonActionTitle} />
+                  <SkeletonLoader type="text" width="50%" height={p(12)} style={styles.skeletonActionSubtitle} />
+                </View>
+                <SkeletonLoader type="category" width={p(16)} height={p(16)} borderRadius={p(8)} />
+              </View>
+            ))}
+          </View>
         </View>
       ) : profileState.error ? (
         <View style={styles.errorContainer}>
@@ -636,17 +661,59 @@ const styles = StyleSheet.create({
   logoutTitle: {
     color: '#dc3545', // Red color for destructive action
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
+  // Skeleton Loader Styles
+  skeletonProfileHeader: {
     alignItems: 'center',
-    backgroundColor: '#f6fbf7',
+    paddingVertical: p(30),
   },
-  loadingText: {
-    marginTop: p(10),
-    fontSize: fontSizes.base,
-    color: '#666',
-    fontFamily: 'Poppins-Regular',
+  skeletonAvatarContainer: {
+    alignItems: 'center',
+    marginBottom: p(15),
+    position: 'relative',
+  },
+  skeletonCameraIcon: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    borderWidth: 2,
+    borderColor: '#fff',
+  },
+  skeletonUserName: {
+    marginBottom: p(5),
+  },
+  skeletonUserEmail: {
+    marginTop: p(5),
+  },
+  skeletonSection: {
+    backgroundColor: '#fff',
+    borderRadius: p(15),
+    padding: p(20),
+    marginBottom: p(20),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  skeletonSectionTitle: {
+    marginBottom: p(20),
+  },
+  skeletonActionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: p(15),
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  skeletonActionContent: {
+    flex: 1,
+    marginLeft: p(15),
+  },
+  skeletonActionTitle: {
+    marginBottom: p(2),
+  },
+  skeletonActionSubtitle: {
+    marginTop: p(2),
   },
   errorContainer: {
     flex: 1,

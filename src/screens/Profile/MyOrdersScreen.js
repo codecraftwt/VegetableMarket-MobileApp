@@ -7,6 +7,7 @@ import { fontSizes } from '../../utils/fonts';
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchMyOrders, clearOrdersError, cancelOrder, clearCancelOrderError, submitReview, clearSubmitReviewError } from '../../redux/slices/ordersSlice';
 import { ReviewModal, ConfirmationModal } from '../../components';
+import SkeletonLoader from '../../components/SkeletonLoader';
 
 const MyOrdersScreen = ({ navigation }) => {
   const dispatch = useDispatch();
@@ -223,8 +224,52 @@ const MyOrdersScreen = ({ navigation }) => {
           navigation={navigation}
         />
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#019a34" />
-          <Text style={styles.loadingText}>Loading orders...</Text>
+          <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+            {/* Skeleton Header Section */}
+            <View style={styles.headerSection}>
+              <SkeletonLoader type="text" width="60%" height={p(28)} style={styles.skeletonTitle} />
+              <SkeletonLoader type="text" width="85%" height={p(16)} />
+            </View>
+            
+            {/* Skeleton Order Cards */}
+            {[1, 2, 3].map((item) => (
+              <View key={item} style={styles.skeletonOrderCard}>
+                {/* Order Header Skeleton */}
+                <View style={styles.skeletonOrderHeader}>
+                  <View style={styles.skeletonOrderInfo}>
+                    <SkeletonLoader type="text" width="75%" height={p(22)} style={styles.skeletonLine} />
+                    <SkeletonLoader type="text" width="55%" height={p(16)} />
+                  </View>
+                  <View style={styles.skeletonOrderTotal}>
+                    <SkeletonLoader type="text" width="65%" height={p(22)} />
+                  </View>
+                </View>
+
+                {/* Status Section Skeleton */}
+                <View style={styles.skeletonStatusSection}>
+                  <View style={styles.skeletonStatusItem}>
+                    <SkeletonLoader type="category" width={p(16)} height={p(16)} borderRadius={p(8)} />
+                    <SkeletonLoader type="text" width="60%" height={p(16)} style={styles.skeletonStatusText} />
+                  </View>
+                  <View style={styles.skeletonStatusItem}>
+                    <SkeletonLoader type="category" width={p(16)} height={p(16)} borderRadius={p(8)} />
+                    <SkeletonLoader type="text" width="70%" height={p(16)} style={styles.skeletonStatusText} />
+                  </View>
+                </View>
+
+                {/* Items Preview Skeleton */}
+                <View style={styles.skeletonItemsPreview}>
+                  <SkeletonLoader type="category" width={p(16)} height={p(16)} borderRadius={p(8)} />
+                  <SkeletonLoader type="text" width="80%" height={p(16)} style={styles.skeletonItemsText} />
+                </View>
+
+                {/* Action Button Skeleton */}
+                <View style={styles.skeletonActionSection}>
+                  <SkeletonLoader type="category" width="60%" height={p(40)} borderRadius={p(20)} />
+                </View>
+              </View>
+            ))}
+          </ScrollView>
         </View>
       </SafeAreaView>
     );
@@ -548,6 +593,70 @@ const styles = StyleSheet.create({
     fontSize: fontSizes.base,
     color: '#666',
     fontFamily: 'Poppins-Regular',
+  },
+  // Skeleton styles
+  skeletonTitle: {
+    marginBottom: p(5),
+  },
+  skeletonLine: {
+    marginBottom: p(5),
+  },
+  skeletonOrderCard: {
+    backgroundColor: '#fff',
+    borderRadius: p(15),
+    padding: p(20),
+    marginBottom: p(15),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  skeletonOrderHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: p(15),
+    paddingBottom: p(15),
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  skeletonOrderInfo: {
+    flex: 1,
+  },
+  skeletonOrderTotal: {
+    alignItems: 'flex-end',
+  },
+  skeletonStatusSection: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: p(15),
+    paddingBottom: p(15),
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  skeletonStatusItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  skeletonStatusText: {
+    marginLeft: p(8),
+  },
+  skeletonItemsPreview: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: p(15),
+  },
+  skeletonItemsText: {
+    marginLeft: p(8),
+  },
+  skeletonActionSection: {
+    marginTop: p(15),
+    paddingTop: p(15),
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+    alignItems: 'center',
   },
 });
 

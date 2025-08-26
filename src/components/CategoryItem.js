@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { p } from '../utils/Responsive';
 import { fontSizes } from '../utils/fonts';
+import SkeletonLoader from './SkeletonLoader';
 
 const CategoryItem = ({
   category,

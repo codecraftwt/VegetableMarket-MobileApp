@@ -8,8 +8,8 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
-  ActivityIndicator,
 } from 'react-native';
+import SkeletonLoader from '../../components/SkeletonLoader';
 import CommonHeader from '../../components/CommonHeader';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { p } from '../../utils/Responsive';
@@ -151,9 +151,21 @@ const CategoryProductsScreen = ({ navigation, route }) => {
           </Text>
           
           {loading ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#019a34" />
-              <Text style={styles.loadingText}>Loading products...</Text>
+            <View style={styles.skeletonContainer}>
+              {/* Skeleton loader for products grid */}
+              <View style={styles.productsGrid}>
+                {[1, 2, 3, 4, 5, 6].map((item) => (
+                  <View key={item} style={styles.productCardWrapper}>
+                    <View style={styles.skeletonProductCard}>
+                      <SkeletonLoader type="card" width="100%" height={p(120)} style={styles.skeletonProductImage} />
+                      <SkeletonLoader type="text" width="80%" height={p(16)} style={styles.skeletonProductName} />
+                      <SkeletonLoader type="text" width="60%" height={p(12)} style={styles.skeletonProductRating} />
+                      <SkeletonLoader type="text" width="70%" height={p(16)} style={styles.skeletonProductPrice} />
+                      <SkeletonLoader type="category" width="100%" height={p(35)} borderRadius={p(17.5)} style={styles.skeletonAddButton} />
+                    </View>
+                  </View>
+                ))}
+              </View>
             </View>
           ) : filteredProducts.length > 0 ? (
             <View style={styles.productsGrid}>
@@ -297,17 +309,34 @@ const styles = StyleSheet.create({
     lineHeight: p(22),
     fontFamily: 'Poppins-Regular',
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: p(60),
+  // Skeleton Loader Styles
+  skeletonContainer: {
+    marginBottom: p(20),
   },
-  loadingText: {
-    marginTop: p(20),
-    fontSize: fontSizes.base,
-    color: '#666',
-    fontFamily: 'Poppins-Regular',
+  skeletonProductCard: {
+    backgroundColor: '#fff',
+    borderRadius: p(15),
+    padding: p(10),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  skeletonProductImage: {
+    marginBottom: p(15),
+  },
+  skeletonProductName: {
+    marginBottom: p(3),
+  },
+  skeletonProductRating: {
+    marginBottom: p(3),
+  },
+  skeletonProductPrice: {
+    marginBottom: p(10),
+  },
+  skeletonAddButton: {
+    marginTop: p(5),
   },
 });
 

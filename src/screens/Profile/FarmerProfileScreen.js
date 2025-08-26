@@ -8,7 +8,6 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
-  ActivityIndicator,
   Alert,
 } from 'react-native';
 import CommonHeader from '../../components/CommonHeader';
@@ -17,6 +16,7 @@ import { p } from '../../utils/Responsive';
 import { fontSizes } from '../../utils/fonts';
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchFarmerProfile, clearFarmerProfile } from '../../redux/slices/vegetablesSlice';
+import SkeletonLoader from '../../components/SkeletonLoader';
 
 const FarmerProfileScreen = ({ navigation, route }) => {
   const { farmerId, farmerName } = route.params;
@@ -159,10 +159,86 @@ const FarmerProfileScreen = ({ navigation, route }) => {
           onNotificationPress={handleNotificationPress}
           navigation={navigation}
         />
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#019a34" />
-          <Text style={styles.loadingText}>Loading farmer profile...</Text>
-        </View>
+        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+          {/* Skeleton Profile Header */}
+          <View style={styles.profileHeader}>
+            <View style={styles.profileImageContainer}>
+              <SkeletonLoader type="category" width={p(80)} height={p(80)} borderRadius={p(40)} />
+            </View>
+            <View style={styles.profileInfo}>
+              <SkeletonLoader type="text" width="60%" height={p(20)} style={styles.skeletonLine} />
+              <SkeletonLoader type="text" width="50%" height={p(16)} style={styles.skeletonLine} />
+              <SkeletonLoader type="text" width="40%" height={p(16)} style={styles.skeletonLine} />
+              <View style={styles.ratingContainer}>
+                <View style={{ flexDirection: 'row', marginBottom: p(5) }}>
+                  {[1,2,3,4,5].map(i => (
+                    <SkeletonLoader key={i} type="category" width={p(16)} height={p(16)} borderRadius={p(8)} style={{ marginRight: p(2) }} />
+                  ))}
+                </View>
+                <SkeletonLoader type="text" width="45%" height={p(14)} />
+              </View>
+            </View>
+          </View>
+
+          {/* Skeleton Bio Section */}
+          <View style={styles.bioSection}>
+            <SkeletonLoader type="text" width="40%" height={p(20)} style={styles.skeletonTitle} />
+            <SkeletonLoader type="text" width="100%" height={p(14)} style={styles.skeletonParagraph} />
+            <SkeletonLoader type="text" width="95%" height={p(14)} style={styles.skeletonParagraph} />
+            <SkeletonLoader type="text" width="85%" height={p(14)} />
+          </View>
+
+          {/* Skeleton Address Section */}
+          <View style={styles.addressSection}>
+            <SkeletonLoader type="text" width="50%" height={p(20)} style={styles.skeletonTitle} />
+            <View style={styles.addressInfo}>
+              <SkeletonLoader type="category" width={p(16)} height={p(16)} borderRadius={p(8)} style={{ marginRight: p(15), marginTop: p(2) }} />
+              <View style={styles.addressDetails}>
+                <SkeletonLoader type="text" width="40%" height={p(16)} style={styles.skeletonLine} />
+                <SkeletonLoader type="text" width="80%" height={p(14)} style={styles.skeletonLine} />
+                <SkeletonLoader type="text" width="70%" height={p(14)} style={styles.skeletonLine} />
+                <SkeletonLoader type="text" width="75%" height={p(14)} />
+              </View>
+            </View>
+          </View>
+
+          {/* Skeleton Farms Section */}
+          <View style={styles.farmsSection}>
+            <SkeletonLoader type="text" width="30%" height={p(20)} style={styles.skeletonTitle} />
+            {[1,2].map(i => (
+              <View key={i} style={styles.farmCard}>
+                <View style={styles.farmImageContainer}>
+                  <SkeletonLoader type="banner" width={'100%'} height={p(150)} />
+                </View>
+                <View style={styles.farmContent}>
+                  <SkeletonLoader type="text" width="60%" height={p(18)} style={styles.skeletonLine} />
+                  <SkeletonLoader type="text" width="100%" height={p(14)} style={styles.skeletonParagraph} />
+                  <SkeletonLoader type="text" width="90%" height={p(14)} />
+                </View>
+              </View>
+            ))}
+          </View>
+
+          {/* Skeleton Reviews Section */}
+          <View style={styles.reviewsSection}>
+            <SkeletonLoader type="text" width="40%" height={p(20)} style={styles.skeletonTitle} />
+            {[1,2,3].map(i => (
+              <View key={i} style={styles.reviewCard}>
+                <View style={styles.reviewHeader}>
+                  <SkeletonLoader type="text" width="40%" height={p(16)} />
+                  <View style={{ flexDirection: 'row' }}>
+                    {[1,2,3,4,5].map(s => (
+                      <SkeletonLoader key={s} type="category" width={p(16)} height={p(16)} borderRadius={p(8)} style={{ marginLeft: p(2) }} />
+                    ))}
+                  </View>
+                </View>
+                <SkeletonLoader type="text" width="100%" height={p(14)} style={styles.skeletonParagraph} />
+                <SkeletonLoader type="text" width="90%" height={p(14)} style={styles.skeletonParagraph} />
+                <SkeletonLoader type="text" width="30%" height={p(12)} />
+              </View>
+            ))}
+          </View>
+        </ScrollView>
       </SafeAreaView>
     );
   }
@@ -626,6 +702,17 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: p(22),
     fontFamily: 'Poppins-Regular',
+  },
+
+  // Skeleton styles
+  skeletonLine: {
+    marginBottom: p(6),
+  },
+  skeletonTitle: {
+    marginBottom: p(12),
+  },
+  skeletonParagraph: {
+    marginBottom: p(6),
   },
 });
 

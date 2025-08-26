@@ -9,8 +9,8 @@ import {
   TouchableOpacity, 
   TextInput,
   Image,
-  ActivityIndicator,
 } from 'react-native';
+import SkeletonLoader from '../../components/SkeletonLoader';
 import CommonHeader from '../../components/CommonHeader';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { p } from '../../utils/Responsive';
@@ -324,7 +324,7 @@ const CartScreen = ({ navigation }) => {
               disabled={isItemUpdating || item.quantity_kg <= 1}
             >
               {isItemUpdating ? (
-                <ActivityIndicator size={14} color="#666" />
+                <SkeletonLoader type="category" width={14} height={14} borderRadius={7} />
               ) : (
                 <Icon name="minus" size={16} color={item.quantity_kg <= 1 ? "#ccc" : "#666"} />
               )}
@@ -341,7 +341,7 @@ const CartScreen = ({ navigation }) => {
               disabled={isItemUpdating || item.quantity_kg >= 99}
             >
               {isItemUpdating ? (
-                <ActivityIndicator size={14} color="#019a34" />
+                <SkeletonLoader type="category" width={14} height={14} borderRadius={7} />
               ) : (
                 <Icon name="plus" size={16} color={item.quantity_kg >= 99 ? "#ccc" : "#019a34"} />
               )}
@@ -354,7 +354,7 @@ const CartScreen = ({ navigation }) => {
             disabled={isItemRemoving}
           >
             {isItemRemoving ? (
-              <ActivityIndicator size={16} color="#F44336" />
+              <SkeletonLoader type="category" width={16} height={16} borderRadius={8} />
             ) : (
               <Icon name="trash" size={16} color="#F44336" />
             )}
@@ -440,9 +440,42 @@ const CartScreen = ({ navigation }) => {
           onNotificationPress={handleNotificationPress}
           navigation={navigation}
         />
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#019a34" />
-          <Text style={styles.loadingText}>Loading cart...</Text>
+        <View style={styles.content}>
+          {/* Skeleton loader for cart items */}
+          <View style={styles.cartItemsSection}>
+            <Text style={styles.sectionTitle}>Cart Items</Text>
+            {[1, 2, 3].map((item) => (
+              <View key={item} style={styles.skeletonCartItem}>
+                <View style={styles.skeletonItemLeft}>
+                  <SkeletonLoader type="category" width={p(60)} height={p(60)} borderRadius={p(30)} />
+                  <View style={styles.skeletonItemInfo}>
+                    <SkeletonLoader type="text" width="80%" height={p(16)} style={styles.skeletonItemName} />
+                    <SkeletonLoader type="text" width="60%" height={p(12)} style={styles.skeletonItemCategory} />
+                    <SkeletonLoader type="text" width="70%" height={p(16)} style={styles.skeletonItemPrice} />
+                  </View>
+                </View>
+                <View style={styles.skeletonItemRight}>
+                  <View style={styles.skeletonQuantitySelector}>
+                    <SkeletonLoader type="category" width={p(35)} height={p(35)} borderRadius={p(17.5)} />
+                    <SkeletonLoader type="text" width={p(40)} height={p(12)} style={styles.skeletonQuantityText} />
+                    <SkeletonLoader type="category" width={p(35)} height={p(35)} borderRadius={p(17.5)} />
+                  </View>
+                  <SkeletonLoader type="category" width={p(24)} height={p(24)} borderRadius={p(12)} />
+                </View>
+              </View>
+            ))}
+          </View>
+
+          {/* Skeleton loader for price breakdown */}
+          <View style={styles.skeletonPriceBreakdown}>
+            <Text style={styles.sectionTitle}>Price Details</Text>
+            {[1, 2, 3, 4].map((item) => (
+              <View key={item} style={styles.skeletonPriceRow}>
+                <SkeletonLoader type="text" width="40%" height={p(16)} />
+                <SkeletonLoader type="text" width="30%" height={p(16)} />
+              </View>
+            ))}
+          </View>
         </View>
       </SafeAreaView>
     );
@@ -779,18 +812,69 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-Bold',
   },
 
-  // Loading Styles
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
+  // Skeleton Loader Styles
+  skeletonCartItem: {
+    backgroundColor: '#fff',
+    borderRadius: p(15),
+    padding: p(15),
+    marginBottom: p(15),
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: p(50),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  loadingText: {
-    marginTop: p(20),
-    fontSize: fontSizes.base,
-    color: '#666',
-    fontFamily: 'Poppins-Regular',
+  skeletonItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  skeletonItemInfo: {
+    flex: 1,
+    marginLeft: p(15),
+  },
+  skeletonItemName: {
+    marginBottom: p(3),
+  },
+  skeletonItemCategory: {
+    marginBottom: p(3),
+  },
+  skeletonItemPrice: {
+    marginTop: p(5),
+  },
+  skeletonItemRight: {
+    alignItems: 'center',
+  },
+  skeletonQuantitySelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
+    borderRadius: p(25),
+    paddingHorizontal: p(5),
+    marginBottom: p(10),
+    gap: p(12),
+  },
+  skeletonQuantityText: {
+    marginHorizontal: p(12),
+  },
+  skeletonPriceBreakdown: {
+    backgroundColor: '#fff',
+    borderRadius: p(15),
+    padding: p(20),
+    marginBottom: p(25),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  skeletonPriceRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: p(12),
   },
 });
 

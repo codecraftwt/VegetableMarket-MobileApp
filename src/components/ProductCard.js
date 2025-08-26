@@ -5,8 +5,8 @@ import {
   StyleSheet,
   TouchableOpacity,
   Image,
-  ActivityIndicator,
 } from 'react-native';
+import SkeletonLoader from './SkeletonLoader';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import Icon1 from 'react-native-vector-icons/Feather';
 import { p } from '../utils/Responsive';
@@ -217,7 +217,7 @@ const ProductCard = ({
             disabled={isAddingToCart}
           >
             {isAddingToCart ? (
-              <ActivityIndicator size={16} color="#fff" />
+              <SkeletonLoader type="category" width={16} height={16} borderRadius={8} />
             ) : (
               <Icon1 name="plus" size={16} color="#fff" />
             )}

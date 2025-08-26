@@ -9,8 +9,8 @@ import {
   Image,
   StatusBar,
   SafeAreaView,
-  ActivityIndicator,
 } from 'react-native';
+import SkeletonLoader from '../../components/SkeletonLoader';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { p } from '../../utils/Responsive';
 import { fontSizes } from '../../utils/fonts';
@@ -79,10 +79,15 @@ const DashboardScreen = ({ navigation }) => {
       return (
         <View style={styles.categoriesContainer}>
           <Text style={styles.sectionTitle}>Categories</Text>
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#019a34" />
-            <Text style={styles.loadingText}>Loading categories...</Text>
-          </View>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            {/* Skeleton loaders for categories */}
+            {[1, 2, 3, 4, 5].map((item) => (
+              <View key={item} style={styles.skeletonCategoryWrapper}>
+                <SkeletonLoader type="category" width={p(60)} height={p(60)} />
+                <SkeletonLoader type="text" width={p(50)} height={p(12)} style={styles.skeletonText} />
+              </View>
+            ))}
+          </ScrollView>
         </View>
       );
     }
@@ -141,10 +146,19 @@ const DashboardScreen = ({ navigation }) => {
       return (
         <View style={styles.popularContainer}>
           <Text style={styles.sectionTitle}>Popular</Text>
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#019a34" />
-            <Text style={styles.loadingText}>Loading products...</Text>
-          </View>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            {/* Skeleton loaders for popular items */}
+            {[1, 2, 3, 4].map((item) => (
+              <View key={item} style={styles.skeletonProductWrapper}>
+                <View style={styles.skeletonCard}>
+                  <SkeletonLoader type="card" width={p(160)} height={p(120)} style={styles.skeletonImage} />
+                  <SkeletonLoader type="text" width={p(120)} height={p(16)} style={styles.skeletonTitle} />
+                  <SkeletonLoader type="text" width={p(80)} height={p(12)} style={styles.skeletonRating} />
+                  <SkeletonLoader type="text" width={p(100)} height={p(16)} style={styles.skeletonPrice} />
+                </View>
+              </View>
+            ))}
+          </ScrollView>
         </View>
       );
     }
@@ -192,7 +206,7 @@ const DashboardScreen = ({ navigation }) => {
       <StatusBar barStyle="light-content" backgroundColor="#019a34" />
       
       <CommonHeader 
-        screenName="Home"
+        screenName="Walstar VeggieMart"
         showBackButton={false}
         showNotification={true}
         onNotificationPress={handleNotificationPress}
@@ -288,17 +302,40 @@ const styles = StyleSheet.create({
     marginVertical: p(20),
     paddingBottom: p(10),
   },
-  loadingContainer: {
-    flexDirection: 'row',
+  // Skeleton Loader Styles
+  skeletonCategoryWrapper: {
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: p(20),
+    marginRight: p(20),
   },
-  loadingText: {
-    marginLeft: p(10),
-    fontSize: fontSizes.base,
-    color: '#666',
-    fontFamily: 'Poppins-Regular',
+  skeletonText: {
+    marginTop: p(10),
+  },
+  skeletonProductWrapper: {
+    marginRight: p(15),
+  },
+  skeletonCard: {
+    backgroundColor: '#fff',
+    borderRadius: p(15),
+    padding: p(10),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    width: p(160),
+    height: p(240),
+  },
+  skeletonImage: {
+    marginBottom: p(15),
+  },
+  skeletonTitle: {
+    marginBottom: p(3),
+  },
+  skeletonRating: {
+    marginBottom: p(5),
+  },
+  skeletonPrice: {
+    marginTop: p(5),
   },
   emptyState: {
     alignItems: 'center',

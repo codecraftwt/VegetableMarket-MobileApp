@@ -8,8 +8,8 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
-  ActivityIndicator,
 } from 'react-native';
+import SkeletonLoader from '../../components/SkeletonLoader';
 import CommonHeader from '../../components/CommonHeader';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { p } from '../../utils/Responsive';
@@ -28,7 +28,7 @@ const ProductDetailScreen = ({ navigation, route }) => {
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const dispatch = useDispatch();
-  const { vegetables } = useSelector(state => state.vegetables);
+  const { vegetables, loading: vegetablesLoading } = useSelector(state => state.vegetables);
   const { addLoading } = useSelector(state => state.cart);
   
   // Get product data from navigation params or use default
@@ -210,13 +210,82 @@ const ProductDetailScreen = ({ navigation, route }) => {
       />
       
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Product Image Section */}
-        <View style={styles.imageSection}>
-          <Image source={getProductImage()} style={styles.productImage} />
-        </View>
-        
-        {/* Product Information Card */}
-        <View style={styles.productCard}>
+        {vegetablesLoading ? (
+          <>
+            {/* Skeleton loader for product image */}
+            <View style={styles.imageSection}>
+              <SkeletonLoader type="banner" width="100%" height={p(250)} borderRadius={p(20)} />
+            </View>
+            
+            {/* Skeleton loader for product information */}
+            <View style={styles.productCard}>
+              {/* Product Name Skeleton */}
+              <SkeletonLoader type="text" width="80%" height={p(24)} style={styles.skeletonProductName} />
+              
+              {/* Star Rating Skeleton */}
+              <View style={styles.skeletonStarRating}>
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <SkeletonLoader key={star} type="category" width={p(16)} height={p(16)} borderRadius={p(8)} />
+                ))}
+              </View>
+              
+              {/* Price and Quantity Skeleton */}
+              <View style={styles.priceQuantityRow}>
+                <SkeletonLoader type="text" width="40%" height={p(20)} />
+                <View style={styles.quantitySelector}>
+                  <SkeletonLoader type="category" width={p(40)} height={p(40)} borderRadius={p(20)} />
+                  <SkeletonLoader type="text" width={p(60)} height={p(16)} style={styles.skeletonQuantityText} />
+                  <SkeletonLoader type="category" width={p(40)} height={p(40)} borderRadius={p(20)} />
+                </View>
+              </View>
+              
+              {/* Product Details Skeleton */}
+              <View style={styles.detailsSection}>
+                <SkeletonLoader type="text" width="50%" height={p(20)} style={styles.skeletonDetailsTitle} />
+                <SkeletonLoader type="text" width="100%" height={p(16)} style={styles.skeletonDetailsText} />
+                <SkeletonLoader type="text" width="90%" height={p(16)} style={styles.skeletonDetailsText} />
+                <SkeletonLoader type="text" width="70%" height={p(16)} style={styles.skeletonDetailsText} />
+              </View>
+              
+              {/* Farmer Information Skeleton */}
+              <View style={styles.farmerSection}>
+                <SkeletonLoader type="text" width="60%" height={p(20)} style={styles.skeletonFarmerTitle} />
+                <View style={styles.skeletonFarmerInfo}>
+                  <SkeletonLoader type="category" width={p(16)} height={p(16)} borderRadius={p(8)} />
+                  <SkeletonLoader type="text" width="50%" height={p(16)} style={styles.skeletonFarmerName} />
+                  <SkeletonLoader type="category" width={p(14)} height={p(14)} borderRadius={p(7)} />
+                </View>
+                <View style={styles.skeletonFarmerInfo}>
+                  <SkeletonLoader type="category" width={p(16)} height={p(16)} borderRadius={p(8)} />
+                  <SkeletonLoader type="text" width="40%" height={p(16)} />
+                </View>
+              </View>
+              
+              {/* Related Products Skeleton */}
+              <View style={styles.relatedSection}>
+                <SkeletonLoader type="text" width="50%" height={p(20)} style={styles.skeletonRelatedTitle} />
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  {[1, 2, 3, 4].map((item) => (
+                    <View key={item} style={styles.skeletonRelatedProduct}>
+                      <SkeletonLoader type="card" width={p(160)} height={p(120)} style={styles.skeletonRelatedImage} />
+                      <SkeletonLoader type="text" width="80%" height={p(16)} style={styles.skeletonRelatedName} />
+                      <SkeletonLoader type="text" width="60%" height={p(12)} style={styles.skeletonRelatedRating} />
+                      <SkeletonLoader type="text" width="70%" height={p(16)} style={styles.skeletonRelatedPrice} />
+                    </View>
+                  ))}
+                </ScrollView>
+              </View>
+            </View>
+          </>
+        ) : (
+          <>
+            {/* Product Image Section */}
+            <View style={styles.imageSection}>
+              <Image source={getProductImage()} style={styles.productImage} />
+            </View>
+            
+            {/* Product Information Card */}
+            <View style={styles.productCard}>
           {/* Product Name and Rating */}
           <Text style={styles.productName}>{product?.name || 'Unknown Product'}</Text>
           <StarRating rating={product?.rating || 0} />
@@ -276,6 +345,8 @@ const ProductDetailScreen = ({ navigation, route }) => {
           {/* Related Products */}
           <RelatedProducts />
         </View>
+          </>
+        )}
       </ScrollView>
       
       {/* Bottom Fixed Bar */}
@@ -286,7 +357,7 @@ const ProductDetailScreen = ({ navigation, route }) => {
         </View>
         <TouchableOpacity style={styles.addToCartButton} onPress={handleAddToCart} disabled={addLoading}>
           {addLoading ? (
-            <ActivityIndicator color="#fff" />
+            <SkeletonLoader type="text" width={p(80)} height={p(16)} borderRadius={p(8)} />
           ) : (
             <Text style={styles.addToCartText}>Add to Cart</Text>
           )}
@@ -515,6 +586,56 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: fontSizes.base,
     fontFamily: 'Poppins-Bold',
+  },
+
+  // Skeleton Loader Styles
+  skeletonProductName: {
+    marginBottom: p(10),
+  },
+  skeletonStarRating: {
+    flexDirection: 'row',
+    marginBottom: p(15),
+    gap: p(3),
+  },
+  skeletonQuantityText: {
+    marginHorizontal: p(15),
+  },
+  skeletonDetailsTitle: {
+    marginBottom: p(10),
+  },
+  skeletonDetailsText: {
+    marginBottom: p(8),
+  },
+  skeletonFarmerTitle: {
+    marginBottom: p(10),
+  },
+  skeletonFarmerInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: p(8),
+  },
+  skeletonFarmerName: {
+    marginLeft: p(10),
+    flex: 1,
+  },
+  skeletonRelatedTitle: {
+    marginBottom: p(15),
+  },
+  skeletonRelatedProduct: {
+    marginRight: p(15),
+    width: p(160),
+  },
+  skeletonRelatedImage: {
+    marginBottom: p(10),
+  },
+  skeletonRelatedName: {
+    marginBottom: p(5),
+  },
+  skeletonRelatedRating: {
+    marginBottom: p(5),
+  },
+  skeletonRelatedPrice: {
+    marginTop: p(5),
   },
 });
 
