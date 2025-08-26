@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, StatusBar, ScrollView, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import CommonHeader from '../../components/CommonHeader';
 import { SuccessModal, ErrorModal, ConfirmationModal } from '../../components';
@@ -81,17 +81,31 @@ const ProfileEditScreen = ({ navigation, route }) => {
     dispatch(fetchProfile());
   }, [dispatch]);
 
-  const handleBackPress = () => {
+  const handleBackPress = useCallback(() => {
     navigation.goBack();
-  };
+  }, [navigation]);
 
-  const handleSaveProfile = async () => {
+  const handleSaveProfile = useCallback(async () => {
     try {
-      // Combine profile and address data for the API call
+      // Map the form data to match the API specification
       const updateData = {
-        ...formData,
-        ...addressData,
+        // Profile fields
+        name: formData.name,
+        phone: formData.phone,
+        bio: formData.bio,
+        
+        // Address fields - map to the correct API field names
+        address_label: addressData.addressLabel,
+        address_line: addressData.addressLine,
+        city: addressData.city,
+        taluka: addressData.taluka,
+        district: addressData.district,
+        state: addressData.state,
+        country: addressData.country,
+        pincode: addressData.pincode,
       };
+      
+      console.log('Sending profile update data:', updateData);
       
       await dispatch(updateProfile(updateData)).unwrap();
       
@@ -102,62 +116,93 @@ const ProfileEditScreen = ({ navigation, route }) => {
       setSuccessMessage('Profile updated successfully!');
       setShowSuccessModal(true);
     } catch (error) {
+      console.error('Profile update error:', error);
       // Show error modal
       setErrorMessage(error.message || 'Failed to update profile');
       setShowErrorModal(true);
     }
-  };
+  }, [formData, addressData, dispatch]);
 
-  const handleSaveAddress = async () => {
+  const handleSaveAddress = useCallback(async () => {
     try {
-      await dispatch(updateAddress(addressData)).unwrap();
+      // Map the address data to match the API specification
+      const updateAddressData = {
+        address_label: addressData.addressLabel,
+        address_line: addressData.addressLine,
+        city: addressData.city,
+        taluka: addressData.taluka,
+        district: addressData.district,
+        state: addressData.state,
+        country: addressData.country,
+        pincode: addressData.pincode,
+      };
+      
+      console.log('Sending address update data:', updateAddressData);
+      
+      await dispatch(updateAddress(updateAddressData)).unwrap();
       
       // Show success modal
       setSuccessMessage('Address updated successfully!');
       setShowSuccessModal(true);
     } catch (error) {
+      console.error('Address update error:', error);
       // Show error modal
       setErrorMessage(error.message || 'Failed to update address');
       setShowErrorModal(true);
     }
-  };
+  }, [addressData, dispatch]);
 
-  const handleAddAddress = async () => {
+  const handleAddAddress = useCallback(async () => {
     try {
-      await dispatch(addAddress(addressData)).unwrap();
+      // Map the address data to match the API specification
+      const newAddressData = {
+        address_label: addressData.addressLabel,
+        address_line: addressData.addressLine,
+        city: addressData.city,
+        taluka: addressData.taluka,
+        district: addressData.district,
+        state: addressData.state,
+        country: addressData.country,
+        pincode: addressData.pincode,
+      };
+      
+      console.log('Sending new address data:', newAddressData);
+      
+      await dispatch(addAddress(newAddressData)).unwrap();
       
       // Show success modal
       setSuccessMessage('Address added successfully!');
       setShowSuccessModal(true);
     } catch (error) {
+      console.error('Add address error:', error);
       // Show error modal
-      setErrorMessage(error.message || 'Failed to add address');
+      setErrorMessage(error.message || 'Failed to update address');
       setShowErrorModal(true);
     }
-  };
+  }, [addressData, dispatch]);
 
   // Modal handlers
-  const handleSuccessModalClose = () => {
+  const handleSuccessModalClose = useCallback(() => {
     setShowSuccessModal(false);
     navigation.goBack();
-  };
+  }, [navigation]);
 
-  const handleConfirmProfileSave = () => {
+  const handleConfirmProfileSave = useCallback(() => {
     setShowConfirmProfileModal(false);
     handleSaveProfile();
-  };
+  }, [handleSaveProfile]);
 
-  const handleConfirmAddressSave = () => {
+  const handleConfirmAddressSave = useCallback(() => {
     setShowConfirmAddressModal(false);
     handleSaveAddress();
-  };
+  }, [handleSaveAddress]);
 
-  const handleConfirmAddAddress = () => {
+  const handleConfirmAddAddress = useCallback(() => {
     setShowConfirmAddAddressModal(false);
     handleAddAddress();
-  };
+  }, [handleAddAddress]);
 
-  const TabButton = ({ title, tab, icon }) => (
+  const TabButton = useCallback(({ title, tab, icon }) => (
     <TouchableOpacity
       style={[styles.tabButton, activeTab === tab && styles.activeTabButton]}
       onPress={() => setActiveTab(tab)}
@@ -167,193 +212,266 @@ const ProfileEditScreen = ({ navigation, route }) => {
         {title}
       </Text>
     </TouchableOpacity>
-  );
+  ), [activeTab]);
+
+  // Optimized form handlers
+  const handleNameChange = useCallback((text) => {
+    setFormData(prev => ({...prev, name: text}));
+  }, []);
+
+  const handleEmailChange = useCallback((text) => {
+    setFormData(prev => ({...prev, email: text}));
+  }, []);
+
+  const handlePhoneChange = useCallback((text) => {
+    setFormData(prev => ({...prev, phone: text}));
+  }, []);
+
+  const handleBioChange = useCallback((text) => {
+    setFormData(prev => ({...prev, bio: text}));
+  }, []);
 
   const ProfileTab = () => (
-    <KeyboardAvoidingView 
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={{ flex: 1 }}
-    >
-      <View style={styles.tabContent}>
-        <Text style={styles.sectionTitle}>Personal Information</Text>
-        
-        <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>Full Name</Text>
-          <TextInput
-            style={styles.textInput}
-            value={formData.name}
-            onChangeText={(text) => setFormData({...formData, name: text})}
-            placeholder="Enter your full name"
-          />
-        </View>
-
-        <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>Email</Text>
-          <TextInput
-            style={styles.textInput}
-            value={formData.email}
-            onChangeText={(text) => setFormData({...formData, email: text})}
-            placeholder="Enter your email"
-            keyboardType="email-address"
-          />
-        </View>
-
-        <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>Phone</Text>
-          <TextInput
-            style={styles.textInput}
-            value={formData.phone}
-            onChangeText={(text) => setFormData({...formData, phone: text})}
-            placeholder="Enter your phone number"
-            keyboardType="phone-pad"
-          />
-        </View>
-
-        <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>Bio</Text>
-          <TextInput
-            style={[styles.textInput, styles.bioInput]}
-            value={formData.bio}
-            onChangeText={(text) => setFormData({...formData, bio: text})}
-            placeholder="Tell us about yourself..."
-            multiline={true}
-            numberOfLines={4}
-            textAlignVertical="top"
-          />
-        </View>
-
-        <TouchableOpacity 
-          style={[styles.saveButton, updateLoading && styles.saveButtonDisabled]} 
-          onPress={() => setShowConfirmProfileModal(true)}
-          disabled={updateLoading}
-        >
-          {updateLoading ? (
-            <ActivityIndicator size="small" color="#fff" />
-          ) : (
-            <Text style={styles.saveButtonText}>Save Profile</Text>
-          )}
-        </TouchableOpacity>
+    <View style={styles.tabContent}>
+      <Text style={styles.sectionTitle}>Personal Information</Text>
+      
+      <View style={styles.inputGroup}>
+        <Text style={styles.inputLabel}>Full Name</Text>
+        <TextInput
+          style={styles.textInput}
+          value={formData.name}
+          onChangeText={handleNameChange}
+          placeholder="Enter your full name"
+          autoCapitalize="words"
+          returnKeyType="next"
+          blurOnSubmit={false}
+        />
       </View>
-    </KeyboardAvoidingView>
+
+      <View style={styles.inputGroup}>
+        <Text style={styles.inputLabel}>Email</Text>
+        <TextInput
+          style={styles.textInput}
+          value={formData.email}
+          onChangeText={handleEmailChange}
+          placeholder="Enter your email"
+          keyboardType="email-address"
+          autoCapitalize="none"
+          returnKeyType="next"
+          blurOnSubmit={false}
+        />
+      </View>
+
+      <View style={styles.inputGroup}>
+        <Text style={styles.inputLabel}>Phone</Text>
+        <TextInput
+          style={styles.textInput}
+          value={formData.phone}
+          onChangeText={handlePhoneChange}
+          placeholder="Enter your phone number"
+          keyboardType="phone-pad"
+          returnKeyType="next"
+          blurOnSubmit={false}
+        />
+      </View>
+
+      <View style={styles.inputGroup}>
+        <Text style={styles.inputLabel}>Bio</Text>
+        <TextInput
+          style={[styles.textInput, styles.bioInput]}
+          value={formData.bio}
+          onChangeText={handleBioChange}
+          placeholder="Tell us about yourself..."
+          multiline={true}
+          numberOfLines={4}
+          textAlignVertical="top"
+          returnKeyType="default"
+          blurOnSubmit={true}
+        />
+      </View>
+
+      <TouchableOpacity 
+        style={[styles.saveButton, updateLoading && styles.saveButtonDisabled]} 
+        onPress={() => setShowConfirmProfileModal(true)}
+        disabled={updateLoading}
+      >
+        {updateLoading ? (
+          <ActivityIndicator size="small" color="#fff" />
+        ) : (
+          <Text style={styles.saveButtonText}>Save Profile</Text>
+        )}
+      </TouchableOpacity>
+    </View>
   );
 
+  // Optimized address handlers
+  const handleAddressLabelChange = useCallback((text) => {
+    setAddressData(prev => ({...prev, addressLabel: text}));
+  }, []);
+
+  const handleAddressLineChange = useCallback((text) => {
+    setAddressData(prev => ({...prev, addressLine: text}));
+  }, []);
+
+  const handleCityChange = useCallback((text) => {
+    setAddressData(prev => ({...prev, city: text}));
+  }, []);
+
+  const handleTalukaChange = useCallback((text) => {
+    setAddressData(prev => ({...prev, taluka: text}));
+  }, []);
+
+  const handleDistrictChange = useCallback((text) => {
+    setAddressData(prev => ({...prev, district: text}));
+  }, []);
+
+  const handleStateChange = useCallback((text) => {
+    setAddressData(prev => ({...prev, state: text}));
+  }, []);
+
+  const handleCountryChange = useCallback((text) => {
+    setAddressData(prev => ({...prev, country: text}));
+  }, []);
+
+  const handlePincodeChange = useCallback((text) => {
+    setAddressData(prev => ({...prev, pincode: text}));
+  }, []);
+
   const AddressTab = () => (
-    <KeyboardAvoidingView 
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={{ flex: 1 }}
-    >
-      <View style={styles.tabContent}>
-        <Text style={styles.sectionTitle}>Delivery Address</Text>
-        
-        <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>Address Label</Text>
-          <TextInput
-            style={styles.textInput}
-            value={addressData.addressLabel}
-            onChangeText={(text) => setAddressData({...addressData, addressLabel: text})}
-            placeholder="Enter Address Label e.g. Home, Farm, etc"
-          />
-        </View>
-
-        <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>Address Line</Text>
-          <TextInput
-            style={styles.textInput}
-            value={addressData.addressLine}
-            onChangeText={(text) => setAddressData({...addressData, addressLine: text})}
-            placeholder="Enter Address Line"
-          />
-        </View>
-
-        <View style={styles.row}>
-          <View style={[styles.inputGroup, { flex: 1, marginRight: p(10) }]}>
-            <Text style={styles.inputLabel}>City/Village</Text>
-            <TextInput
-              style={styles.textInput}
-              value={addressData.city}
-              onChangeText={(text) => setAddressData({...addressData, city: text})}
-              placeholder="Enter City"
-            />
-          </View>
-          <View style={[styles.inputGroup, { flex: 1 }]}>
-            <Text style={styles.inputLabel}>Taluka</Text>
-            <TextInput
-              style={styles.textInput}
-              value={addressData.taluka}
-              onChangeText={(text) => setAddressData({...addressData, taluka: text})}
-              placeholder="Enter Taluka"
-            />
-          </View>
-        </View>
-
-        <View style={styles.row}>
-          <View style={[styles.inputGroup, { flex: 1, marginRight: p(10) }]}>
-            <Text style={styles.inputLabel}>District</Text>
-            <TextInput
-              style={styles.textInput}
-              value={addressData.district}
-              onChangeText={(text) => setAddressData({...addressData, district: text})}
-              placeholder="Enter District"
-            />
-          </View>
-          <View style={[styles.inputGroup, { flex: 1 }]}>
-            <Text style={styles.inputLabel}>State</Text>
-            <TextInput
-              style={styles.textInput}
-              value={addressData.state}
-              onChangeText={(text) => setAddressData({...addressData, state: text})}
-              placeholder="Enter State"
-            />
-          </View>
-        </View>
-
-        <View style={styles.row}>
-          <View style={[styles.inputGroup, { flex: 1, marginRight: p(10) }]}>
-            <Text style={styles.inputLabel}>Country</Text>
-            <TextInput
-              style={styles.textInput}
-              value={addressData.country}
-              onChangeText={(text) => setAddressData({...addressData, country: text})}
-              placeholder="Enter Country"
-            />
-          </View>
-          <View style={[styles.inputGroup, { flex: 1 }]}>
-            <Text style={styles.inputLabel}>Pincode</Text>
-            <TextInput
-              style={styles.textInput}
-              value={addressData.pincode}
-              onChangeText={(text) => setAddressData({...addressData, pincode: text})}
-              placeholder="Enter Pincode"
-              keyboardType="numeric"
-            />
-          </View>
-        </View>
-
-        <TouchableOpacity 
-          style={[styles.saveButton, updateLoading && styles.saveButtonDisabled]} 
-          onPress={() => setShowConfirmAddressModal(true)}
-          disabled={updateLoading}
-        >
-          {updateLoading ? (
-            <ActivityIndicator size="small" color="#fff" />
-          ) : (
-            <Text style={styles.saveButtonText}>Save Address</Text>
-          )}
-        </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={[styles.addButton, addAddressLoading && styles.addButtonDisabled]} 
-          onPress={() => setShowConfirmAddAddressModal(true)}
-          disabled={addAddressLoading}
-        >
-          {addAddressLoading ? (
-            <ActivityIndicator size="small" color="#fff" />
-          ) : (
-            <Text style={styles.addButtonText}>Add New Address</Text>
-          )}
-        </TouchableOpacity>
+    <View style={styles.tabContent}>
+      <Text style={styles.sectionTitle}>Delivery Address</Text>
+      
+      <View style={styles.inputGroup}>
+        <Text style={styles.inputLabel}>Address Label</Text>
+        <TextInput
+          style={styles.textInput}
+          value={addressData.addressLabel}
+          onChangeText={handleAddressLabelChange}
+          placeholder="Enter Address Label e.g. Home, Farm, etc"
+          autoCapitalize="words"
+          returnKeyType="next"
+          blurOnSubmit={false}
+        />
       </View>
-    </KeyboardAvoidingView>
+
+      <View style={styles.inputGroup}>
+        <Text style={styles.inputLabel}>Address Line</Text>
+        <TextInput
+          style={styles.textInput}
+          value={addressData.addressLine}
+          onChangeText={handleAddressLineChange}
+          placeholder="Enter Address Line"
+          autoCapitalize="words"
+          returnKeyType="next"
+          blurOnSubmit={false}
+        />
+      </View>
+
+      <View style={styles.row}>
+        <View style={[styles.inputGroup, { flex: 1, marginRight: p(10) }]}>
+          <Text style={styles.inputLabel}>City/Village</Text>
+          <TextInput
+            style={styles.textInput}
+            value={addressData.city}
+            onChangeText={handleCityChange}
+            placeholder="Enter City"
+            autoCapitalize="words"
+            returnKeyType="next"
+            blurOnSubmit={false}
+          />
+        </View>
+        <View style={[styles.inputGroup, { flex: 1 }]}>
+          <Text style={styles.inputLabel}>Taluka</Text>
+          <TextInput
+            style={styles.textInput}
+            value={addressData.taluka}
+            onChangeText={handleTalukaChange}
+            placeholder="Enter Taluka"
+            autoCapitalize="words"
+            returnKeyType="next"
+            blurOnSubmit={false}
+          />
+        </View>
+      </View>
+
+      <View style={styles.row}>
+        <View style={[styles.inputGroup, { flex: 1, marginRight: p(10) }]}>
+          <Text style={styles.inputLabel}>District</Text>
+          <TextInput
+            style={styles.textInput}
+            value={addressData.district}
+            onChangeText={handleDistrictChange}
+            placeholder="Enter District"
+            autoCapitalize="words"
+            returnKeyType="next"
+            blurOnSubmit={false}
+          />
+        </View>
+        <View style={[styles.inputGroup, { flex: 1 }]}>
+          <Text style={styles.inputLabel}>State</Text>
+          <TextInput
+            style={styles.textInput}
+            value={addressData.state}
+            onChangeText={handleStateChange}
+            placeholder="Enter State"
+            autoCapitalize="words"
+            returnKeyType="next"
+            blurOnSubmit={false}
+          />
+        </View>
+      </View>
+
+      <View style={styles.row}>
+        <View style={[styles.inputGroup, { flex: 1, marginRight: p(10) }]}>
+          <Text style={styles.inputLabel}>Country</Text>
+          <TextInput
+            style={styles.textInput}
+            value={addressData.country}
+            onChangeText={handleCountryChange}
+            placeholder="Enter Country"
+            autoCapitalize="words"
+            returnKeyType="next"
+            blurOnSubmit={false}
+          />
+        </View>
+        <View style={[styles.inputGroup, { flex: 1 }]}>
+          <Text style={styles.inputLabel}>Pincode</Text>
+          <TextInput
+            style={styles.textInput}
+            value={addressData.pincode}
+            onChangeText={handlePincodeChange}
+            placeholder="Enter Pincode"
+            keyboardType="numeric"
+            returnKeyType="done"
+            blurOnSubmit={true}
+          />
+        </View>
+      </View>
+
+      <TouchableOpacity 
+        style={[styles.saveButton, updateLoading && styles.saveButtonDisabled]} 
+        onPress={() => setShowConfirmAddressModal(true)}
+        disabled={updateLoading}
+      >
+        {updateLoading ? (
+          <ActivityIndicator size="small" color="#fff" />
+        ) : (
+          <Text style={styles.saveButtonText}>Save Address</Text>
+        )}
+      </TouchableOpacity>
+
+      <TouchableOpacity 
+        style={[styles.addButton, addAddressLoading && styles.addButtonDisabled]} 
+        onPress={() => setShowConfirmAddAddressModal(true)}
+        disabled={addAddressLoading}
+      >
+        {addAddressLoading ? (
+          <ActivityIndicator size="small" color="#fff" />
+        ) : (
+          <Text style={styles.addButtonText}>Add New Address</Text>
+        )}
+      </TouchableOpacity>
+    </View>
   );
 
   return (
@@ -397,8 +515,9 @@ const ProfileEditScreen = ({ navigation, route }) => {
               style={styles.content} 
               showsVerticalScrollIndicator={false}
               contentContainerStyle={styles.scrollContent}
-              keyboardShouldPersistTaps="handled"
+              keyboardShouldPersistTaps="always"
               bounces={false}
+              removeClippedSubviews={false}
             >
               {activeTab === 'profile' ? <ProfileTab /> : <AddressTab />}
             </ScrollView>

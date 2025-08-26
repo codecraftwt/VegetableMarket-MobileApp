@@ -34,6 +34,7 @@ const ProfileScreen = ({ navigation }) => {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  const [isProcessingImage, setIsProcessingImage] = useState(false);
 
   // Debug logging
   console.log('ProfileScreen - Redux State:', profileState);
@@ -77,26 +78,28 @@ const ProfileScreen = ({ navigation }) => {
 
   const requestCameraPermissionAndroid = async () => {
     try {
+      console.log('Requesting camera permission...');
       const granted = await PermissionsAndroid.request(
         PermissionsAndroid.PERMISSIONS.CAMERA,
         {
           title: 'Camera Permission',
-          message:
-            'This app needs access to your camera to take profile photos.',
+          message: 'This app needs access to your camera to take profile photos.',
           buttonNeutral: 'Ask Me Later',
           buttonNegative: 'Cancel',
           buttonPositive: 'OK',
         },
       );
+      console.log('Camera permission result:', granted);
       return granted === PermissionsAndroid.RESULTS.GRANTED;
     } catch (err) {
-      console.warn(err);
+      console.error('Camera permission error:', err);
       return false;
     }
   };
 
   const requestStoragePermissionAndroid = async () => {
     try {
+      console.log('Requesting storage permission...');
       const granted = await PermissionsAndroid.request(
         PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
         {
@@ -107,12 +110,13 @@ const ProfileScreen = ({ navigation }) => {
           buttonPositive: 'OK',
         },
       );
+      console.log('Storage permission result:', granted);
       return granted === PermissionsAndroid.RESULTS.GRANTED;
     } catch (err) {
-      console.warn(err);
+      console.error('Storage permission error:', err);
       return false;
     }
-  };
+    };
 
   const handleCameraPress = () => {
     console.log('Camera button pressed!');
@@ -137,32 +141,50 @@ const ProfileScreen = ({ navigation }) => {
 
   const uploadProfilePicture = async (imageUri) => {
     try {
-      const formData = new FormData();
-      formData.append('profile_picture', {
-        uri: imageUri,
-        type: 'image/jpeg',
-        name: 'profile_picture.jpg'
-      });
+      setIsProcessingImage(true);
+      console.log('Starting profile picture upload for URI:', imageUri);
+      
+      // Validate image URI
+      if (!imageUri) {
+        throw new Error('Invalid image URI');
+      }
+      
+      // Validate image URI format
+      if (!imageUri.startsWith('file://') && !imageUri.startsWith('content://') && !imageUri.startsWith('http')) {
+        throw new Error('Invalid image URI format');
+      }
+
+      // Create data object for profile update
+      const updateData = {
+        profile_picture: {
+          uri: imageUri,
+          type: 'image/jpeg',
+          name: 'profile_picture.jpg'
+        }
+      };
 
       // Add other required fields with current values
-      if (user?.name) formData.append('name', user.name);
-      if (user?.phone) formData.append('phone', user.phone);
-      if (profile?.bio) formData.append('bio', profile.bio);
+      if (user?.name) updateData.name = user.name;
+      if (user?.phone) updateData.phone = user.phone;
+      if (profile?.bio) updateData.bio = profile.bio;
       
       // Add address fields if they exist
       if (address) {
-        if (address.address_label) formData.append('address_label', address.address_label);
-        if (address.address_line) formData.append('address_line', address.address_line);
-        if (address.city) formData.append('city', address.city);
-        if (address.taluka) formData.append('taluka', address.taluka);
-        if (address.district) formData.append('district', address.district);
-        if (address.state) formData.append('state', address.state);
-        if (address.country) formData.append('country', address.country);
-        if (address.pincode) formData.append('pincode', address.pincode);
+        if (address.address_label) updateData.address_label = address.address_label;
+        if (address.address_line) updateData.address_line = address.address_line;
+        if (address.city) updateData.city = address.city;
+        if (address.taluka) updateData.taluka = address.taluka;
+        if (address.district) updateData.district = address.district;
+        if (address.state) updateData.state = address.state;
+        if (address.country) updateData.country = address.country;
+        if (address.pincode) updateData.pincode = address.pincode;
       }
 
-      await dispatch(updateProfile(formData)).unwrap();
+      console.log('Update data prepared, dispatching updateProfile...');
+      const result = await dispatch(updateProfile(updateData)).unwrap();
+      console.log('Update profile result:', result);
       
+      console.log('Profile picture updated successfully, refreshing profile...');
       // Refresh profile data to get the new image
       dispatch(fetchProfile());
       
@@ -171,62 +193,86 @@ const ProfileScreen = ({ navigation }) => {
       setShowSuccessModal(true);
     } catch (error) {
       console.error('Upload error:', error);
-      // Show error modal
-      setErrorMessage('Failed to upload profile picture. Please try again.');
+      // Show error modal with more specific error message
+      let errorMessage = 'Failed to upload profile picture. Please try again.';
+      
+      if (error?.message) {
+        errorMessage = error.message;
+      } else if (error?.error) {
+        errorMessage = error.error;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
+      
+      setErrorMessage(errorMessage);
       setShowErrorModal(true);
+    } finally {
+      setIsProcessingImage(false);
     }
   };
 
   const openCamera = async () => {
     console.log('Opening camera...');
 
-    // Check if launchCamera is available
-    if (!launchCamera) {
-      console.error('launchCamera is not available');
-      setErrorMessage('Camera functionality is not available. Please restart the app.');
-      setShowErrorModal(true);
-      return;
-    }
-
-    // Check permissions first
-    if (Platform.OS === 'android') {
-      const hasCameraPermission = await requestCameraPermissionAndroid();
-      if (!hasCameraPermission) {
-        setErrorMessage('Camera permission is required to take photos.');
-        setShowErrorModal(true);
-        return;
-      }
-    }
-
-    const options = {
-      mediaType: 'photo',
-      quality: 0.8,
-      includeBase64: false,
-      saveToPhotos: false,
-      cameraType: 'front',
-      maxWidth: 800,
-      maxHeight: 800,
-    };
-
     try {
+      // Check permissions first
+      if (Platform.OS === 'android') {
+        const hasCameraPermission = await requestCameraPermissionAndroid();
+        if (!hasCameraPermission) {
+          setErrorMessage('Camera permission is required to take photos.');
+          setShowErrorModal(true);
+          return;
+        }
+      }
+
+      const options = {
+        mediaType: 'photo',
+        quality: 0.8,
+        includeBase64: false,
+        saveToPhotos: false,
+        cameraType: 'front',
+        maxWidth: 800,
+        maxHeight: 800,
+        presentationStyle: 'fullScreen',
+        includeExtra: false,
+      };
+
+      console.log('Launching camera with options:', options);
       const response = await launchCamera(options);
       console.log('Camera response:', response);
 
       if (response.didCancel) {
         console.log('User cancelled camera');
-      } else if (response.errorCode) {
+        return;
+      }
+
+      if (response.errorCode) {
         console.log('Camera error:', response.errorMessage);
-        setErrorMessage('Failed to open camera. Please try again.');
+        setErrorMessage(`Camera error: ${response.errorMessage}`);
         setShowErrorModal(true);
-      } else if (response.assets && response.assets[0]) {
-        const imageUri = response.assets[0].uri;
-        if (imageUri) {
-          await uploadProfilePicture(imageUri);
+        return;
+      }
+
+      if (response.assets && response.assets.length > 0) {
+        const asset = response.assets[0];
+        console.log('Camera asset:', asset);
+        
+        if (asset.uri) {
+          console.log('Processing image URI:', asset.uri);
+          await uploadProfilePicture(asset.uri);
+        } else {
+          console.error('No URI in camera response');
+          setErrorMessage('Failed to capture image. Please try again.');
+          setShowErrorModal(true);
         }
+      } else {
+        console.error('No assets in camera response');
+        setErrorMessage('No image captured. Please try again.');
+        setShowErrorModal(true);
       }
     } catch (error) {
       console.error('Camera error:', error);
-      setErrorMessage('Failed to open camera. Please try again.');
+      setErrorMessage(`Camera error: ${error.message || 'Unknown error'}`);
       setShowErrorModal(true);
     }
   };
@@ -234,52 +280,64 @@ const ProfileScreen = ({ navigation }) => {
   const openGallery = async () => {
     console.log('Opening gallery...');
 
-    // Check if launchImageLibrary is available
-    if (!launchImageLibrary) {
-      console.error('launchImageLibrary is not available');
-      setErrorMessage('Gallery functionality is not available. Please restart the app.');
-      setShowErrorModal(true);
-      return;
-    }
-
-    // Check permissions first
-    if (Platform.OS === 'android') {
-      const hasStoragePermission = await requestStoragePermissionAndroid();
-      if (!hasStoragePermission) {
-        setErrorMessage('Storage permission is required to select photos.');
-        setShowErrorModal(true);
-        return;
-      }
-    }
-
-    const options = {
-      mediaType: 'photo',
-      quality: 0.8,
-      includeBase64: false,
-      selectionLimit: 1,
-      maxWidth: 800,
-      maxHeight: 800,
-    };
-
     try {
+      // Check permissions first
+      if (Platform.OS === 'android') {
+        const hasStoragePermission = await requestStoragePermissionAndroid();
+        if (!hasStoragePermission) {
+          setErrorMessage('Storage permission is required to select photos.');
+          setShowErrorModal(true);
+          return;
+        }
+      }
+
+      const options = {
+        mediaType: 'photo',
+        quality: 0.8,
+        includeBase64: false,
+        selectionLimit: 1,
+        maxWidth: 800,
+        maxHeight: 800,
+        presentationStyle: 'fullScreen',
+        includeExtra: false,
+      };
+
+      console.log('Launching gallery with options:', options);
       const response = await launchImageLibrary(options);
       console.log('Gallery response:', response);
 
       if (response.didCancel) {
         console.log('User cancelled gallery');
-      } else if (response.errorCode) {
+        return;
+      }
+
+      if (response.errorCode) {
         console.log('Gallery error:', response.errorMessage);
-        setErrorMessage('Failed to open gallery. Please try again.');
+        setErrorMessage(`Gallery error: ${response.errorMessage}`);
         setShowErrorModal(true);
-      } else if (response.assets && response.assets[0]) {
-        const imageUri = response.assets[0].uri;
-        if (imageUri) {
-          await uploadProfilePicture(imageUri);
+        return;
+      }
+
+      if (response.assets && response.assets.length > 0) {
+        const asset = response.assets[0];
+        console.log('Gallery asset:', asset);
+        
+        if (asset.uri) {
+          console.log('Processing image URI:', asset.uri);
+          await uploadProfilePicture(asset.uri);
+        } else {
+          console.error('No URI in gallery response');
+          setErrorMessage('Failed to select image. Please try again.');
+          setShowErrorModal(true);
         }
+      } else {
+        console.error('No assets in gallery response');
+        setErrorMessage('No image selected. Please try again.');
+        setShowErrorModal(true);
       }
     } catch (error) {
       console.error('Gallery error:', error);
-      setErrorMessage('Failed to open gallery. Please try again.');
+      setErrorMessage(`Gallery error: ${error.message || 'Unknown error'}`);
       setShowErrorModal(true);
     }
   };
@@ -298,10 +356,15 @@ const ProfileScreen = ({ navigation }) => {
           )}
         </TouchableOpacity>
         <TouchableOpacity
-          style={styles.cameraIconOverlay}
+          style={[styles.cameraIconOverlay, isProcessingImage && styles.cameraIconDisabled]}
           onPress={handleCameraPress}
+          disabled={isProcessingImage}
         >
-          <Icon name="camera" size={16} color="#fff" />
+          {isProcessingImage ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <Icon name="camera" size={16} color="#fff" />
+          )}
         </TouchableOpacity>
       </View>
       <Text style={styles.userName}>{user?.name || 'Loading...'}</Text>
@@ -500,6 +563,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 2,
     borderColor: '#fff',
+  },
+  cameraIconDisabled: {
+    backgroundColor: '#95a5a6',
+    opacity: 0.7,
   },
   userName: {
     fontSize: fontSizes.xl,

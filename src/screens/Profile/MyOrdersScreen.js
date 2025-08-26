@@ -6,7 +6,7 @@ import { p } from '../../utils/Responsive';
 import { fontSizes } from '../../utils/fonts';
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchMyOrders, clearOrdersError, cancelOrder, clearCancelOrderError, submitReview, clearSubmitReviewError } from '../../redux/slices/ordersSlice';
-import { ReviewModal } from '../../components';
+import { ReviewModal, ConfirmationModal } from '../../components';
 
 const MyOrdersScreen = ({ navigation }) => {
   const dispatch = useDispatch();
@@ -14,6 +14,9 @@ const MyOrdersScreen = ({ navigation }) => {
   const { cancelOrderLoading, cancelOrderError, submitReviewLoading, submitReviewError } = useSelector(state => state.orders);
   const [refreshing, setRefreshing] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
   const [selectedOrder, setSelectedOrder] = useState(null);
 
   useEffect(() => {
@@ -57,30 +60,22 @@ const MyOrdersScreen = ({ navigation }) => {
   };
 
   const handleCancelOrder = (order) => {
-    Alert.alert(
-      'Cancel Order',
-      `Are you sure you want to cancel order ${order.order_id}? This action cannot be undone.`,
-      [
-        {
-          text: 'No, Keep Order',
-          style: 'cancel',
-        },
-        {
-          text: 'Yes, Cancel Order',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await dispatch(cancelOrder(order.order_id)).unwrap();
-              Alert.alert('Success', 'Order cancelled successfully!');
-              // Refresh orders to get updated status
-              dispatch(fetchMyOrders());
-            } catch (error) {
-              // Error is already handled by the slice
-            }
-          },
-        },
-      ]
-    );
+    setSelectedOrder(order);
+    setShowCancelModal(true);
+  };
+
+  const handleConfirmCancelOrder = async () => {
+    try {
+      await dispatch(cancelOrder(selectedOrder.order_id)).unwrap();
+      setSuccessMessage('Order cancelled successfully!');
+      setShowSuccessModal(true);
+      setShowCancelModal(false);
+      setSelectedOrder(null);
+      // Refresh orders to get updated status
+      dispatch(fetchMyOrders());
+    } catch (error) {
+      // Error is already handled by the slice
+    }
   };
 
   const handleReviewOrder = (order) => {
@@ -295,6 +290,34 @@ const MyOrdersScreen = ({ navigation }) => {
         onSubmit={handleSubmitReview}
         order={selectedOrder}
         loading={submitReviewLoading}
+      />
+
+      {/* Cancel Order Confirmation Modal */}
+      <ConfirmationModal
+        visible={showCancelModal}
+        onClose={() => {
+          setShowCancelModal(false);
+          setSelectedOrder(null);
+        }}
+        onConfirm={handleConfirmCancelOrder}
+        title="Cancel Order"
+        message={`Are you sure you want to cancel order ${selectedOrder?.order_id}? This action cannot be undone.`}
+        confirmText="Yes"
+        cancelText="No"
+        type="warning"
+        loading={cancelOrderLoading}
+      />
+
+      {/* Success Modal */}
+      <ConfirmationModal
+        visible={showSuccessModal}
+        onClose={() => setShowSuccessModal(false)}
+        onConfirm={() => setShowSuccessModal(false)}
+        title="Success!"
+        message={successMessage}
+        confirmText="OK"
+        type="success"
+        showCancel={false}
       />
     </SafeAreaView>
   );

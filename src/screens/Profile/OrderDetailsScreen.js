@@ -17,7 +17,7 @@ import { p } from '../../utils/Responsive';
 import { fontSizes } from '../../utils/fonts';
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchMyOrders, cancelOrder, clearCancelOrderError, acceptPartialOrder, clearAcceptPartialError, submitReview, clearSubmitReviewError } from '../../redux/slices/ordersSlice';
-import { ReviewModal } from '../../components';
+import { ReviewModal, ConfirmationModal } from '../../components';
 
 const OrderDetailsScreen = ({ navigation, route }) => {
   const { order: initialOrder } = route.params;
@@ -25,6 +25,12 @@ const OrderDetailsScreen = ({ navigation, route }) => {
   const [refreshing, setRefreshing] = useState(false);
   const [order, setOrder] = useState(initialOrder);
   const [showReviewModal, setShowReviewModal] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [showAcceptPartialModal, setShowAcceptPartialModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showUPIModal, setShowUPIModal] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [upiLink, setUpiLink] = useState('');
   const { cancelOrderLoading, cancelOrderError, acceptPartialLoading, acceptPartialError, submitReviewLoading, submitReviewError } = useSelector(state => state.orders);
 
   useEffect(() => {
@@ -73,95 +79,67 @@ const OrderDetailsScreen = ({ navigation, route }) => {
   };
 
   const handleCancelOrder = () => {
-    // Show confirmation dialog
-    Alert.alert(
-      'Cancel Order',
-      'Are you sure you want to cancel this order? This action cannot be undone.',
-      [
-        {
-          text: 'No, Keep Order',
-          style: 'cancel',
-        },
-        {
-          text: 'Yes, Cancel Order',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await dispatch(cancelOrder(order.order_id)).unwrap();
-              Alert.alert('Success', 'Order cancelled successfully!');
-              // Update local order state
-              setOrder(prevOrder => ({
-                ...prevOrder,
-                is_canceled: true,
-                delivery_status: 'cancelled'
-              }));
-              // Navigate back to orders screen
-              navigation.goBack();
-            } catch (error) {
-              // Error is already handled by the slice
-            }
-          },
-        },
-      ]
-    );
+    setShowCancelModal(true);
   };
 
-  const handleAcceptPartialOrder = async () => {
-    Alert.alert(
-      'Accept Partial Order',
-      'Are you sure you want to accept this partial order? You will receive a UPI payment link.',
-      [
-        {
-          text: 'No, Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Yes, Accept',
-          style: 'default',
-          onPress: async () => {
-            try {
-              const result = await dispatch(acceptPartialOrder(order.order_id)).unwrap();
-              const upiLink = result.data?.upi_link;
-              
-              if (upiLink) {
-                Alert.alert(
-                  'Partial Order Accepted! 🎉',
-                  'Your partial order has been accepted successfully! You can now proceed with payment using the UPI link.',
-                  [
-                    {
-                      text: 'Open UPI Link',
-                      style: 'default',
-                      onPress: () => {
-                        Linking.openURL(upiLink);
-                      },
-                    },
-                    {
-                      text: 'Copy Link',
-                      style: 'default',
-                      onPress: () => {
-                        // You can add clipboard functionality here if needed
-                        Alert.alert('Info', 'UPI Link copied to clipboard');
-                      },
-                    },
-                    {
-                      text: 'OK',
-                      style: 'default',
-                    },
-                  ]
-                );
-              } else {
-                Alert.alert('Success', 'Partial order accepted successfully!');
-              }
-              
-              // Refresh order details
-              handleRefresh();
-            } catch (error) {
-              // Error is already handled by the slice
-            }
-          },
-        },
-      ]
-    );
+  const handleConfirmCancelOrder = async () => {
+    try {
+      await dispatch(cancelOrder(order.order_id)).unwrap();
+      setSuccessMessage('Order cancelled successfully!');
+      setShowSuccessModal(true);
+      setShowCancelModal(false);
+      
+      // Update local order state
+      setOrder(prevOrder => ({
+        ...prevOrder,
+        is_canceled: true,
+        delivery_status: 'cancelled'
+      }));
+      
+      // Navigate back to orders screen after a short delay
+      setTimeout(() => {
+        navigation.goBack();
+      }, 2000);
+    } catch (error) {
+      // Error is already handled by the slice
+    }
+  };
+
+  const handleAcceptPartialOrder = () => {
+    setShowAcceptPartialModal(true);
+  };
+
+  const handleConfirmAcceptPartialOrder = async () => {
+    try {
+      const result = await dispatch(acceptPartialOrder(order.order_id)).unwrap();
+      const upiLinkResult = result.data?.upi_link;
+      
+      if (upiLinkResult) {
+        setUpiLink(upiLinkResult);
+        setShowUPIModal(true);
+      } else {
+        setSuccessMessage('Partial order accepted successfully!');
+        setShowSuccessModal(true);
+      }
+      
+      setShowAcceptPartialModal(false);
+      
+      // Refresh order details
+      handleRefresh();
+    } catch (error) {
+      // Error is already handled by the slice
+    }
+  };
+
+  const handleOpenUPILink = () => {
+    if (upiLink) {
+      Linking.openURL(upiLink);
+    }
+  };
+
+  const handleCopyUPILink = () => {
+    // You can add clipboard functionality here if needed
+    Alert.alert('Info', 'UPI Link copied to clipboard');
   };
 
   const handleReviewOrder = () => {
@@ -484,6 +462,58 @@ const OrderDetailsScreen = ({ navigation, route }) => {
         onSubmit={handleSubmitReview}
         order={order}
         loading={submitReviewLoading}
+      />
+
+      {/* Cancel Order Confirmation Modal */}
+      <ConfirmationModal
+        visible={showCancelModal}
+        onClose={() => setShowCancelModal(false)}
+        onConfirm={handleConfirmCancelOrder}
+        title="Cancel Order"
+        message="Are you sure you want to cancel this order? This action cannot be undone."
+        confirmText="Yes"
+        cancelText="No"
+        type="warning"
+        loading={cancelOrderLoading}
+      />
+
+      {/* Accept Partial Order Confirmation Modal */}
+      <ConfirmationModal
+        visible={showAcceptPartialModal}
+        onClose={() => setShowAcceptPartialModal(false)}
+        onConfirm={handleConfirmAcceptPartialOrder}
+        title="Accept Partial Order"
+        message="Are you sure you want to accept this partial order? You will receive a UPI payment link."
+        confirmText="Yes, Accept"
+        cancelText="No, Cancel"
+        type="info"
+        loading={acceptPartialLoading}
+      />
+
+      {/* UPI Link Modal */}
+      <ConfirmationModal
+        visible={showUPIModal}
+        onClose={() => setShowUPIModal(false)}
+        onConfirm={handleOpenUPILink}
+        title="Partial Order Accepted! 🎉"
+        message="Your partial order has been accepted successfully! You can now proceed with payment using the UPI link."
+        confirmText="Open UPI Link"
+        cancelText="Copy Link"
+        type="success"
+        showCancel={true}
+        onCancel={handleCopyUPILink}
+      />
+
+      {/* Success Modal */}
+      <ConfirmationModal
+        visible={showSuccessModal}
+        onClose={() => setShowSuccessModal(false)}
+        onConfirm={() => setShowSuccessModal(false)}
+        title="Success!"
+        message={successMessage}
+        confirmText="OK"
+        type="success"
+        showCancel={false}
       />
     </SafeAreaView>
   );

@@ -19,41 +19,149 @@ export const updateProfile = createAsyncThunk(
   'profile/updateProfile',
   async (profileData, { rejectWithValue }) => {
     try {
-      // Create FormData for multipart/form-data
+      console.log('updateProfile called with data:', profileData);
+      
+      // Try using React Native's FormData first, which should work better
       const formData = new FormData();
       
       // Add text fields
-      if (profileData.name) formData.append('name', profileData.name);
-      if (profileData.phone) formData.append('phone', profileData.phone);
-      if (profileData.bio) formData.append('bio', profileData.bio);
+      if (profileData.name) {
+        formData.append('name', profileData.name);
+        console.log('Added name:', profileData.name);
+      }
+      if (profileData.phone) {
+        formData.append('phone', profileData.phone);
+        console.log('Added phone:', profileData.phone);
+      }
+      if (profileData.bio) {
+        formData.append('bio', profileData.bio);
+        console.log('Added bio:', profileData.bio);
+      }
       
       // Add address fields
-      if (profileData.address_label) formData.append('address_label', profileData.address_label);
-      if (profileData.address_line) formData.append('address_line', profileData.address_line);
-      if (profileData.city) formData.append('city', profileData.city);
-      if (profileData.taluka) formData.append('taluka', profileData.taluka);
-      if (profileData.district) formData.append('district', profileData.district);
-      if (profileData.state) formData.append('state', profileData.state);
-      if (profileData.country) formData.append('country', profileData.country);
-      if (profileData.pincode) formData.append('pincode', profileData.pincode);
+      if (profileData.address_label) {
+        formData.append('address_label', profileData.address_label);
+        console.log('Added address_label:', profileData.address_label);
+      }
+      if (profileData.address_line) {
+        formData.append('address_line', profileData.address_line);
+        console.log('Added address_line:', profileData.address_line);
+      }
+      if (profileData.city) {
+        formData.append('city', profileData.city);
+        console.log('Added city:', profileData.city);
+      }
+      if (profileData.taluka) {
+        formData.append('taluka', profileData.taluka);
+        console.log('Added taluka:', profileData.taluka);
+      }
+      if (profileData.district) {
+        formData.append('district', profileData.district);
+        console.log('Added district:', profileData.district);
+      }
+      if (profileData.state) {
+        formData.append('state', profileData.state);
+        console.log('Added state:', profileData.state);
+      }
+      if (profileData.country) {
+        formData.append('country', profileData.country);
+        console.log('Added country:', profileData.country);
+      }
+      if (profileData.pincode) {
+        formData.append('pincode', profileData.pincode);
+        console.log('Added pincode:', profileData.pincode);
+      }
       
       // Add profile picture if exists
       if (profileData.profile_picture) {
-        formData.append('profile_picture', {
-          uri: profileData.profile_picture,
-          type: 'image/jpeg',
-          name: 'profile_picture.jpg'
-        });
+        console.log('Adding profile picture to form data:', profileData.profile_picture);
+        
+        // Get the image URI and create a proper file object
+        let imageUri = profileData.profile_picture;
+        let imageType = 'image/jpeg';
+        let imageName = 'profile_picture.jpg';
+        
+        if (typeof profileData.profile_picture === 'object' && profileData.profile_picture.uri) {
+          imageUri = profileData.profile_picture.uri;
+          imageType = profileData.profile_picture.type || 'image/jpeg';
+          imageName = profileData.profile_picture.name || 'profile_picture.jpg';
+        }
+        
+        // Create a file object that FormData can handle
+        const imageFile = {
+          uri: imageUri,
+          type: imageType,
+          name: imageName,
+        };
+        
+        formData.append('profile_picture', imageFile);
+        console.log('Added profile picture file:', imageFile);
       }
 
+      console.log('FormData created with entries:');
+      console.log('FormData keys count:', Object.keys(formData).length);
+      console.log('API base URL:', api.defaults.baseURL);
+      console.log('Full request URL will be:', `${api.defaults.baseURL}/profile`);
+      
+      // Make the POST request to /profile with multipart/form-data
+      console.log('Making POST request to /profile with FormData...');
       const response = await api.post('/profile', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
+      
+      console.log('Profile update successful!');
+      console.log('Response status:', response.status);
+      console.log('Response data:', response.data);
+      
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data || 'Failed to update profile');
+      console.error('updateProfile error:', error);
+      console.error('Error response:', error.response);
+      console.error('Error message:', error.message);
+      console.error('Error status:', error.response?.status);
+      console.error('Error statusText:', error.response?.statusText);
+      
+      // Log more detailed error information for validation errors
+      if (error.response?.status === 422) {
+        console.error('Validation error details:', error.response.data);
+        console.error('Validation errors:', error.response.data.errors);
+        console.error('Validation message:', error.response.data.message);
+      }
+      
+      let errorMessage = 'Failed to update profile';
+      
+      // Check for network errors
+      if (error.code === 'NETWORK_ERROR' || error.message?.includes('Network Error')) {
+        errorMessage = 'Network error. Please check your internet connection.';
+      } else if (error.response?.status === 401) {
+        errorMessage = 'Authentication failed. Please login again.';
+      } else if (error.response?.status === 403) {
+        errorMessage = 'Access denied. You do not have permission to update profile.';
+      } else if (error.response?.status === 422) {
+        // Provide more specific validation error message
+        if (error.response.data?.message) {
+          errorMessage = `Validation error: ${error.response.data.message}`;
+        } else if (error.response.data?.errors) {
+          const errorDetails = Object.entries(error.response.data.errors)
+            .map(([field, messages]) => `${field}: ${messages.join(', ')}`)
+            .join('; ');
+          errorMessage = `Validation errors: ${errorDetails}`;
+        } else {
+          errorMessage = 'Validation error. Please check your input.';
+        }
+      } else if (error.response?.status >= 500) {
+        errorMessage = 'Server error. Please try again later.';
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      return rejectWithValue(errorMessage);
     }
   }
 );
