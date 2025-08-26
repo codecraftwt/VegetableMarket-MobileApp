@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   Image,
   Alert,
+  Linking,
 } from 'react-native';
 import CommonHeader from '../../components/CommonHeader';
 import Icon from 'react-native-vector-icons/FontAwesome';
@@ -45,6 +46,24 @@ const FarmerProfileScreen = ({ navigation, route }) => {
 
   const handleNotificationPress = () => {
     console.log('Farmer profile notification pressed');
+  };
+
+  const handlePhonePress = () => {
+    if (farmerProfile.phone) {
+      const phoneNumber = `tel:${farmerProfile.phone}`;
+      Linking.canOpenURL(phoneNumber)
+        .then((supported) => {
+          if (supported) {
+            return Linking.openURL(phoneNumber);
+          } else {
+            Alert.alert('Error', 'Phone dialer not available on this device');
+          }
+        })
+        .catch((err) => {
+          console.error('Error opening phone dialer:', err);
+          Alert.alert('Error', 'Failed to open phone dialer');
+        });
+    }
   };
 
   const StarRating = ({ stars }) => {
@@ -169,6 +188,7 @@ const FarmerProfileScreen = ({ navigation, route }) => {
               <SkeletonLoader type="text" width="60%" height={p(20)} style={styles.skeletonLine} />
               <SkeletonLoader type="text" width="50%" height={p(16)} style={styles.skeletonLine} />
               <SkeletonLoader type="text" width="40%" height={p(16)} style={styles.skeletonLine} />
+              <SkeletonLoader type="text" width="35%" height={p(16)} style={styles.skeletonLine} />
               <View style={styles.ratingContainer}>
                 <View style={{ flexDirection: 'row', marginBottom: p(5) }}>
                   {[1,2,3,4,5].map(i => (
@@ -297,7 +317,9 @@ const FarmerProfileScreen = ({ navigation, route }) => {
           <View style={styles.profileInfo}>
             <Text style={styles.farmerName}>{farmerProfile.name}</Text>
             <Text style={styles.farmerEmail}>{farmerProfile.email}</Text>
-            <Text style={styles.farmerPhone}>{farmerProfile.phone}</Text>
+            <TouchableOpacity onPress={handlePhonePress}>
+              <Text style={styles.farmerPhone}>{farmerProfile.phone}</Text>
+            </TouchableOpacity>
             
             {/* Rating */}
             <View style={styles.ratingContainer}>

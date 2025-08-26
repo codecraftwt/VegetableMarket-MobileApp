@@ -8,6 +8,8 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
+  Linking,
+  Alert,
 } from 'react-native';
 import SkeletonLoader from '../../components/SkeletonLoader';
 import CommonHeader from '../../components/CommonHeader';
@@ -196,6 +198,24 @@ const ProductDetailScreen = ({ navigation, route }) => {
     return product?.description || 'No description available for this product.';
   };
 
+  const handlePhonePress = () => {
+    if (product?.farmer?.phone) {
+      const phoneNumber = `tel:${product.farmer.phone}`;
+      Linking.canOpenURL(phoneNumber)
+        .then((supported) => {
+          if (supported) {
+            return Linking.openURL(phoneNumber);
+          } else {
+            Alert.alert('Error', 'Phone dialer not available on this device');
+          }
+        })
+        .catch((err) => {
+          console.error('Error opening phone dialer:', err);
+          Alert.alert('Error', 'Failed to open phone dialer');
+        });
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#019a34" />
@@ -336,7 +356,9 @@ const ProductDetailScreen = ({ navigation, route }) => {
               {product.farmer.phone && (
                 <View style={styles.farmerInfo}>
                   <Icon name="phone" size={16} color="#019a34" style={styles.farmerIcon} />
-                  <Text style={styles.farmerPhone}>{product.farmer.phone}</Text>
+                  <TouchableOpacity onPress={handlePhonePress}>
+                    <Text style={styles.farmerPhone}>{product.farmer.phone}</Text>
+                  </TouchableOpacity>
                 </View>
               )}
             </View>
