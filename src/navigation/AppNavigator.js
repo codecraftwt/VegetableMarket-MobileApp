@@ -15,6 +15,7 @@ import CartScreen from '../screens/Cart/CartScreen';
 import NotificationScreen from '../screens/Notification/NotificationScreen';
 import CategoryProductsScreen from '../screens/Category/CategoryProductsScreen';
 import OrderDetailsScreen from '../screens/Profile/OrderDetailsScreen';
+import FarmerProfileScreen from '../screens/Profile/FarmerProfileScreen';
 import { Easing } from 'react-native';
 
 const Stack = createStackNavigator();
@@ -81,6 +82,7 @@ const AppNavigator = () => {
     { name: 'Notification', component: NotificationScreen, transition: slideFromRight },
     { name: 'CategoryProducts', component: CategoryProductsScreen, transition: slideFromRight },
     { name: 'OrderDetails', component: OrderDetailsScreen, transition: slideFromRight },
+    { name: 'FarmerProfile', component: FarmerProfileScreen, transition: slideFromRight },
   ];
 
   return (

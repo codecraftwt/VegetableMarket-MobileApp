@@ -56,8 +56,6 @@ const CartScreen = ({ navigation }) => {
     React.useCallback(() => {
       console.log('CartScreen: Screen focused, fetching cart...');
       dispatch(fetchCart());
-      
-      // Clear any previous errors when screen comes into focus
       dispatch(clearCartErrors());
       
       // Reset local state to ensure fresh data
@@ -69,7 +67,6 @@ const CartScreen = ({ navigation }) => {
       setIsInitialized(false); // Reset initialization flag
     }, [dispatch])
   );
-
   // Manual refresh function for when we need to sync with server
   const refreshCart = () => {
     console.log('CartScreen: Manually refreshing cart...');
@@ -290,10 +287,15 @@ const CartScreen = ({ navigation }) => {
   // Cart Item Component
   const CartItem = ({ item }) => {
     // Helper function to get product image
-    // Note: Cart API doesn't provide image data, so we use fallback
     const getProductImage = () => {
-      // For now, use fallback image since cart API doesn't provide images
-      // In a real app, you might want to fetch product details separately or modify the cart API
+      // Check if item has veg_images and if it's a valid URL
+      if (item.veg_images && item.veg_images.length > 0 && item.veg_images[0]) {
+        // If it's a URL string, return the URI object
+        if (typeof item.veg_images[0] === 'string' && item.veg_images[0].startsWith('http')) {
+          return { uri: item.veg_images[0] };
+        }
+      }
+      // Fallback to local image if no valid image URL
       return require('../../assets/vegebg.png');
     };
 

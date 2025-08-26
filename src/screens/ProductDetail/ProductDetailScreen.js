@@ -249,6 +249,30 @@ const ProductDetailScreen = ({ navigation, route }) => {
             </Text>
           </View>
           
+          {/* Farmer Information */}
+          {product?.farmer && (
+            <View style={styles.farmerSection}>
+              <Text style={styles.farmerTitle}>Farmer Information</Text>
+              <TouchableOpacity 
+                style={styles.farmerInfo}
+                onPress={() => navigation.navigate('FarmerProfile', { 
+                  farmerId: product.farmer.id, 
+                  farmerName: product.farmer.name 
+                })}
+              >
+                <Icon name="user" size={16} color="#019a34" style={styles.farmerIcon} />
+                <Text style={styles.farmerName}>{product.farmer.name}</Text>
+                <Icon name="chevron-right" size={14} color="#019a34" style={styles.farmerChevron} />
+              </TouchableOpacity>
+              {product.farmer.phone && (
+                <View style={styles.farmerInfo}>
+                  <Icon name="phone" size={16} color="#019a34" style={styles.farmerIcon} />
+                  <Text style={styles.farmerPhone}>{product.farmer.phone}</Text>
+                </View>
+              )}
+            </View>
+          )}
+          
           {/* Related Products */}
           <RelatedProducts />
         </View>
@@ -402,6 +426,42 @@ const styles = StyleSheet.create({
   readMoreText: {
     color: '#019a34',
     fontFamily: 'Poppins-SemiBold',
+  },
+  
+  // Farmer Section
+  farmerSection: {
+    marginBottom: p(25),
+    backgroundColor: '#f0f8f0',
+    borderRadius: p(15),
+    padding: p(15),
+  },
+  farmerTitle: {
+    fontSize: fontSizes.lg,
+    color: '#333',
+    marginBottom: p(10),
+    fontFamily: 'Montserrat-Bold',
+  },
+  farmerInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: p(8),
+  },
+  farmerIcon: {
+    marginRight: p(10),
+  },
+  farmerName: {
+    fontSize: fontSizes.base,
+    color: '#019a34',
+    fontFamily: 'Poppins-Bold',
+    flex: 1,
+  },
+  farmerChevron: {
+    marginLeft: p(10),
+  },
+  farmerPhone: {
+    fontSize: fontSizes.base,
+    color: '#666',
+    fontFamily: 'Poppins-Regular',
   },
   
   // Related Products Section

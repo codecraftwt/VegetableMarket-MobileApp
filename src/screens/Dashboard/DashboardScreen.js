@@ -17,6 +17,7 @@ import { fontSizes } from '../../utils/fonts';
 import CommonHeader from '../../components/CommonHeader';
 import ProductCard from '../../components/ProductCard';
 import CategoryItem from '../../components/CategoryItem';
+import PromoBanner from '../../components/PromoBanner';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchVegetables, fetchVegetableCategories } from '../../redux/slices/vegetablesSlice';
 import { addToCart } from '../../redux/slices/cartSlice';
@@ -27,7 +28,6 @@ const DashboardScreen = ({ navigation }) => {
   const dispatch = useDispatch();
   const { vegetables, categories, loading, categoriesLoading } = useSelector(state => state.vegetables);
   const { addError } = useSelector(state => state.cart);
-  const [currentSlide, setCurrentSlide] = useState(0);
   
   // Modal states
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -66,35 +66,7 @@ const DashboardScreen = ({ navigation }) => {
     </View>
   );
 
-  // Promotional Banner Component
-  const PromoBanner = () => (
-    <View style={styles.promoContainer}>
-      <View style={styles.promoContent}>
-        <View style={styles.promoTextContainer}>
-          <Text style={styles.promoTitle}>
-            Get 40% discount on your first order from app
-          </Text>
-          <TouchableOpacity style={styles.shopNowButton}>
-            <Text style={styles.shopNowText}>Shop Now</Text>
-          </TouchableOpacity>
-        </View>
-        <View style={styles.promoImageContainer}>
-          <Image
-            source={require('../../assets/vegebg1.png')}
-            style={styles.promoImage}
-            resizeMode="cover"
-          />
-        </View>
-      </View>
-      
-      {/* Carousel Dots */}
-      <View style={styles.carouselDots}>
-        <View style={[styles.dot, styles.activeDot]} />
-        <View style={styles.dot} />
-        <View style={styles.dot} />
-      </View>
-    </View>
-  );
+
 
   // Categories Component
   const Categories = () => {
@@ -230,7 +202,7 @@ const DashboardScreen = ({ navigation }) => {
       <SearchBar />
       
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <PromoBanner />
+        <PromoBanner navigation={navigation} />
         <Categories />
         <PopularItems />
       </ScrollView>
@@ -299,66 +271,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: p(20),
   },
-  // Promo Banner Styles
-  promoContainer: {
-    backgroundColor: '#019a34',
-    borderRadius: p(20),
-    padding: p(20),
-    marginBottom: p(0),
-    marginVertical: p(10),
-  },
-  promoContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  promoTextContainer: {
-    flex: 1,
-    marginRight: p(15),
-  },
-  promoTitle: {
-    color: '#fff',
-    fontSize: fontSizes.lg,
-    lineHeight: p(24),
-    marginBottom: p(15),
-    fontFamily: 'Montserrat-Bold',
-  },
-  shopNowButton: {
-    backgroundColor: '#fff',
-    paddingHorizontal: p(20),
-    paddingVertical: p(10),
-    borderRadius: p(20),
-    alignSelf: 'flex-start',
-  },
-  shopNowText: {
-    color: '#019a34',
-    fontSize: fontSizes.sm,
-    fontFamily: 'Poppins-Bold',
-  },
-  promoImageContainer: {
-    width: p(100),
-    height: p(60),
-    borderRadius: p(15),
-    overflow: 'hidden',
-  },
-  promoImage: {
-    width: '100%',
-    height: '100%',
-  },
-  carouselDots: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: p(15),
-    gap: p(8),
-  },
-  dot: {
-    width: p(8),
-    height: p(8),
-    borderRadius: p(4),
-    backgroundColor: 'rgba(255, 255, 255, 0.5)',
-  },
-  activeDot: {
-    backgroundColor: '#fff',
-  },
+
   // Categories Styles
   categoriesContainer: {
     marginBottom: p(0),

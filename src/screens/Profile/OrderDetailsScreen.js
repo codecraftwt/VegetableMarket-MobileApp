@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   Alert,
   Linking,
+  Image,
 } from 'react-native';
 import CommonHeader from '../../components/CommonHeader';
 import Icon from 'react-native-vector-icons/FontAwesome';
@@ -55,7 +56,6 @@ const OrderDetailsScreen = ({ navigation, route }) => {
     setRefreshing(true);
     try {
       const result = await dispatch(fetchMyOrders()).unwrap();
-      // Find the updated order from the refreshed list
       const updatedOrders = result.data || [];
       const updatedOrder = updatedOrders.find(o => o.order_id === order.order_id);
       if (updatedOrder) {
@@ -341,7 +341,15 @@ const OrderDetailsScreen = ({ navigation, route }) => {
             ]}>
               <View style={styles.itemLeft}>
                 <View style={styles.itemImageContainer}>
-                  <Icon name="image" size={24} color="#ccc" />
+                  {item.images && item.images.length > 0 ? (
+                    <Image 
+                      source={{ uri: item.images[0] }}
+                      style={styles.itemImage}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <Icon name="image" size={24} color="#ccc" />
+                  )}
                 </View>
                 <View style={styles.itemDetails}>
                   <Text style={styles.itemName}>{item.vegetable_name}</Text>
@@ -659,6 +667,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: p(15),
+    overflow: 'hidden',
+  },
+  itemImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: p(30),
   },
   itemDetails: {
     flex: 1,

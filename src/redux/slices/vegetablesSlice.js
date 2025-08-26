@@ -29,13 +29,30 @@ export const fetchVegetableCategories = createAsyncThunk(
   }
 );
 
+// Async thunk for fetching farmer profile
+export const fetchFarmerProfile = createAsyncThunk(
+  'vegetables/fetchFarmerProfile',
+  async (farmerId, { rejectWithValue }) => {
+    try {
+      const response = await api.get(`/farmer-profile/${farmerId}`);
+      return response.data;
+    } catch (error) {
+      console.warn('Failed to fetch farmer profile:', error);
+      return rejectWithValue(error.response?.data || 'Failed to fetch farmer profile');
+    }
+  }
+);
+
 const initialState = {
   vegetables: [],
   categories: [],
+  farmerProfile: null,
   loading: false,
   categoriesLoading: false,
+  farmerProfileLoading: false,
   error: null,
   categoriesError: null,
+  farmerProfileError: null,
 };
 
 const vegetablesSlice = createSlice({
@@ -57,6 +74,11 @@ const vegetablesSlice = createSlice({
     clearErrors: (state) => {
       state.error = null;
       state.categoriesError = null;
+      state.farmerProfileError = null;
+    },
+    clearFarmerProfile: (state) => {
+      state.farmerProfile = null;
+      state.farmerProfileError = null;
     },
   },
   extraReducers: (builder) => {
@@ -91,16 +113,35 @@ const vegetablesSlice = createSlice({
         state.categoriesLoading = false;
         state.categoriesError = action.payload;
       });
+
+    // Fetch Farmer Profile
+    builder
+      .addCase(fetchFarmerProfile.pending, (state) => {
+        state.farmerProfileLoading = true;
+        state.farmerProfileError = null;
+      })
+      .addCase(fetchFarmerProfile.fulfilled, (state, action) => {
+        state.farmerProfileLoading = false;
+        state.farmerProfile = action.payload.data || null;
+        state.farmerProfileError = null;
+      })
+      .addCase(fetchFarmerProfile.rejected, (state, action) => {
+        state.farmerProfileLoading = false;
+        state.farmerProfileError = action.payload;
+      });
   },
 });
 
 // Selectors
 export const selectVegetables = (state) => state.vegetables.vegetables;
 export const selectCategories = (state) => state.vegetables.categories;
+export const selectFarmerProfile = (state) => state.vegetables.farmerProfile;
 export const selectVegetablesLoading = (state) => state.vegetables.loading;
 export const selectCategoriesLoading = (state) => state.vegetables.categoriesLoading;
+export const selectFarmerProfileLoading = (state) => state.vegetables.farmerProfileLoading;
 export const selectVegetablesError = (state) => state.vegetables.error;
 export const selectCategoriesError = (state) => state.vegetables.categoriesError;
+export const selectFarmerProfileError = (state) => state.vegetables.farmerProfileError;
 
 // Helper selector for popular items (first 4)
 export const selectPopularItems = (state) => state.vegetables.vegetables.slice(0, 4);
@@ -114,5 +155,5 @@ export const selectProductsByCategory = (state, categoryId) => {
   );
 };
 
-export const { clearVegetables, setVegetables, setCategories, clearErrors } = vegetablesSlice.actions;
+export const { clearVegetables, setVegetables, setCategories, clearErrors, clearFarmerProfile } = vegetablesSlice.actions;
 export default vegetablesSlice.reducer;
