@@ -1,26 +1,27 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import ProfileScreen from '../screens/customer/Profile/ProfileScreen';
-import DashboardScreen from '../screens/customer/Dashboard/DashboardScreen';
-import CartScreen from '../screens/customer/Cart/CartScreen';
-import BucketScreen from '../screens/customer/Bucket/BucketScreen';
+
 import Icon from 'react-native-vector-icons/Ionicons';
+import FarmerProfileScreen from '../screens/farmer/Profile/FarmerProfileScreen';
+import FarmerDashboardScreen from '../screens/farmer/Dashboard/FarmerDashboardScreen';
+import FarmerBucketScreen from '../screens/farmer/Vegetables/FarmerBucketScreen';
+import FarmerOrdersScreen from '../screens/farmer/Orders/FarmerOrdersScreen';
 
 const Tab = createBottomTabNavigator();
 
-const BottomTabNavigator = () => {
+const FarmerBottomTabNavigator = () => {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         tabBarIcon: ({ focused, color, size }) => {
           let iconName;
           
-          if (route.name === 'Home') {
+          if (route.name === 'Dashboard') {
             iconName = focused ? 'home' : 'home-outline';
-          } else if (route.name === 'Bucket') {
-            iconName = focused ? 'heart' : 'heart-outline';
-          } else if (route.name === 'Cart') {
-            iconName = focused ? 'cart' : 'cart-outline';
+          } else if (route.name === 'Vegetables') {
+            iconName = focused ? 'leaf' : 'leaf-outline';
+          } else if (route.name === 'Orders') {
+            iconName = focused ? 'list' : 'list-outline';
           } else if (route.name === 'Profile') {
             iconName = focused ? 'person' : 'person-outline';
           }
@@ -46,29 +47,29 @@ const BottomTabNavigator = () => {
       })}
     >
       <Tab.Screen 
-        name="Home" 
-        component={DashboardScreen}
+        name="Dashboard" 
+        component={FarmerDashboardScreen}
         options={{
-          tabBarLabel: 'Home',
+          tabBarLabel: 'Dashboard',
         }}
       />
       <Tab.Screen 
-        name="Bucket" 
-        component={BucketScreen}
+        name="Vegetables" 
+        component={FarmerBucketScreen}
         options={{
-          tabBarLabel: 'Bucket',
+          tabBarLabel: 'Vegetables',
         }}
       />
       <Tab.Screen 
-        name="Cart" 
-        component={CartScreen}
+        name="Orders" 
+        component={FarmerOrdersScreen}
         options={{
-          tabBarLabel: 'Cart',
+          tabBarLabel: 'Orders',
         }}
       />
       <Tab.Screen 
         name="Profile" 
-        component={ProfileScreen}
+        component={FarmerProfileScreen}
         options={{
           tabBarLabel: 'Profile',
         }}
@@ -77,4 +78,4 @@ const BottomTabNavigator = () => {
   );
 };
 
-export default BottomTabNavigator;
+export default FarmerBottomTabNavigator;

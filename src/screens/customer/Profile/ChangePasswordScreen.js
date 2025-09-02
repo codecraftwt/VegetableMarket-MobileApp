@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, StatusBar, ScrollView, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
-import CommonHeader from '../../components/CommonHeader';
-import { SuccessModal, ErrorModal } from '../../components';
-import { p } from '../../utils/Responsive';
-import { fontSizes } from '../../utils/fonts';
+import CommonHeader from '../../../components/CommonHeader';
+import { SuccessModal, ErrorModal } from '../../../components';
+import { p } from '../../../utils/Responsive';
+import { fontSizes } from '../../../utils/fonts';
 import { useDispatch, useSelector } from 'react-redux';
-import { changePassword } from '../../redux/slices/profileSlice';
+import { changePassword } from '../../../redux/slices/profileSlice';
 
 const ChangePasswordScreen = ({ navigation }) => {
   const dispatch = useDispatch();

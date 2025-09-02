@@ -2,21 +2,31 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import BottomTabNavigator from './BottomTabNavigator';
+import FarmerBottomTabNavigator from './FarmerBottomTabNavigator';
 import SplashScreen from '../screens/auth/SplashScreen';
-import DashboardScreen from '../screens/Dashboard/DashboardScreen';
+import DashboardScreen from '../screens/customer/Dashboard/DashboardScreen';
 import LoginScreen from '../screens/auth/LoginScreen';
 import RegisterScreen from '../screens/auth/RegisterScreen';
-import ProfileEditScreen from '../screens/Profile/ProfileEditScreen';
-import ChangePasswordScreen from '../screens/Profile/ChangePasswordScreen';
-import MyOrdersScreen from '../screens/Profile/MyOrdersScreen';
-import ProductDetailScreen from '../screens/ProductDetail/ProductDetailScreen';
-import CheckoutScreen from '../screens/Checkout/CheckoutScreen';
-import CartScreen from '../screens/Cart/CartScreen';
+import ProfileEditScreen from '../screens/customer/Profile/ProfileEditScreen';
+import ChangePasswordScreen from '../screens/customer/Profile/ChangePasswordScreen';
+import MyOrdersScreen from '../screens/customer/Profile/MyOrdersScreen';
+import ProductDetailScreen from '../screens/customer/ProductDetail/ProductDetailScreen';
+import CheckoutScreen from '../screens/customer/Checkout/CheckoutScreen';
+import CartScreen from '../screens/customer/Cart/CartScreen';
 import NotificationScreen from '../screens/Notification/NotificationScreen';
-import CategoryProductsScreen from '../screens/Category/CategoryProductsScreen';
-import OrderDetailsScreen from '../screens/Profile/OrderDetailsScreen';
-import FarmerProfileScreen from '../screens/Profile/FarmerProfileScreen';
+import CategoryProductsScreen from '../screens/customer/Category/CategoryProductsScreen';
+import OrderDetailsScreen from '../screens/customer/Profile/OrderDetailsScreen';
+import FarmerProfileScreen from '../screens/customer/Profile/FarmerProfileScreen';
+import MyFarmsScreen from '../screens/farmer/farm/MyFarmsScreen';
+import SalesReportScreen from '../screens/farmer/Sales/SalesReportScreen';
 import { Easing } from 'react-native';
+import AddFarmScreen from '../screens/farmer/farm/AddFarmScreen';
+import FarmDetailsScreen from '../screens/farmer/farm/FarmDetailsScreen';
+import EditFarmScreen from '../screens/farmer/farm/EditFarmScreen';
+import VegetableDetailsScreen from '../screens/farmer/Vegetables/VegetableDetailsScreen';
+import AddVegetableScreen from '../screens/farmer/Vegetables/AddVegetableScreen';
+import EditVegetableScreen from '../screens/farmer/Vegetables/EditVegetableScreen';
+import FarmerOrderDetailsScreen from '../screens/farmer/Orders/OrderDetailsScreen';
 
 const Stack = createStackNavigator();
 
@@ -68,6 +78,7 @@ const AppNavigator = () => {
     { name: 'Login', component: LoginScreen, transition: slideFromRight },
     { name: 'Register', component: RegisterScreen, transition: slideFromRight },
     { name: 'App', component: BottomTabNavigator, transition: slideFromRight },
+    { name: 'FarmerApp', component: FarmerBottomTabNavigator, transition: slideFromRight },
     {
       name: 'Dashboard',
       component: DashboardScreen,
@@ -83,6 +94,15 @@ const AppNavigator = () => {
     { name: 'CategoryProducts', component: CategoryProductsScreen, transition: slideFromRight },
     { name: 'OrderDetails', component: OrderDetailsScreen, transition: slideFromRight },
     { name: 'FarmerProfile', component: FarmerProfileScreen, transition: slideFromRight },
+    { name: 'MyFarms', component: MyFarmsScreen, transition: slideFromRight },
+    { name: 'SalesReport', component: SalesReportScreen, transition: slideFromRight },
+    { name: 'AddFarm', component: AddFarmScreen, transition: slideFromRight },
+    { name: 'FarmDetails', component: FarmDetailsScreen, transition: slideFromRight },
+    { name: 'EditFarm', component: EditFarmScreen, transition: slideFromRight },
+    { name: 'VegetableDetails', component: VegetableDetailsScreen, transition: slideFromRight },
+    { name: 'AddVegetable', component: AddVegetableScreen, transition: slideFromRight },
+    { name: 'EditVegetable', component: EditVegetableScreen, transition: slideFromRight },
+    { name: 'FarmerOrderDetails', component: FarmerOrderDetailsScreen, transition: slideFromRight },
   ];
 
   return (

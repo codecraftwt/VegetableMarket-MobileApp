@@ -10,17 +10,17 @@ import {
   TextInput,
   Image,
 } from 'react-native';
-import SkeletonLoader from '../../components/SkeletonLoader';
-import CommonHeader from '../../components/CommonHeader';
+import SkeletonLoader from '../../../components/SkeletonLoader';
+import CommonHeader from '../../../components/CommonHeader';
 import Icon from 'react-native-vector-icons/FontAwesome';
-import { p } from '../../utils/Responsive';
-import { fontSizes } from '../../utils/fonts';
+import { p } from '../../../utils/Responsive';
+import { fontSizes } from '../../../utils/fonts';
 import { useDispatch, useSelector } from 'react-redux';
 import { useFocusEffect } from '@react-navigation/native';
-import { fetchCart, updateCartQuantity, clearCartErrors, removeFromCart } from '../../redux/slices/cartSlice';
-import SuccessModal from '../../components/SuccessModal';
-import ErrorModal from '../../components/ErrorModal';
-import ConfirmationModal from '../../components/ConfirmationModal';
+import { fetchCart, updateCartQuantity, clearCartErrors, removeFromCart } from '../../../redux/slices/cartSlice';
+import SuccessModal from '../../../components/SuccessModal';
+import ErrorModal from '../../../components/ErrorModal';
+import ConfirmationModal from '../../../components/ConfirmationModal';
 
 const CartScreen = ({ navigation }) => {
   const dispatch = useDispatch();
@@ -296,7 +296,7 @@ const CartScreen = ({ navigation }) => {
         }
       }
       // Fallback to local image if no valid image URL
-      return require('../../assets/vegebg.png');
+      return require('../../../assets/vegebg.png');
     };
 
     const isItemUpdating = updatingItems.has(item.id);

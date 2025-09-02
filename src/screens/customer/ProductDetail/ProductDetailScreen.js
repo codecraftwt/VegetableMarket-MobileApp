@@ -11,17 +11,17 @@ import {
   Linking,
   Alert,
 } from 'react-native';
-import SkeletonLoader from '../../components/SkeletonLoader';
-import CommonHeader from '../../components/CommonHeader';
+import SkeletonLoader from '../../../components/SkeletonLoader';
+import CommonHeader from '../../../components/CommonHeader';
 import Icon from 'react-native-vector-icons/FontAwesome';
-import { p } from '../../utils/Responsive';
-import { fontSizes } from '../../utils/fonts';
-import ProductCard from '../../components/ProductCard';
+import { p } from '../../../utils/Responsive';
+import { fontSizes } from '../../../utils/fonts';
+import ProductCard from '../../../components/ProductCard';
 import { useSelector, useDispatch } from 'react-redux';
-import { fetchVegetables } from '../../redux/slices/vegetablesSlice';
-import { addToCart } from '../../redux/slices/cartSlice';
-import SuccessModal from '../../components/SuccessModal';
-import ErrorModal from '../../components/ErrorModal';
+import { fetchVegetables } from '../../../redux/slices/vegetablesSlice';
+import { addToCart } from '../../../redux/slices/cartSlice';
+import SuccessModal from '../../../components/SuccessModal';
+import ErrorModal from '../../../components/ErrorModal';
 
 const ProductDetailScreen = ({ navigation, route }) => {
   const [quantity, setQuantity] = useState(1);
@@ -40,7 +40,7 @@ const ProductDetailScreen = ({ navigation, route }) => {
     price: '₹2.99',
     unit: 'KG',
     rating: 4.0,
-    image: require('../../assets/vegebg.png'),
+    image: require('../../../assets/vegebg.png'),
     description: 'Orange is a vibrant and juicy citrus fruit, known for its refreshing flavor and bright color. With a tangy savory sweetness, it adds a burst of freshness to both sweet and savory dishes. The peel of an orange is often used in cooking and baking to impart a zesty',
   };
 
@@ -177,7 +177,7 @@ const ProductDetailScreen = ({ navigation, route }) => {
     if (product?.images && product.images.length > 0) {
       return { uri: `https://vegetables.walstarmedia.com/storage/${product.images[0].image_path}` };
     }
-    return product.image || require('../../assets/vegebg.png');
+    return product.image || require('../../../assets/vegebg.png');
   };
 
   // Helper function to get product price

@@ -11,15 +11,14 @@ import {
   Platform,
   PermissionsAndroid,
 } from 'react-native';
-import SkeletonLoader from '../../components/SkeletonLoader';
-import CommonHeader from '../../components/CommonHeader';
-import { CustomModal, SuccessModal, ErrorModal, ConfirmationModal } from '../../components';
+import CommonHeader from '../../../components/CommonHeader';
+import { CustomModal, SuccessModal, ErrorModal, ConfirmationModal, SkeletonLoader } from '../../../components';
 import Icon from 'react-native-vector-icons/FontAwesome';
-import { p } from '../../utils/Responsive';
-import { fontSizes } from '../../utils/fonts';
+import { p } from '../../../utils/Responsive';
+import { fontSizes } from '../../../utils/fonts';
 import { useDispatch, useSelector } from 'react-redux';
-import { logout } from '../../redux/slices/authSlice';
-import { fetchProfile, setProfileImage, updateProfile } from '../../redux/slices/profileSlice';
+import { logout } from '../../../redux/slices/authSlice';
+import { fetchProfile, setProfileImage, updateProfile } from '../../../redux/slices/profileSlice';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 
 const ProfileScreen = ({ navigation }) => {

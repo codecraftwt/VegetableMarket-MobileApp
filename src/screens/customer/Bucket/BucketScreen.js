@@ -9,18 +9,18 @@ import {
   TouchableOpacity,
   Image,
 } from 'react-native';
-import SkeletonLoader from '../../components/SkeletonLoader';
-import CommonHeader from '../../components/CommonHeader';
+import SkeletonLoader from '../../../components/SkeletonLoader';
+import CommonHeader from '../../../components/CommonHeader';
 import Icon from 'react-native-vector-icons/FontAwesome';
-import { p } from '../../utils/Responsive';
-import { fontSizes } from '../../utils/fonts';
-import ProductCard from '../../components/ProductCard';
-import CategoryItem from '../../components/CategoryItem';
+import { p } from '../../../utils/Responsive';
+import { fontSizes } from '../../../utils/fonts';
+import ProductCard from '../../../components/ProductCard';
+import CategoryItem from '../../../components/CategoryItem';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchVegetables, fetchVegetableCategories } from '../../redux/slices/vegetablesSlice';
-import { addToCart } from '../../redux/slices/cartSlice';
-import SuccessModal from '../../components/SuccessModal';
-import ErrorModal from '../../components/ErrorModal';
+import { fetchVegetables, fetchVegetableCategories } from '../../../redux/slices/vegetablesSlice';
+import { addToCart } from '../../../redux/slices/cartSlice';
+import SuccessModal from '../../../components/SuccessModal';
+import ErrorModal from '../../../components/ErrorModal';
 import { useFocusEffect } from '@react-navigation/native';
 
 const BucketScreen = ({ navigation }) => {

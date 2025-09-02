@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, StatusBar, ScrollView, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
-import CommonHeader from '../../components/CommonHeader';
-import { SuccessModal, ErrorModal, ConfirmationModal } from '../../components';
+import CommonHeader from '../../../components/CommonHeader';
+import { SuccessModal, ErrorModal, ConfirmationModal } from '../../../components';
 import Icon from 'react-native-vector-icons/FontAwesome';
-import { p } from '../../utils/Responsive';
-import { fontSizes } from '../../utils/fonts';
+import { p } from '../../../utils/Responsive';
+import { fontSizes } from '../../../utils/fonts';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchProfile, updateProfile, updateAddress, addAddress } from '../../redux/slices/profileSlice';
+import { fetchProfile, updateProfile, updateAddress, addAddress } from '../../../redux/slices/profileSlice';
 
 const ProfileEditScreen = ({ navigation, route }) => {
   const dispatch = useDispatch();

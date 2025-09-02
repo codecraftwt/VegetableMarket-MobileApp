@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, StatusBar, ScrollView, TouchableOpacity, Alert, ActivityIndicator, RefreshControl } from 'react-native';
-import CommonHeader from '../../components/CommonHeader';
+import CommonHeader from '../../../components/CommonHeader';
 import Icon from 'react-native-vector-icons/FontAwesome';
-import { p } from '../../utils/Responsive';
-import { fontSizes } from '../../utils/fonts';
+import { p } from '../../../utils/Responsive';
+import { fontSizes } from '../../../utils/fonts';
 import { useSelector, useDispatch } from 'react-redux';
-import { fetchMyOrders, clearOrdersError, cancelOrder, clearCancelOrderError, submitReview, clearSubmitReviewError } from '../../redux/slices/ordersSlice';
-import { ReviewModal, ConfirmationModal } from '../../components';
-import SkeletonLoader from '../../components/SkeletonLoader';
+import { fetchMyOrders, clearOrdersError, cancelOrder, clearCancelOrderError, submitReview, clearSubmitReviewError } from '../../../redux/slices/ordersSlice';
+import { ReviewModal, ConfirmationModal } from '../../../components';
+import SkeletonLoader from '../../../components/SkeletonLoader';
 
 const MyOrdersScreen = ({ navigation }) => {
   const dispatch = useDispatch();

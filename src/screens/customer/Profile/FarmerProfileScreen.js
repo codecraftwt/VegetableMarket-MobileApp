@@ -11,13 +11,13 @@ import {
   Alert,
   Linking,
 } from 'react-native';
-import CommonHeader from '../../components/CommonHeader';
+import CommonHeader from '../../../components/CommonHeader';
 import Icon from 'react-native-vector-icons/FontAwesome';
-import { p } from '../../utils/Responsive';
-import { fontSizes } from '../../utils/fonts';
+import { p } from '../../../utils/Responsive';
+import { fontSizes } from '../../../utils/fonts';
 import { useSelector, useDispatch } from 'react-redux';
-import { fetchFarmerProfile, clearFarmerProfile } from '../../redux/slices/vegetablesSlice';
-import SkeletonLoader from '../../components/SkeletonLoader';
+import { fetchFarmerProfile, clearFarmerProfile } from '../../../redux/slices/vegetablesSlice';
+import SkeletonLoader from '../../../components/SkeletonLoader';
 
 const FarmerProfileScreen = ({ navigation, route }) => {
   const { farmerId, farmerName } = route.params;
@@ -102,7 +102,7 @@ const FarmerProfileScreen = ({ navigation, route }) => {
       if (farm.other_images && farm.other_images.length > 0) {
         images.push(...farm.other_images);
       }
-      return images.length > 0 ? images : [require('../../assets/vegebg.png')];
+      return images.length > 0 ? images : [require('../../../assets/vegebg.png')];
     };
     
     const images = getAllImages();
@@ -117,8 +117,8 @@ const FarmerProfileScreen = ({ navigation, route }) => {
     };
     
     const getCurrentImage = () => {
-      if (images[currentImageIndex] === require('../../assets/vegebg.png')) {
-        return require('../../assets/vegebg.png');
+      if (images[currentImageIndex] === require('../../../assets/vegebg.png')) {
+        return require('../../../assets/vegebg.png');
       }
       return { uri: images[currentImageIndex] };
     };

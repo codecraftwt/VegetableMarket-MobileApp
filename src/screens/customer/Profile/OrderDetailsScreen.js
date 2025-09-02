@@ -11,13 +11,13 @@ import {
   Linking,
   Image,
 } from 'react-native';
-import CommonHeader from '../../components/CommonHeader';
+import CommonHeader from '../../../components/CommonHeader';
 import Icon from 'react-native-vector-icons/FontAwesome';
-import { p } from '../../utils/Responsive';
-import { fontSizes } from '../../utils/fonts';
+import { p } from '../../../utils/Responsive';
+import { fontSizes } from '../../../utils/fonts';
 import { useSelector, useDispatch } from 'react-redux';
-import { fetchMyOrders, cancelOrder, clearCancelOrderError, acceptPartialOrder, clearAcceptPartialError, submitReview, clearSubmitReviewError } from '../../redux/slices/ordersSlice';
-import { ReviewModal, ConfirmationModal } from '../../components';
+import { fetchMyOrders, cancelOrder, clearCancelOrderError, acceptPartialOrder, clearAcceptPartialError, submitReview, clearSubmitReviewError } from '../../../redux/slices/ordersSlice';
+import { ReviewModal, ConfirmationModal } from '../../../components';
 
 const OrderDetailsScreen = ({ navigation, route }) => {
   const { order: initialOrder } = route.params;

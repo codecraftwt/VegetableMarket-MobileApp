@@ -20,7 +20,7 @@ const SplashScreen = () => {
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
   
   // Get authentication state
-  const { isLoggedIn } = useSelector(state => state.auth);
+  const { isLoggedIn, user } = useSelector(state => state.auth);
   const [authChecked, setAuthChecked] = useState(false);
 
   useEffect(() => {
@@ -64,8 +64,15 @@ const SplashScreen = () => {
           useNativeDriver: true,
         }).start(() => {
           // Navigate based on authentication status
-          if (isLoggedIn) {
-            navigation.replace('App'); // User is logged in, go to main app
+          if (isLoggedIn && user) {
+            // Check user role and navigate accordingly
+            if (user.role_id === 2) {
+              // Farmer role
+              navigation.replace('FarmerApp');
+            } else {
+              // Customer or other roles
+              navigation.replace('App');
+            }
           } else {
             navigation.replace('Login'); // User is not logged in, go to login
           }
@@ -74,7 +81,7 @@ const SplashScreen = () => {
     }, 3000); // 3 seconds
 
     return () => clearTimeout(timer);
-  }, [isLoggedIn, authChecked, navigation, fadeAnim, scaleAnim]);
+  }, [isLoggedIn, user, authChecked, navigation, fadeAnim, scaleAnim]);
 
   return (
     <Animated.View style={[styles.container, { opacity: fadeAnim }]}>

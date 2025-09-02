@@ -10,19 +10,19 @@ import {
   StatusBar,
   SafeAreaView,
 } from 'react-native';
-import SkeletonLoader from '../../components/SkeletonLoader';
+import SkeletonLoader from '../../../components/SkeletonLoader';
 import Icon from 'react-native-vector-icons/FontAwesome';
-import { p } from '../../utils/Responsive';
-import { fontSizes } from '../../utils/fonts';
-import CommonHeader from '../../components/CommonHeader';
-import ProductCard from '../../components/ProductCard';
-import CategoryItem from '../../components/CategoryItem';
-import PromoBanner from '../../components/PromoBanner';
+import { p } from '../../../utils/Responsive';
+import { fontSizes } from '../../../utils/fonts';
+import CommonHeader from '../../../components/CommonHeader';
+import ProductCard from '../../../components/ProductCard';
+import CategoryItem from '../../../components/CategoryItem';
+import PromoBanner from '../../../components/PromoBanner';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchVegetables, fetchVegetableCategories } from '../../redux/slices/vegetablesSlice';
-import { addToCart } from '../../redux/slices/cartSlice';
-import SuccessModal from '../../components/SuccessModal';
-import ErrorModal from '../../components/ErrorModal';
+import { fetchVegetables, fetchVegetableCategories } from '../../../redux/slices/vegetablesSlice';
+import { addToCart } from '../../../redux/slices/cartSlice';
+import SuccessModal from '../../../components/SuccessModal';
+import ErrorModal from '../../../components/ErrorModal';
 
 const DashboardScreen = ({ navigation }) => {
   const dispatch = useDispatch();

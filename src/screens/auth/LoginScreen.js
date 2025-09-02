@@ -34,7 +34,7 @@ const fontSizes = {
 const LoginScreen = () => {
   const navigation = useNavigation();
   const dispatch = useDispatch();
-  const { loading, error, isLoggedIn } = useSelector(state => state.auth);
+  const { loading, error, isLoggedIn, user } = useSelector(state => state.auth);
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -51,10 +51,17 @@ const LoginScreen = () => {
 
   // Handle successful login navigation
   React.useEffect(() => {
-    if (isLoggedIn) {
-      navigation.replace('App');
+    if (isLoggedIn && user) {
+      // Check user role and navigate accordingly
+      if (user.role_id === 2) {
+        // Farmer role
+        navigation.replace('FarmerApp');
+      } else {
+        // Customer or other roles
+        navigation.replace('App');
+      }
     }
-  }, [isLoggedIn, navigation]);
+  }, [isLoggedIn, user, navigation]);
 
   const validateForm = () => {
     const newErrors = {};

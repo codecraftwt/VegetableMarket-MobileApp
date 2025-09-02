@@ -9,15 +9,15 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
-import CommonHeader from '../../components/CommonHeader';
+import CommonHeader from '../../../components/CommonHeader';
 import Icon from 'react-native-vector-icons/FontAwesome';
-import { p } from '../../utils/Responsive';
-import { fontSizes } from '../../utils/fonts';
+import { p } from '../../../utils/Responsive';
+import { fontSizes } from '../../../utils/fonts';
 import { useSelector, useDispatch } from 'react-redux';
-import { fetchCart } from '../../redux/slices/cartSlice';
-import { fetchProfile, setPrimaryAddress } from '../../redux/slices/profileSlice';
-import { placeOrder, verifyRazorpayPayment, clearOrderData } from '../../redux/slices/ordersSlice';
-import { SuccessModal, ErrorModal, ConfirmationModal } from '../../components';
+import { fetchCart } from '../../../redux/slices/cartSlice';
+import { fetchProfile, setPrimaryAddress } from '../../../redux/slices/profileSlice';
+import { placeOrder, verifyRazorpayPayment, clearOrderData } from '../../../redux/slices/ordersSlice';
+import { SuccessModal, ErrorModal, ConfirmationModal } from '../../../components';
 import RazorpayCheckout from 'react-native-razorpay';
 
 const CheckoutScreen = ({ navigation }) => {
