@@ -9,6 +9,7 @@ import ordersReducer from './slices/ordersSlice';
 import farmsReducer from './slices/farmsSlice';
 import farmerVegetablesReducer from './slices/farmerVegetablesSlice';
 import farmerOrdersReducer from './slices/farmerOrdersSlice';
+import salesReportReducer from './slices/salesReportSlice';
 
 // Create root reducer
 const rootReducer = combineReducers({
@@ -20,6 +21,7 @@ const rootReducer = combineReducers({
   farms: farmsReducer,
   farmerVegetables: farmerVegetablesReducer,
   farmerOrders: farmerOrdersReducer,
+  salesReport: salesReportReducer,
 });
 
 // Configure store
