@@ -13,6 +13,7 @@ import {
   PermissionsAndroid,
   Platform,
 } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import CommonHeader from '../../../components/CommonHeader';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
@@ -35,6 +36,7 @@ const AddVegetableScreen = ({ navigation }) => {
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [showPhotoModal, setShowPhotoModal] = useState(false);
   const [selectedImages, setSelectedImages] = useState([]);
+  const [showDatePicker, setShowDatePicker] = useState(false);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -190,6 +192,24 @@ const AddVegetableScreen = ({ navigation }) => {
 
   const removeImage = (index) => {
     setSelectedImages(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleDateChange = (event, selectedDate) => {
+    setShowDatePicker(false);
+    if (selectedDate) {
+      const dateString = selectedDate.toISOString().split('T')[0];
+      handleInputChange('harvest_date', dateString);
+    }
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'Select harvest date';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
   };
 
   const handleInputChange = (field, value) => {
@@ -437,7 +457,19 @@ const AddVegetableScreen = ({ navigation }) => {
                 {renderPickerField('Grade', 'grade', grades.map(grade => ({ id: grade, name: grade })))}
               </View>
             </View>
-            {renderFormField('Harvest Date', 'harvest_date', 'YYYY-MM-DD')}
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Harvest Date</Text>
+              <TouchableOpacity 
+                style={styles.datePickerButton}
+                onPress={() => setShowDatePicker(true)}
+              >
+                <Icon name="calendar" size={16} color="#019a34" />
+                <Text style={styles.datePickerText}>
+                  {formatDate(formData.harvest_date)}
+                </Text>
+                <Icon name="chevron-down" size={14} color="#666" />
+              </TouchableOpacity>
+            </View>
           </View>
           
           {renderImagePicker()}
@@ -492,6 +524,17 @@ const AddVegetableScreen = ({ navigation }) => {
         onCameraPress={handleCameraOption}
         onGalleryPress={handleGalleryOption}
       />
+
+      {/* Date Picker */}
+      {showDatePicker && (
+        <DateTimePicker
+          value={formData.harvest_date ? new Date(formData.harvest_date) : new Date()}
+          mode="date"
+          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+          onChange={handleDateChange}
+          maximumDate={new Date()}
+        />
+      )}
     </SafeAreaView>
   );
 };
@@ -731,6 +774,22 @@ const styles = StyleSheet.create({
     fontSize: fontSizes.medium,
     color: '#e53e3e',
     textAlign: 'center',
+  },
+  datePickerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: '#e1e5e9',
+    borderRadius: p(12),
+    padding: p(16),
+    backgroundColor: '#fff',
+    gap: p(12),
+  },
+  datePickerText: {
+    fontSize: fontSizes.base,
+    fontFamily: 'Poppins-Regular',
+    color: '#333',
+    flex: 1,
   },
 });
 

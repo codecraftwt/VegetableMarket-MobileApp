@@ -3,6 +3,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import BottomTabNavigator from './BottomTabNavigator';
 import FarmerBottomTabNavigator from './FarmerBottomTabNavigator';
+import DeliveryBottomTabNavigator from './DeliveryBottomTabNavigator';
 import SplashScreen from '../screens/auth/SplashScreen';
 import DashboardScreen from '../screens/customer/Dashboard/DashboardScreen';
 import LoginScreen from '../screens/auth/LoginScreen';
@@ -27,6 +28,10 @@ import VegetableDetailsScreen from '../screens/farmer/Vegetables/VegetableDetail
 import AddVegetableScreen from '../screens/farmer/Vegetables/AddVegetableScreen';
 import EditVegetableScreen from '../screens/farmer/Vegetables/EditVegetableScreen';
 import FarmerOrderDetailsScreen from '../screens/farmer/Orders/OrderDetailsScreen';
+import DeliveryHistoryScreen from '../screens/delivery/DeliveryHistory/DeliveryHistoryScreen';
+import DeliveryDetailsScreen from '../screens/delivery/DeliveryDetails/DeliveryDetailsScreen';
+import AssignedDeliveryDetailsScreen from '../screens/delivery/AssignedDeliveryDetails/AssignedDeliveryDetailsScreen';
+import TodaysTaskDetailsScreen from '../screens/delivery/TodaysTaskDetails/TodaysTaskDetailsScreen';
 
 const Stack = createStackNavigator();
 
@@ -79,6 +84,7 @@ const AppNavigator = () => {
     { name: 'Register', component: RegisterScreen, transition: slideFromRight },
     { name: 'App', component: BottomTabNavigator, transition: slideFromRight },
     { name: 'FarmerApp', component: FarmerBottomTabNavigator, transition: slideFromRight },
+    { name: 'DeliveryApp', component: DeliveryBottomTabNavigator, transition: slideFromRight },
     {
       name: 'Dashboard',
       component: DashboardScreen,
@@ -103,6 +109,10 @@ const AppNavigator = () => {
     { name: 'AddVegetable', component: AddVegetableScreen, transition: slideFromRight },
     { name: 'EditVegetable', component: EditVegetableScreen, transition: slideFromRight },
     { name: 'FarmerOrderDetails', component: FarmerOrderDetailsScreen, transition: slideFromRight },
+    { name: 'DeliveryHistory', component: DeliveryHistoryScreen, transition: slideFromRight },
+    { name: 'DeliveryDetails', component: DeliveryDetailsScreen, transition: slideFromRight },
+    { name: 'AssignedDeliveryDetails', component: AssignedDeliveryDetailsScreen, transition: slideFromRight },
+    { name: 'TodaysTaskDetails', component: TodaysTaskDetailsScreen, transition: slideFromRight },
   ];
 
   return (

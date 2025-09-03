@@ -7,26 +7,10 @@ export const fetchSalesReport = createAsyncThunk(
   async (dateParams, { rejectWithValue }) => {
     try {
       const { start_date, end_date } = dateParams;
-      console.log('=== API CALL START ===');
-      console.log('Date Params received:', { start_date, end_date });
-      console.log('Date types - start_date:', typeof start_date, 'end_date:', typeof end_date);
-      
-      // Build URL exactly like Postman
-      const url = `/farmer/sales-report/export-pdf?start_date=${start_date}&end_date=${end_date}`;
-      console.log('Full URL:', url);
-      
+      const url = `/farmer/sales-report?start_date=${start_date}&end_date=${end_date}`;
       const response = await api.get(url);
-      console.log('=== API RESPONSE ===');
-      console.log('Status:', response.status);
-      console.log('Response Data:', response.data);
-      console.log('=== API CALL END ===');
       return response.data;
     } catch (error) {
-      console.log('=== API ERROR ===');
-      console.log('Error:', error);
-      console.log('Error Response:', error.response?.data);
-      console.log('Error Status:', error.response?.status);
-      console.log('=== API ERROR END ===');
       return rejectWithValue(
         error.response?.data?.message || error.message || 'Failed to fetch sales report'
       );
@@ -39,21 +23,45 @@ export const fetchFarmerDashboard = createAsyncThunk(
   'salesReport/fetchFarmerDashboard',
   async (_, { rejectWithValue }) => {
     try {
-      console.log('=== DASHBOARD API CALL START ===');
       const response = await api.get('/farmer/dashboard');
-      console.log('=== DASHBOARD API RESPONSE ===');
-      console.log('Status:', response.status);
-      console.log('Response Data:', response.data);
-      console.log('=== DASHBOARD API CALL END ===');
       return response.data;
     } catch (error) {
-      console.log('=== DASHBOARD API ERROR ===');
-      console.log('Error:', error);
-      console.log('Error Response:', error.response?.data);
-      console.log('Error Status:', error.response?.status);
-      console.log('=== DASHBOARD API ERROR END ===');
       return rejectWithValue(
         error.response?.data?.message || error.message || 'Failed to fetch dashboard data'
+      );
+    }
+  }
+);
+
+// Async thunk to export sales report as PDF
+export const exportSalesReportPDF = createAsyncThunk(
+  'salesReport/exportSalesReportPDF',
+  async (dateParams, { rejectWithValue }) => {
+    try {
+      const { start_date, end_date } = dateParams;
+      const url = `/farmer/sales-report/export-pdf?start_date=${start_date}&end_date=${end_date}`;
+      const response = await api.get(url);
+      return { data: response.data, start_date, end_date };
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || error.message || 'Failed to export PDF'
+      );
+    }
+  }
+);
+
+// Async thunk to export sales report as Excel
+export const exportSalesReportExcel = createAsyncThunk(
+  'salesReport/exportSalesReportExcel',
+  async (dateParams, { rejectWithValue }) => {
+    try {
+      const { start_date, end_date } = dateParams;
+      const url = `/farmer/sales-report/export-excel?start_date=${start_date}&end_date=${end_date}`;
+      const response = await api.get(url);
+      return { data: response.data, start_date, end_date };
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || error.message || 'Failed to export Excel'
       );
     }
   }
@@ -66,6 +74,8 @@ const salesReportSlice = createSlice({
     dashboardData: null,
     loading: false,
     dashboardLoading: false,
+    exportingPDF: false,
+    exportingExcel: false,
     error: null,
     success: false,
     message: null,
@@ -100,13 +110,11 @@ const salesReportSlice = createSlice({
         state.salesReport = action.payload;
         state.success = action.payload?.success || true;
         state.error = null;
-        console.log('Sales Report State Updated:', state.salesReport);
       })
       .addCase(fetchSalesReport.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
         state.success = false;
-        console.log('Sales Report Error:', action.payload);
       })
       // Dashboard reducers
       .addCase(fetchFarmerDashboard.pending, (state) => {
@@ -117,12 +125,36 @@ const salesReportSlice = createSlice({
         state.dashboardLoading = false;
         state.dashboardData = action.payload;
         state.error = null;
-        console.log('Dashboard Data Updated:', state.dashboardData);
       })
       .addCase(fetchFarmerDashboard.rejected, (state, action) => {
         state.dashboardLoading = false;
         state.error = action.payload;
-        console.log('Dashboard Error:', action.payload);
+      })
+      // Export PDF reducers
+      .addCase(exportSalesReportPDF.pending, (state) => {
+        state.exportingPDF = true;
+        state.error = null;
+      })
+      .addCase(exportSalesReportPDF.fulfilled, (state) => {
+        state.exportingPDF = false;
+        state.error = null;
+      })
+      .addCase(exportSalesReportPDF.rejected, (state, action) => {
+        state.exportingPDF = false;
+        state.error = action.payload;
+      })
+      // Export Excel reducers
+      .addCase(exportSalesReportExcel.pending, (state) => {
+        state.exportingExcel = true;
+        state.error = null;
+      })
+      .addCase(exportSalesReportExcel.fulfilled, (state) => {
+        state.exportingExcel = false;
+        state.error = null;
+      })
+      .addCase(exportSalesReportExcel.rejected, (state, action) => {
+        state.exportingExcel = false;
+        state.error = action.payload;
       });
   },
 });

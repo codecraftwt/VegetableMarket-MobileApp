@@ -10,6 +10,10 @@ import farmsReducer from './slices/farmsSlice';
 import farmerVegetablesReducer from './slices/farmerVegetablesSlice';
 import farmerOrdersReducer from './slices/farmerOrdersSlice';
 import salesReportReducer from './slices/salesReportSlice';
+import deliveryDashboardReducer from './slices/deliveryDashboardSlice';
+import deliveryReducer from './slices/deliverySlice';
+import todaysTaskReducer from './slices/todaysTaskSlice';
+import deliveryHistoryReducer from './slices/deliveryHistorySlice';
 
 // Create root reducer
 const rootReducer = combineReducers({
@@ -22,6 +26,10 @@ const rootReducer = combineReducers({
   farmerVegetables: farmerVegetablesReducer,
   farmerOrders: farmerOrdersReducer,
   salesReport: salesReportReducer,
+  deliveryDashboard: deliveryDashboardReducer,
+  delivery: deliveryReducer,
+  todaysTask: todaysTaskReducer,
+  deliveryHistory: deliveryHistoryReducer,
 });
 
 // Configure store

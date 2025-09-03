@@ -69,8 +69,11 @@ const SplashScreen = () => {
             if (user.role_id === 2) {
               // Farmer role
               navigation.replace('FarmerApp');
+            } else if (user.role_id === 4) {
+              // Delivery agent role
+              navigation.replace('DeliveryApp');
             } else {
-              // Customer or other roles
+              // Customer or other roles (role_id === 3)
               navigation.replace('App');
             }
           } else {
