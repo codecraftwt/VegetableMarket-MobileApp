@@ -20,7 +20,8 @@ import OrderDetailsScreen from '../screens/customer/Profile/OrderDetailsScreen';
 import FarmerProfileScreen from '../screens/customer/Profile/FarmerProfileScreen';
 import MyFarmsScreen from '../screens/farmer/farm/MyFarmsScreen';
 import SalesReportScreen from '../screens/farmer/Sales/SalesReportScreen';
-import { Easing } from 'react-native';
+import { Easing, StatusBar } from 'react-native';
+import StatusBarSpacer from '../components/StatusBarSpacer';
 import AddFarmScreen from '../screens/farmer/farm/AddFarmScreen';
 import FarmDetailsScreen from '../screens/farmer/farm/FarmDetailsScreen';
 import EditFarmScreen from '../screens/farmer/farm/EditFarmScreen';
@@ -117,6 +118,8 @@ const AppNavigator = () => {
 
   return (
     <NavigationContainer>
+      <StatusBar backgroundColor="#019a34" barStyle="light-content" />
+      <StatusBarSpacer backgroundColor="#019a34" />
       <Stack.Navigator
         initialRouteName="Splash"
         screenOptions={{
