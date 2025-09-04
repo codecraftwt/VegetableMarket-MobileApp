@@ -25,6 +25,7 @@ import {
   clearDeliveryError,
   clearDeliverySuccess
 } from '../../../redux/slices/deliverySlice';
+import { updateOrderStatus, updateAssignmentStatus, updatePaymentStatus } from '../../../redux/slices/todaysTaskSlice';
 import SuccessModal from '../../../components/SuccessModal';
 import ErrorModal from '../../../components/ErrorModal';
 
@@ -115,10 +116,23 @@ const DeliveriesScreen = ({ navigation }) => {
   const handleStatusChange = (deliveryId, newStatus) => {
     if (newStatus === 'assign') {
       dispatch(assignDeliveryToSelf(deliveryId));
+    } else if (newStatus === 'in_progress') {
+      // Map to API format
+      dispatch(updateOrderStatus({ orderId: deliveryId, status: 'out_for_delivery' }));
+    } else if (newStatus === 'delivered') {
+      dispatch(updateOrderStatus({ orderId: deliveryId, status: 'delivered' }));
     } else {
       // Handle other status changes
       console.log('Status change:', deliveryId, newStatus);
     }
+  };
+
+  const handleUpdateAssignmentStatus = (assignmentId, status) => {
+    dispatch(updateAssignmentStatus({ assignmentId, status }));
+  };
+
+  const handleUpdatePaymentStatus = (orderId, paymentStatus) => {
+    dispatch(updatePaymentStatus({ orderId, paymentStatus }));
   };
 
   const getDeliveryStatus = (delivery) => {
@@ -175,7 +189,9 @@ const DeliveriesScreen = ({ navigation }) => {
   const renderSearchBar = () => (
     <View style={styles.searchContainer}>
       <View style={styles.searchInputContainer}>
-        <Icon name="search" size={p(16)} color="#666" style={styles.searchIcon} />
+        <View style={styles.searchIconContainer}>
+          <Icon name="search" size={p(18)} color="#6b7280" />
+        </View>
         <TextInput
           style={styles.searchInput}
           placeholder="Search deliveries..."
@@ -184,7 +200,10 @@ const DeliveriesScreen = ({ navigation }) => {
           onChangeText={setSearchQuery}
         />
         {searchQuery.length > 0 && (
-          <TouchableOpacity onPress={() => setSearchQuery('')}>
+          <TouchableOpacity 
+            style={styles.clearButton}
+            onPress={() => setSearchQuery('')}
+          >
             <Icon name="times" size={p(16)} color="#666" />
           </TouchableOpacity>
         )}
@@ -220,47 +239,69 @@ const DeliveriesScreen = ({ navigation }) => {
       key={delivery.id}
       style={styles.deliveryCard}
       onPress={() => handleDeliveryPress(delivery)}
+      activeOpacity={0.7}
     >
-      <View style={styles.deliveryHeader}>
+      {/* Card Header with Gradient Background */}
+      <View style={styles.cardHeader}>
         <View style={styles.orderInfo}>
-          <Text style={styles.orderId}>Order #{delivery.id}</Text>
+          <View style={styles.orderIdContainer}>
+            <Icon name="hashtag" size={p(12)} color="#2563eb" />
+            <Text style={styles.orderId}>{delivery.id}</Text>
+          </View>
           <Text style={styles.customerName}>{delivery.customer_name}</Text>
         </View>
         <View style={[styles.statusBadge, { backgroundColor: getStatusColor(delivery) }]}>
+          <View style={styles.statusDot} />
           <Text style={styles.statusText}>{getStatusText(delivery)}</Text>
         </View>
       </View>
 
-      <View style={styles.deliveryDetails}>
-        <View style={styles.detailRow}>
-          <Icon name="calendar" size={p(14)} color="#666" />
-          <Text style={styles.detailText}>Ordered: {delivery.ordered_date}</Text>
+      {/* Card Content */}
+      <View style={styles.cardContent}>
+        <View style={styles.deliveryDetails}>
+          <View style={styles.detailRow}>
+            <View style={styles.detailIconContainer}>
+              <Icon name="calendar" size={p(14)} color="#6b7280" />
+            </View>
+            <Text style={styles.detailText}>Ordered: {delivery.ordered_date}</Text>
+          </View>
+          
+          {delivery.payment_method && (
+            <View style={styles.detailRow}>
+              <View style={styles.detailIconContainer}>
+                <Icon name="credit-card" size={p(14)} color="#6b7280" />
+              </View>
+              <Text style={styles.detailText}>
+                {delivery.payment_method} • {delivery.payment_status}
+              </Text>
+            </View>
+          )}
+          
+          {delivery.assignment_status && (
+            <View style={styles.detailRow}>
+              <View style={styles.detailIconContainer}>
+                <Icon name="user-check" size={p(14)} color="#6b7280" />
+              </View>
+              <Text style={styles.detailText}>
+                {delivery.assignment_status}
+              </Text>
+            </View>
+          )}
         </View>
-        {delivery.payment_method && (
-          <View style={styles.detailRow}>
-            <Icon name="credit-card" size={p(14)} color="#666" />
-            <Text style={styles.detailText}>
-              Payment: {delivery.payment_method} ({delivery.payment_status})
-            </Text>
+
+        {/* Amount Section */}
+        <View style={styles.amountSection}>
+          <View style={styles.amountContainer}>
+            <Text style={styles.amountLabel}>Total Amount</Text>
+            <Text style={styles.totalAmount}>{delivery.total_amount}</Text>
           </View>
-        )}
-        {delivery.assignment_status && (
-          <View style={styles.detailRow}>
-            <Icon name="user" size={p(14)} color="#666" />
-            <Text style={styles.detailText}>
-              Assignment: {delivery.assignment_status}
-            </Text>
+          <View style={styles.deliveryIconContainer}>
+            <Icon name="truck" size={p(20)} color="#2563eb" />
           </View>
-        )}
+        </View>
       </View>
 
-      <View style={styles.deliveryFooter}>
-        <View style={styles.itemsContainer}>
-          <Text style={styles.itemsLabel}>Total Amount:</Text>
-        </View>
-        <Text style={styles.totalAmount}>{delivery.total_amount}</Text>
-      </View>
-
+      {/* Action Buttons */}
       {activeTab === 'available' && (
         <View style={styles.actionButtons}>
           <TouchableOpacity
@@ -269,9 +310,9 @@ const DeliveriesScreen = ({ navigation }) => {
             disabled={assigningDelivery}
           >
             {assigningDelivery ? (
-              <Icon name="spinner" size={p(14)} color="#fff" />
+              <Icon name="spinner" size={p(16)} color="#fff" />
             ) : (
-              <Icon name="plus" size={p(14)} color="#fff" />
+              <Icon name="plus" size={p(16)} color="#fff" />
             )}
             <Text style={styles.actionButtonText}>
               {assigningDelivery ? 'Assigning...' : 'Assign to Me'}
@@ -286,17 +327,20 @@ const DeliveriesScreen = ({ navigation }) => {
             style={[styles.actionButton, styles.startButton]}
             onPress={() => handleStatusChange(delivery.id, 'in_progress')}
           >
-            <Icon name="play" size={p(14)} color="#fff" />
+            <Icon name="play" size={p(16)} color="#fff" />
             <Text style={styles.actionButtonText}>Start Delivery</Text>
           </TouchableOpacity>
         </View>
       )}
+
+      {/* Card Footer with subtle border */}
+      <View style={styles.cardFooter} />
     </TouchableOpacity>
   );
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#019a34" />
+      <StatusBar backgroundColor="#019a34" barStyle="light-content" />
       <CommonHeader
         screenName="Deliveries"
         showNotification={true}
@@ -325,11 +369,16 @@ const DeliveriesScreen = ({ navigation }) => {
               filteredDeliveries.map(renderDeliveryCard)
             ) : (
               <View style={styles.emptyContainer}>
-                <Icon name="truck" size={p(60)} color="#ccc" />
-                <Text style={styles.emptyText}>No deliveries found</Text>
+                <View style={styles.emptyIconContainer}>
+                  <Icon name="truck" size={p(48)} color="#6b7280" />
+                </View>
+                <Text style={styles.emptyText}>
+                  {searchQuery ? 'No deliveries found' : 
+                   activeTab === 'available' ? 'No available deliveries' : 'No assigned deliveries'}
+                </Text>
                 <Text style={styles.emptySubtext}>
-                  {searchQuery ? 'Try adjusting your search' : 
-                   activeTab === 'available' ? 'No available deliveries' : 'No deliveries assigned yet'}
+                  {searchQuery ? 'Try adjusting your search terms' : 
+                   activeTab === 'available' ? 'Check back later for new delivery opportunities' : 'You haven\'t been assigned any deliveries yet'}
                 </Text>
               </View>
             )}
@@ -367,29 +416,37 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    padding: p(16),
+    padding: p(12),
   },
   tabContainer: {
     flexDirection: 'row',
     backgroundColor: '#fff',
     borderRadius: p(8),
     padding: p(4),
-    marginBottom: p(16),
+    marginBottom: p(12),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 1,
+    shadowRadius: 4,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
   },
   tabButton: {
     flex: 1,
-    paddingVertical: p(12),
-    paddingHorizontal: p(16),
+    paddingVertical: p(8),
+    paddingHorizontal: p(12),
     borderRadius: p(6),
     alignItems: 'center',
+    position: 'relative',
   },
   activeTabButton: {
     backgroundColor: '#019a34',
+    shadowColor: '#019a34',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 2,
   },
   tabButtonText: {
     fontSize: fontSizes.sm,
@@ -400,29 +457,46 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   searchContainer: {
-    marginBottom: p(16),
+    marginBottom: p(12),
   },
   searchInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#fff',
-    borderRadius: p(12),
-    paddingHorizontal: p(16),
-    paddingVertical: p(12),
+    borderRadius: p(8),
+    paddingHorizontal: p(12),
+    paddingVertical: p(6),
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
   },
-  searchIcon: {
-    marginRight: p(12),
+  searchIconContainer: {
+    width: p(18),
+    height: p(18),
+    borderRadius: p(9),
+    backgroundColor: '#f3f4f6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: p(8),
   },
   searchInput: {
     flex: 1,
     fontSize: fontSizes.base,
     fontFamily: 'Poppins-Regular',
     color: '#333',
+    paddingVertical: 0,
+  },
+  clearButton: {
+    width: p(18),
+    height: p(18),
+    borderRadius: p(9),
+    backgroundColor: '#f5f5f5',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
   deliveriesList: {
@@ -430,96 +504,142 @@ const styles = StyleSheet.create({
   },
   deliveryCard: {
     backgroundColor: '#fff',
-    borderRadius: p(12),
-    padding: p(16),
-    marginBottom: p(12),
+    borderRadius: p(8),
+    marginBottom: p(8),
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
+    overflow: 'hidden',
   },
-  deliveryHeader: {
+  cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: p(12),
+    alignItems: 'center',
+    paddingHorizontal: p(12),
+    paddingTop: p(12),
+    paddingBottom: p(8),
+    backgroundColor: '#fafafa',
   },
   orderInfo: {
     flex: 1,
   },
+  orderIdContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: p(2),
+  },
   orderId: {
-    fontSize: fontSizes.lg,
+    fontSize: fontSizes.sm,
     fontFamily: 'Poppins-Bold',
-    color: '#019a34',
-    marginBottom: p(4),
+    color: '#2563eb',
+    marginLeft: p(4),
   },
   customerName: {
     fontSize: fontSizes.base,
     fontFamily: 'Poppins-SemiBold',
-    color: '#333',
+    color: '#1f2937',
   },
   statusBadge: {
-    paddingHorizontal: p(12),
-    paddingVertical: p(6),
-    borderRadius: p(16),
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: p(8),
+    paddingVertical: p(4),
+    borderRadius: p(12),
+  },
+  statusDot: {
+    width: p(4),
+    height: p(4),
+    borderRadius: p(2),
+    backgroundColor: '#fff',
+    marginRight: p(4),
   },
   statusText: {
-    fontSize: fontSizes.sm,
+    fontSize: fontSizes.xs,
     fontFamily: 'Poppins-SemiBold',
     color: '#fff',
   },
+  cardContent: {
+    paddingHorizontal: p(12),
+    paddingBottom: p(8),
+  },
   deliveryDetails: {
-    marginBottom: p(12),
+    marginBottom: p(8),
   },
   detailRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: p(6),
+    marginBottom: p(4),
+  },
+  detailIconContainer: {
+    width: p(16),
+    height: p(16),
+    borderRadius: p(8),
+    backgroundColor: '#f3f4f6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: p(6),
   },
   detailText: {
-    fontSize: fontSizes.sm,
+    fontSize: fontSizes.xs,
     fontFamily: 'Poppins-Regular',
-    color: '#666',
-    marginLeft: p(8),
+    color: '#4a4a4a',
     flex: 1,
   },
-  deliveryFooter: {
+  amountSection: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: p(12),
+    paddingVertical: p(8),
+    paddingHorizontal: p(8),
+    backgroundColor: '#f8fafc',
+    borderRadius: p(6),
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
   },
-  itemsContainer: {
+  amountContainer: {
     flex: 1,
   },
-  itemsLabel: {
-    fontSize: fontSizes.sm,
-    fontFamily: 'Poppins-SemiBold',
-    color: '#333',
+  amountLabel: {
+    fontSize: fontSizes.xs,
+    fontFamily: 'Poppins-Medium',
+    color: '#666',
     marginBottom: p(2),
   },
-  itemsText: {
-    fontSize: fontSizes.sm,
-    fontFamily: 'Poppins-Regular',
-    color: '#666',
-  },
   totalAmount: {
-    fontSize: fontSizes.lg,
+    fontSize: fontSizes.base,
     fontFamily: 'Poppins-Bold',
-    color: '#019a34',
+    color: '#059669',
+  },
+  deliveryIconContainer: {
+    width: p(24),
+    height: p(24),
+    borderRadius: p(12),
+    backgroundColor: '#dbeafe',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cardFooter: {
+    height: p(2),
+    backgroundColor: '#019a34',
+    opacity: 0.1,
   },
   actionButtons: {
     flexDirection: 'row',
-    gap: p(8),
+    paddingHorizontal: p(12),
+    paddingBottom: p(8),
+    paddingTop: p(6),
   },
   actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: p(16),
-    paddingVertical: p(10),
-    borderRadius: p(8),
-    gap: p(6),
+    justifyContent: 'center',
+    paddingHorizontal: p(12),
+    paddingVertical: p(8),
+    borderRadius: p(6),
+    gap: p(4),
+    flex: 1,
   },
   startButton: {
     backgroundColor: '#019a34',
@@ -541,30 +661,47 @@ const styles = StyleSheet.create({
   emptyContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: p(60),
+    paddingVertical: p(80),
+    paddingHorizontal: p(40),
+  },
+  emptyIconContainer: {
+    width: p(80),
+    height: p(80),
+    borderRadius: p(40),
+    backgroundColor: '#f3f4f6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: p(16),
   },
   emptyText: {
-    fontSize: fontSizes.lg,
+    fontSize: fontSizes.xl,
     fontFamily: 'Poppins-SemiBold',
-    color: '#666',
-    marginTop: p(16),
-    marginBottom: p(8),
+    color: '#333',
+    marginBottom: p(12),
+    textAlign: 'center',
   },
   emptySubtext: {
-    fontSize: fontSizes.sm,
+    fontSize: fontSizes.base,
     fontFamily: 'Poppins-Regular',
-    color: '#999',
+    color: '#666',
     textAlign: 'center',
+    lineHeight: p(24),
   },
   loadingContainer: {
     flex: 1,
+    paddingTop: p(20),
   },
   skeletonCard: {
     backgroundColor: '#fff',
-    borderRadius: p(12),
-    padding: p(16),
-    marginBottom: p(12),
-    gap: p(8),
+    borderRadius: p(16),
+    padding: p(20),
+    marginBottom: p(16),
+    gap: p(12),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
   },
 });
 

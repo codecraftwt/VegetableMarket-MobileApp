@@ -277,7 +277,7 @@ const VegetableDetailsScreen = ({ navigation, route }) => {
   if (loadingVegetable || !selectedVegetable) {
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="light-content" backgroundColor="#019a34" />
+        <StatusBar backgroundColor="#019a34" barStyle="light-content" />
         <CommonHeader
           screenName="Vegetable Details"
           showBackButton={true}
@@ -296,7 +296,7 @@ const VegetableDetailsScreen = ({ navigation, route }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#019a34" />
+      <StatusBar backgroundColor="#019a34" barStyle="light-content" />
       <CommonHeader
         screenName="Vegetable Details"
         showBackButton={true}

@@ -361,7 +361,7 @@ const EditVegetableScreen = ({ navigation, route }) => {
   if (loading && !selectedVegetable) {
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="light-content" backgroundColor="#019a34" />
+        <StatusBar backgroundColor="#019a34" barStyle="light-content" />
         <CommonHeader
           screenName="Edit Vegetable"
           showBackButton={true}
@@ -378,7 +378,7 @@ const EditVegetableScreen = ({ navigation, route }) => {
   if (!selectedVegetable && !loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="light-content" backgroundColor="#019a34" />
+        <StatusBar backgroundColor="#019a34" barStyle="light-content" />
         <CommonHeader
           screenName="Edit Vegetable"
           showBackButton={true}
@@ -396,7 +396,7 @@ const EditVegetableScreen = ({ navigation, route }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#019a34" />
+      <StatusBar backgroundColor="#019a34" barStyle="light-content" />
       <CommonHeader
         screenName="Edit Vegetable"
         showBackButton={true}

@@ -21,14 +21,18 @@ import {
   fetchAssignedDeliveryDetails,
   clearDeliveryError
 } from '../../../redux/slices/deliverySlice';
+import { updateOrderStatus, updateAssignmentStatus, updatePaymentStatus } from '../../../redux/slices/todaysTaskSlice';
 import ErrorModal from '../../../components/ErrorModal';
+import SuccessModal from '../../../components/SuccessModal';
 
 const AssignedDeliveryDetailsScreen = ({ navigation, route }) => {
   const dispatch = useDispatch();
   const { assignedDeliveryDetails, loadingAssignedDetails, error } = useSelector(state => state.delivery);
+  const { loading: updateOrderStatusLoading, error: updateOrderStatusError, success: updateOrderStatusSuccess, message: updateOrderStatusMessage } = useSelector(state => state.todaysTask);
   const { orderId } = route.params;
   
   const [showErrorModal, setShowErrorModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -45,6 +49,18 @@ const AssignedDeliveryDetailsScreen = ({ navigation, route }) => {
     }
   }, [error]);
 
+  useEffect(() => {
+    if (updateOrderStatusSuccess && updateOrderStatusMessage) {
+      setShowSuccessModal(true);
+    }
+  }, [updateOrderStatusSuccess, updateOrderStatusMessage]);
+
+  useEffect(() => {
+    if (updateOrderStatusError) {
+      setShowErrorModal(true);
+    }
+  }, [updateOrderStatusError]);
+
   const handleBackPress = () => {
     navigation.goBack();
   };
@@ -54,13 +70,23 @@ const AssignedDeliveryDetailsScreen = ({ navigation, route }) => {
   };
 
   const handleStartDelivery = () => {
-    // Handle start delivery action
-    console.log('Start delivery pressed');
+    if (assignedDeliveryDetails?.order?.id) {
+      dispatch(updateOrderStatus({ orderId: assignedDeliveryDetails.order.id, status: 'out_for_delivery' }));
+    }
   };
 
   const handleMarkComplete = () => {
-    // Handle mark complete action
-    console.log('Mark complete pressed');
+    if (assignedDeliveryDetails?.order?.id) {
+      dispatch(updateOrderStatus({ orderId: assignedDeliveryDetails.order.id, status: 'delivered' }));
+    }
+  };
+
+  const handleUpdateAssignmentStatus = (assignmentId, status) => {
+    dispatch(updateAssignmentStatus({ assignmentId, status }));
+  };
+
+  const handleUpdatePaymentStatus = (orderId, paymentStatus) => {
+    dispatch(updatePaymentStatus({ orderId, paymentStatus }));
   };
 
   const getStatusColor = (status) => {
@@ -230,21 +256,35 @@ const AssignedDeliveryDetailsScreen = ({ navigation, route }) => {
         <View style={styles.actionButtonsContainer}>
           {order.delivery_status === 'ready_for_delivery' && (
             <TouchableOpacity
-              style={[styles.actionButton, styles.startButton]}
+              style={[styles.actionButton, styles.startButton, updateOrderStatusLoading && styles.disabledButton]}
               onPress={handleStartDelivery}
+              disabled={updateOrderStatusLoading}
             >
-              <Icon name="play" size={p(16)} color="#fff" />
-              <Text style={styles.actionButtonText}>Start Delivery</Text>
+              {updateOrderStatusLoading ? (
+                <Icon name="spinner" size={p(16)} color="#fff" />
+              ) : (
+                <Icon name="play" size={p(16)} color="#fff" />
+              )}
+              <Text style={styles.actionButtonText}>
+                {updateOrderStatusLoading ? 'Starting...' : 'Start Delivery'}
+              </Text>
             </TouchableOpacity>
           )}
           
-          {order.delivery_status === 'in_progress' && (
+          {order.delivery_status === 'out_for_delivery' && (
             <TouchableOpacity
-              style={[styles.actionButton, styles.completeButton]}
+              style={[styles.actionButton, styles.completeButton, updateOrderStatusLoading && styles.disabledButton]}
               onPress={handleMarkComplete}
+              disabled={updateOrderStatusLoading}
             >
-              <Icon name="check" size={p(16)} color="#fff" />
-              <Text style={styles.actionButtonText}>Mark Complete</Text>
+              {updateOrderStatusLoading ? (
+                <Icon name="spinner" size={p(16)} color="#fff" />
+              ) : (
+                <Icon name="check" size={p(16)} color="#fff" />
+              )}
+              <Text style={styles.actionButtonText}>
+                {updateOrderStatusLoading ? 'Completing...' : 'Mark Complete'}
+              </Text>
             </TouchableOpacity>
           )}
         </View>
@@ -267,7 +307,7 @@ const AssignedDeliveryDetailsScreen = ({ navigation, route }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#019a34" />
+      <StatusBar backgroundColor="#019a34" barStyle="light-content" />
       <CommonHeader
         screenName="Assigned Delivery Details"
         showBackButton={true}
@@ -295,12 +335,22 @@ const AssignedDeliveryDetailsScreen = ({ navigation, route }) => {
         )}
       </View>
 
+      {/* Success Modal */}
+      <SuccessModal
+        visible={showSuccessModal}
+        onClose={() => setShowSuccessModal(false)}
+        title="Success"
+        message={updateOrderStatusMessage || "Order status updated successfully!"}
+        buttonText="OK"
+        onButtonPress={() => setShowSuccessModal(false)}
+      />
+
       {/* Error Modal */}
       <ErrorModal
         visible={showErrorModal}
         onClose={() => setShowErrorModal(false)}
         title="Error"
-        message={error || "Failed to load delivery details. Please try again."}
+        message={error || updateOrderStatusError || "Failed to load delivery details. Please try again."}
         buttonText="OK"
         onButtonPress={() => setShowErrorModal(false)}
       />
@@ -498,6 +548,9 @@ const styles = StyleSheet.create({
     fontSize: fontSizes.base,
     fontFamily: 'Poppins-SemiBold',
     color: '#fff',
+  },
+  disabledButton: {
+    opacity: 0.6,
   },
   emptyContainer: {
     flex: 1,

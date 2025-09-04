@@ -261,7 +261,7 @@ const FarmDetailsScreen = ({ navigation, route }) => {
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="light-content" backgroundColor="#019a34" />
+        <StatusBar backgroundColor="#019a34" barStyle="light-content" />
         <CommonHeader
           screenName="Farm Details"
           showBackButton={true}
@@ -278,7 +278,7 @@ const FarmDetailsScreen = ({ navigation, route }) => {
   if (!selectedFarm) {
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="light-content" backgroundColor="#019a34" />
+        <StatusBar backgroundColor="#019a34" barStyle="light-content" />
         <CommonHeader
           screenName="Farm Details"
           showBackButton={true}
@@ -300,7 +300,7 @@ const FarmDetailsScreen = ({ navigation, route }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#019a34" />
+      <StatusBar backgroundColor="#019a34" barStyle="light-content" />
       <CommonHeader
         screenName="Farm Details"
         showBackButton={true}

@@ -476,7 +476,7 @@ const ProfileEditScreen = ({ navigation, route }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#019a34" />
+      <StatusBar backgroundColor="#019a34" barStyle="light-content" />
       
       <CommonHeader 
         screenName="Edit Profile"

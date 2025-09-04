@@ -16,7 +16,7 @@ import { SkeletonLoader } from '../../../components';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { p } from '../../../utils/Responsive';
 import { fontSizes } from '../../../utils/fonts';
-import { fetchTodaysTasks, updateTaskStatus } from '../../../redux/slices/todaysTaskSlice';
+import { fetchTodaysTasks, updateTaskStatus, updateOrderStatus, updateAssignmentStatus, updatePaymentStatus } from '../../../redux/slices/todaysTaskSlice';
 
 const TodaysTaskScreen = ({ navigation }) => {
   const dispatch = useDispatch();
@@ -63,7 +63,13 @@ const TodaysTaskScreen = ({ navigation }) => {
         {
           text: 'Confirm',
           onPress: () => {
-            dispatch(updateTaskStatus({ taskId, status: newStatus }));
+            // Map status to API format
+            let apiStatus = newStatus;
+            if (newStatus === 'in_progress') {
+              apiStatus = 'out_for_delivery';
+            }
+            
+            dispatch(updateOrderStatus({ orderId: taskId, status: apiStatus }));
             
             if (newStatus === 'delivered') {
               setCompletedTasks(prev => prev + 1);
@@ -129,56 +135,79 @@ const TodaysTaskScreen = ({ navigation }) => {
         key={task.id}
         style={styles.taskCard}
         onPress={() => handleTaskPress(task)}
+        activeOpacity={0.7}
       >
-        <View style={styles.taskHeader}>
+        {/* Card Header */}
+        <View style={styles.cardHeader}>
           <View style={styles.taskInfo}>
-            <Text style={styles.orderId}>Order #{task.id}</Text>
+            <View style={styles.orderIdContainer}>
+              <Icon name="hashtag" size={p(12)} color="#2563eb" />
+              <Text style={styles.orderId}>{task.id}</Text>
+            </View>
             <Text style={styles.customerName}>
               {task.uniqueFarmers && task.uniqueFarmers.length > 0 ? 
                 task.uniqueFarmers[0].name : 'Customer'}
             </Text>
           </View>
-          <View style={styles.taskBadges}>
-            <View style={[styles.statusBadge, { backgroundColor: getStatusColor(task.delivery_status) }]}>
-              <Text style={styles.statusText}>{getStatusText(task.delivery_status)}</Text>
+          <View style={[styles.statusBadge, { backgroundColor: getStatusColor(task.delivery_status) }]}>
+            <View style={styles.statusDot} />
+            <Text style={styles.statusText}>{getStatusText(task.delivery_status)}</Text>
+          </View>
+        </View>
+
+        {/* Card Content */}
+        <View style={styles.cardContent}>
+          <View style={styles.taskDetails}>
+            <View style={styles.detailRow}>
+              <View style={styles.detailIconContainer}>
+                <Icon name="map-marker" size={p(14)} color="#6b7280" />
+              </View>
+              <Text style={styles.detailText}>{address}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <View style={styles.detailIconContainer}>
+                <Icon name="credit-card" size={p(14)} color="#6b7280" />
+              </View>
+              <Text style={styles.detailText}>
+                {task.payment_method} • {task.payment_status}
+              </Text>
+            </View>
+            <View style={styles.detailRow}>
+              <View style={styles.detailIconContainer}>
+                <Icon name="calendar" size={p(14)} color="#6b7280" />
+              </View>
+              <Text style={styles.detailText}>
+                Ordered: {new Date(task.created_at).toLocaleDateString()}
+              </Text>
             </View>
           </View>
-        </View>
 
-        <View style={styles.taskDetails}>
-          <View style={styles.detailRow}>
-            <Icon name="map-marker" size={p(14)} color="#666" />
-            <Text style={styles.detailText}>{address}</Text>
+          {/* Amount Section */}
+          <View style={styles.amountSection}>
+            <View style={styles.amountContainer}>
+              <Text style={styles.amountLabel}>Total Amount</Text>
+              <Text style={styles.totalAmount}>₹{task.total_amount}</Text>
+            </View>
+            <View style={styles.deliveryIconContainer}>
+              <Icon name="truck" size={p(20)} color="#2563eb" />
+            </View>
           </View>
-          <View style={styles.detailRow}>
-            <Icon name="credit-card" size={p(14)} color="#666" />
-            <Text style={styles.detailText}>
-              Payment: {task.payment_method} ({task.payment_status})
-            </Text>
-          </View>
-          <View style={styles.detailRow}>
-            <Icon name="calendar" size={p(14)} color="#666" />
-            <Text style={styles.detailText}>
-              Ordered: {new Date(task.created_at).toLocaleDateString()}
-            </Text>
-          </View>
-        </View>
 
-        <View style={styles.taskFooter}>
-          <View style={styles.itemsContainer}>
+          {/* Items Section */}
+          <View style={styles.itemsSection}>
             <Text style={styles.itemsLabel}>Items:</Text>
             <Text style={styles.itemsText}>{items}</Text>
           </View>
-          <Text style={styles.totalAmount}>₹{task.total_amount}</Text>
         </View>
 
+        {/* Action Buttons */}
         {task.delivery_status === 'ready_for_delivery' && (
           <View style={styles.actionButtons}>
             <TouchableOpacity
               style={[styles.actionButton, styles.startButton]}
               onPress={() => handleStatusChange(task.id, 'in_progress')}
             >
-              <Icon name="play" size={p(14)} color="#fff" />
+              <Icon name="play" size={p(16)} color="#fff" />
               <Text style={styles.actionButtonText}>Start Delivery</Text>
             </TouchableOpacity>
           </View>
@@ -190,7 +219,7 @@ const TodaysTaskScreen = ({ navigation }) => {
               style={[styles.actionButton, styles.completeButton]}
               onPress={() => handleStatusChange(task.id, 'delivered')}
             >
-              <Icon name="check" size={p(14)} color="#fff" />
+              <Icon name="check" size={p(16)} color="#fff" />
               <Text style={styles.actionButtonText}>Mark Complete</Text>
             </TouchableOpacity>
           </View>
@@ -198,10 +227,13 @@ const TodaysTaskScreen = ({ navigation }) => {
 
         {task.delivery_status === 'delivered' && (
           <View style={styles.completedIndicator}>
-            <Icon name="check-circle" size={p(20)} color="#28a745" />
+            <Icon name="check-circle" size={p(20)} color="#059669" />
             <Text style={styles.completedText}>Delivery Completed</Text>
           </View>
         )}
+
+        {/* Card Footer */}
+        <View style={styles.cardFooter} />
       </TouchableOpacity>
     );
   };
@@ -224,7 +256,7 @@ const TodaysTaskScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#019a34" />
+      <StatusBar backgroundColor="#019a34" barStyle="light-content" />
       <CommonHeader
         screenName="Today's Tasks"
         showNotification={true}
@@ -275,7 +307,9 @@ const TodaysTaskScreen = ({ navigation }) => {
               tasks.map(renderTaskCard)
             ) : (
               <View style={styles.emptyContainer}>
-                <Icon name="check-circle" size={p(60)} color="#28a745" />
+                <View style={styles.emptyIconContainer}>
+                  <Icon name="check-circle" size={p(48)} color="#059669" />
+                </View>
                 <Text style={styles.emptyText}>No tasks for today!</Text>
                 <Text style={styles.emptySubtext}>All deliveries are completed</Text>
               </View>
@@ -301,8 +335,8 @@ const styles = StyleSheet.create({
   },
   progressCard: {
     backgroundColor: '#fff',
-    borderRadius: p(16),
-    padding: p(20),
+    borderRadius: p(12),
+    padding: p(16),
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -365,110 +399,152 @@ const styles = StyleSheet.create({
   },
   taskCard: {
     backgroundColor: '#fff',
-    borderRadius: p(12),
-    padding: p(16),
-    marginBottom: p(12),
+    borderRadius: p(8),
+    marginBottom: p(8),
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
+    overflow: 'hidden',
   },
-  taskHeader: {
+  cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: p(12),
+    alignItems: 'center',
+    paddingHorizontal: p(12),
+    paddingTop: p(12),
+    paddingBottom: p(8),
+    backgroundColor: '#fafafa',
   },
   taskInfo: {
     flex: 1,
   },
+  orderIdContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: p(2),
+  },
   orderId: {
-    fontSize: fontSizes.lg,
+    fontSize: fontSizes.sm,
     fontFamily: 'Poppins-Bold',
-    color: '#019a34',
-    marginBottom: p(4),
+    color: '#2563eb',
+    marginLeft: p(4),
   },
   customerName: {
     fontSize: fontSizes.base,
     fontFamily: 'Poppins-SemiBold',
-    color: '#333',
+    color: '#1f2937',
   },
-  taskBadges: {
+  statusBadge: {
     flexDirection: 'row',
-    gap: p(8),
-  },
-  priorityBadge: {
+    alignItems: 'center',
     paddingHorizontal: p(8),
     paddingVertical: p(4),
     borderRadius: p(12),
   },
-  priorityText: {
-    fontSize: fontSizes.xs,
-    fontFamily: 'Poppins-Bold',
-    color: '#fff',
-  },
-  statusBadge: {
-    paddingHorizontal: p(12),
-    paddingVertical: p(6),
-    borderRadius: p(16),
+  statusDot: {
+    width: p(4),
+    height: p(4),
+    borderRadius: p(2),
+    backgroundColor: '#fff',
+    marginRight: p(4),
   },
   statusText: {
-    fontSize: fontSizes.sm,
+    fontSize: fontSizes.xs,
     fontFamily: 'Poppins-SemiBold',
     color: '#fff',
   },
+  cardContent: {
+    paddingHorizontal: p(12),
+    paddingBottom: p(8),
+  },
   taskDetails: {
-    marginBottom: p(12),
+    marginBottom: p(8),
   },
   detailRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: p(6),
+    marginBottom: p(4),
+  },
+  detailIconContainer: {
+    width: p(16),
+    height: p(16),
+    borderRadius: p(8),
+    backgroundColor: '#f3f4f6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: p(6),
   },
   detailText: {
-    fontSize: fontSizes.sm,
+    fontSize: fontSizes.xs,
     fontFamily: 'Poppins-Regular',
-    color: '#666',
-    marginLeft: p(8),
+    color: '#4a4a4a',
     flex: 1,
   },
-  taskFooter: {
+  amountSection: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: p(12),
+    paddingVertical: p(8),
+    paddingHorizontal: p(8),
+    backgroundColor: '#f8fafc',
+    borderRadius: p(6),
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    marginBottom: p(8),
   },
-  itemsContainer: {
+  amountContainer: {
     flex: 1,
   },
+  amountLabel: {
+    fontSize: fontSizes.xs,
+    fontFamily: 'Poppins-Medium',
+    color: '#666',
+    marginBottom: p(2),
+  },
+  totalAmount: {
+    fontSize: fontSizes.base,
+    fontFamily: 'Poppins-Bold',
+    color: '#059669',
+  },
+  deliveryIconContainer: {
+    width: p(24),
+    height: p(24),
+    borderRadius: p(12),
+    backgroundColor: '#dbeafe',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  itemsSection: {
+    marginBottom: p(8),
+  },
   itemsLabel: {
-    fontSize: fontSizes.sm,
+    fontSize: fontSizes.xs,
     fontFamily: 'Poppins-SemiBold',
     color: '#333',
     marginBottom: p(2),
   },
   itemsText: {
-    fontSize: fontSizes.sm,
+    fontSize: fontSizes.xs,
     fontFamily: 'Poppins-Regular',
     color: '#666',
   },
-  totalAmount: {
-    fontSize: fontSizes.lg,
-    fontFamily: 'Poppins-Bold',
-    color: '#019a34',
-  },
   actionButtons: {
     flexDirection: 'row',
-    gap: p(8),
+    paddingHorizontal: p(12),
+    paddingBottom: p(8),
+    paddingTop: p(6),
   },
   actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: p(16),
-    paddingVertical: p(10),
-    borderRadius: p(8),
-    gap: p(6),
+    justifyContent: 'center',
+    paddingHorizontal: p(12),
+    paddingVertical: p(8),
+    borderRadius: p(6),
+    gap: p(4),
+    flex: 1,
   },
   startButton: {
     backgroundColor: '#019a34',
@@ -486,25 +562,40 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: p(8),
-    backgroundColor: '#d4edda',
+    backgroundColor: '#d1fae5',
     borderRadius: p(8),
     gap: p(8),
+    marginHorizontal: p(12),
+    marginBottom: p(8),
   },
   completedText: {
     fontSize: fontSizes.sm,
     fontFamily: 'Poppins-SemiBold',
-    color: '#28a745',
+    color: '#059669',
+  },
+  cardFooter: {
+    height: p(2),
+    backgroundColor: '#019a34',
+    opacity: 0.1,
   },
   emptyContainer: {
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: p(60),
   },
+  emptyIconContainer: {
+    width: p(80),
+    height: p(80),
+    borderRadius: p(40),
+    backgroundColor: '#f3f4f6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: p(16),
+  },
   emptyText: {
     fontSize: fontSizes.lg,
     fontFamily: 'Poppins-SemiBold',
-    color: '#28a745',
-    marginTop: p(16),
+    color: '#333',
     marginBottom: p(8),
   },
   emptySubtext: {

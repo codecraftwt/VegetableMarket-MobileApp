@@ -20,14 +20,18 @@ import {
   fetchDeliveryDetails,
   clearDeliveryError
 } from '../../../redux/slices/deliverySlice';
+import { updateOrderStatus, updateAssignmentStatus, updatePaymentStatus } from '../../../redux/slices/todaysTaskSlice';
 import ErrorModal from '../../../components/ErrorModal';
+import SuccessModal from '../../../components/SuccessModal';
 
 const DeliveryDetailsScreen = ({ navigation, route }) => {
   const dispatch = useDispatch();
   const { deliveryDetails, loadingDetails, error } = useSelector(state => state.delivery);
+  const { loading: updateOrderStatusLoading, error: updateOrderStatusError, success: updateOrderStatusSuccess, message: updateOrderStatusMessage } = useSelector(state => state.todaysTask);
   const { orderId } = route.params;
   
   const [showErrorModal, setShowErrorModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -44,6 +48,18 @@ const DeliveryDetailsScreen = ({ navigation, route }) => {
     }
   }, [error]);
 
+  useEffect(() => {
+    if (updateOrderStatusSuccess && updateOrderStatusMessage) {
+      setShowSuccessModal(true);
+    }
+  }, [updateOrderStatusSuccess, updateOrderStatusMessage]);
+
+  useEffect(() => {
+    if (updateOrderStatusError) {
+      setShowErrorModal(true);
+    }
+  }, [updateOrderStatusError]);
+
   const handleBackPress = () => {
     navigation.goBack();
   };
@@ -54,6 +70,26 @@ const DeliveryDetailsScreen = ({ navigation, route }) => {
 
   const handleCallFarmer = (phone) => {
     Linking.openURL(`tel:${phone}`);
+  };
+
+  const handleStartDelivery = () => {
+    if (deliveryDetails?.order?.id) {
+      dispatch(updateOrderStatus({ orderId: deliveryDetails.order.id, status: 'out_for_delivery' }));
+    }
+  };
+
+  const handleMarkComplete = () => {
+    if (deliveryDetails?.order?.id) {
+      dispatch(updateOrderStatus({ orderId: deliveryDetails.order.id, status: 'delivered' }));
+    }
+  };
+
+  const handleUpdateAssignmentStatus = (assignmentId, status) => {
+    dispatch(updateAssignmentStatus({ assignmentId, status }));
+  };
+
+  const handleUpdatePaymentStatus = (orderId, paymentStatus) => {
+    dispatch(updatePaymentStatus({ orderId, paymentStatus }));
   };
 
   const getStatusColor = (status) => {
@@ -248,6 +284,52 @@ const DeliveryDetailsScreen = ({ navigation, route }) => {
     );
   };
 
+  const renderActionButtons = () => {
+    if (!deliveryDetails?.order) return null;
+    
+    const { order } = deliveryDetails;
+    
+    return (
+      <View style={styles.section}>
+        <View style={styles.actionButtonsContainer}>
+          {order.delivery_status === 'ready_for_delivery' && (
+            <TouchableOpacity
+              style={[styles.actionButton, styles.startButton, updateOrderStatusLoading && styles.disabledButton]}
+              onPress={handleStartDelivery}
+              disabled={updateOrderStatusLoading}
+            >
+              {updateOrderStatusLoading ? (
+                <Icon name="spinner" size={p(16)} color="#fff" />
+              ) : (
+                <Icon name="play" size={p(16)} color="#fff" />
+              )}
+              <Text style={styles.actionButtonText}>
+                {updateOrderStatusLoading ? 'Starting...' : 'Start Delivery'}
+              </Text>
+            </TouchableOpacity>
+          )}
+          
+          {order.delivery_status === 'out_for_delivery' && (
+            <TouchableOpacity
+              style={[styles.actionButton, styles.completeButton, updateOrderStatusLoading && styles.disabledButton]}
+              onPress={handleMarkComplete}
+              disabled={updateOrderStatusLoading}
+            >
+              {updateOrderStatusLoading ? (
+                <Icon name="spinner" size={p(16)} color="#fff" />
+              ) : (
+                <Icon name="check" size={p(16)} color="#fff" />
+              )}
+              <Text style={styles.actionButtonText}>
+                {updateOrderStatusLoading ? 'Completing...' : 'Mark Complete'}
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+    );
+  };
+
   const renderSkeletonLoader = () => (
     <View style={styles.loadingContainer}>
       {[1, 2, 3, 4].map((index) => (
@@ -263,7 +345,7 @@ const DeliveryDetailsScreen = ({ navigation, route }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#019a34" />
+      <StatusBar backgroundColor="#019a34" barStyle="light-content" />
       <CommonHeader
         screenName="Delivery Details"
         showBackButton={true}
@@ -281,6 +363,7 @@ const DeliveryDetailsScreen = ({ navigation, route }) => {
             {renderDeliveryAddress()}
             {renderOrderItems()}
             {renderFarmerAddresses()}
+            {renderActionButtons()}
           </ScrollView>
         ) : (
           <View style={styles.emptyContainer}>
@@ -291,12 +374,22 @@ const DeliveryDetailsScreen = ({ navigation, route }) => {
         )}
       </View>
 
+      {/* Success Modal */}
+      <SuccessModal
+        visible={showSuccessModal}
+        onClose={() => setShowSuccessModal(false)}
+        title="Success"
+        message={updateOrderStatusMessage || "Order status updated successfully!"}
+        buttonText="OK"
+        onButtonPress={() => setShowSuccessModal(false)}
+      />
+
       {/* Error Modal */}
       <ErrorModal
         visible={showErrorModal}
         onClose={() => setShowErrorModal(false)}
         title="Error"
-        message={error || "Failed to load delivery details. Please try again."}
+        message={error || updateOrderStatusError || "Failed to load delivery details. Please try again."}
         buttonText="OK"
         onButtonPress={() => setShowErrorModal(false)}
       />
@@ -517,6 +610,32 @@ const styles = StyleSheet.create({
     padding: p(16),
     marginBottom: p(12),
     gap: p(8),
+  },
+  actionButtonsContainer: {
+    gap: p(12),
+  },
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: p(20),
+    paddingVertical: p(14),
+    borderRadius: p(12),
+    gap: p(8),
+  },
+  startButton: {
+    backgroundColor: '#019a34',
+  },
+  completeButton: {
+    backgroundColor: '#28a745',
+  },
+  disabledButton: {
+    opacity: 0.6,
+  },
+  actionButtonText: {
+    fontSize: fontSizes.base,
+    fontFamily: 'Poppins-SemiBold',
+    color: '#fff',
   },
 });
 

@@ -381,7 +381,7 @@ const OrderDetailsScreen = ({ navigation, route }) => {
   if (loadingOrder || !selectedOrder) {
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="light-content" backgroundColor="#019a34" />
+        <StatusBar backgroundColor="#019a34" barStyle="light-content" />
         <CommonHeader
           screenName="Order Details"
           showBackButton={true}
@@ -397,7 +397,7 @@ const OrderDetailsScreen = ({ navigation, route }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#019a34" />
+      <StatusBar backgroundColor="#019a34" barStyle="light-content" />
       <CommonHeader
         screenName="Order Details"
         showBackButton={true}
