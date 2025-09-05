@@ -57,7 +57,8 @@ const MyOrdersScreen = ({ navigation }) => {
   };
 
   const handleBackPress = () => {
-    navigation.goBack();
+    // Navigate to home screen directly instead of going back to checkout
+    navigation.navigate('Dashboard');
   };
 
   const handleCancelOrder = (order) => {

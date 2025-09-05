@@ -167,15 +167,59 @@ const cartSlice = createSlice({
       })
       .addCase(updateCartQuantity.fulfilled, (state, action) => {
         state.updateLoading = false;
+        console.log('CartSlice: updateCartQuantity.fulfilled - Full payload:', JSON.stringify(action.payload, null, 2));
+        console.log('CartSlice: Action payload keys:', Object.keys(action.payload));
+        if (action.payload.data) {
+          console.log('CartSlice: Action payload.data keys:', Object.keys(action.payload.data));
+        }
+        
         // Update the specific item's quantity and subtotal
         const itemIndex = state.cartItems.findIndex(item => item.id === action.payload.id);
         if (itemIndex !== -1) {
-          state.cartItems[itemIndex].quantity_kg = action.payload.data.quantity;
-          state.cartItems[itemIndex].subtotal = action.payload.data.subtotal;
+          console.log('CartSlice: Found item at index:', itemIndex, 'Current item:', state.cartItems[itemIndex]);
+          
+          // Try different possible field names for quantity
+          const newQuantity = action.payload.data?.quantity || action.payload.data?.quantity_kg || action.payload.quantity;
+          const newSubtotal = action.payload.data?.subtotal || action.payload.subtotal;
+          
+          console.log('CartSlice: New quantity:', newQuantity, 'New subtotal:', newSubtotal);
+          
+          if (newQuantity !== undefined) {
+            state.cartItems[itemIndex].quantity_kg = newQuantity;
+            console.log('CartSlice: Updated quantity_kg to:', newQuantity);
+          } else {
+            // If no quantity in response, use the quantity from the request
+            // This ensures the Redux state stays in sync with what was sent
+            const requestedQuantity = action.meta.arg.quantity;
+            if (requestedQuantity !== undefined) {
+              state.cartItems[itemIndex].quantity_kg = requestedQuantity;
+              console.log('CartSlice: Using requested quantity as fallback:', requestedQuantity);
+            } else {
+              console.log('CartSlice: No quantity found in API response or request, keeping current value');
+            }
+          }
+          
+          if (newSubtotal !== undefined) {
+            state.cartItems[itemIndex].subtotal = newSubtotal;
+            console.log('CartSlice: Updated subtotal to:', newSubtotal);
+          } else {
+            // If no subtotal in response, calculate it manually
+            const pricePerKg = parseFloat(state.cartItems[itemIndex].price_per_kg);
+            const quantity = state.cartItems[itemIndex].quantity_kg;
+            const calculatedSubtotal = (pricePerKg * quantity).toFixed(2);
+            state.cartItems[itemIndex].subtotal = calculatedSubtotal;
+            console.log('CartSlice: Calculated subtotal:', calculatedSubtotal);
+          }
+          
           // Recalculate total amount
           state.totalAmount = state.cartItems.reduce((sum, item) => 
             sum + parseFloat(item.subtotal), 0
           );
+          
+          console.log('CartSlice: Updated item:', state.cartItems[itemIndex]);
+          console.log('CartSlice: New total amount:', state.totalAmount);
+        } else {
+          console.log('CartSlice: Item not found with id:', action.payload.id);
         }
       })
       .addCase(updateCartQuantity.rejected, (state, action) => {

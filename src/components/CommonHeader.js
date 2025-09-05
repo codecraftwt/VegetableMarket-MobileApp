@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { p } from '../utils/Responsive';
 import { fontSizes } from '../utils/fonts';
@@ -69,7 +69,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: p(20),
     // paddingTop: p(60),
     // paddingBottom: p(20),
-    paddingVertical: p(6),
+    paddingVertical: Platform.OS === 'ios' ? p(7) : p(15),
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,

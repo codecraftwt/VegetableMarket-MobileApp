@@ -50,6 +50,7 @@ const CartScreen = ({ navigation }) => {
   const [itemToRemove, setItemToRemove] = useState(null);
   const [updatingItems, setUpdatingItems] = useState(new Set()); // Track which items are being updated
   const [removingItems, setRemovingItems] = useState(new Set()); // Track which items are being removed
+  const [isRefreshing, setIsRefreshing] = useState(false); // Track if cart is refreshing
 
   // Fetch cart when component mounts and when screen comes into focus
   useFocusEffect(
@@ -70,25 +71,10 @@ const CartScreen = ({ navigation }) => {
   // Manual refresh function for when we need to sync with server
   const refreshCart = () => {
     console.log('CartScreen: Manually refreshing cart...');
+    setIsRefreshing(true);
     dispatch(fetchCart());
   };
 
-  // Additional focus effect for immediate cart refresh when returning from other screens
-  useFocusEffect(
-    React.useCallback(() => {
-      // This will run every time the screen comes into focus
-      // Useful for refreshing cart after adding items from other screens
-      const refreshCartOnFocus = () => {
-        console.log('CartScreen: Refreshing cart on focus...');
-        refreshCart();
-      };
-      
-      // Small delay to ensure smooth navigation
-      const timer = setTimeout(refreshCartOnFocus, 100);
-      
-      return () => clearTimeout(timer);
-    }, [dispatch])
-  );
 
   // Handle cleanup when screen loses focus
   useFocusEffect(
@@ -103,24 +89,32 @@ const CartScreen = ({ navigation }) => {
 
   // Update local state when Redux state changes
   useEffect(() => {
+    // Always sync local state with Redux state when Redux changes
+    console.log('CartScreen: Syncing local state with Redux - Items:', reduxCartItems.length, 'Total:', reduxTotalAmount);
+    setLocalCartItems([...reduxCartItems]); // Create new array reference
+    setLocalTotalAmount(reduxTotalAmount);
+    setForceUpdate(prev => prev + 1); // Force re-render
+    
+    // Reset refreshing state when data is updated
+    if (isRefreshing) {
+      setIsRefreshing(false);
+    }
+    
     if (reduxCartItems.length > 0 || reduxTotalAmount > 0) {
-      console.log('CartScreen: Updating local state from Redux - Items:', reduxCartItems.length, 'Total:', reduxTotalAmount);
-      setLocalCartItems([...reduxCartItems]); // Create new array reference
-      setLocalTotalAmount(reduxTotalAmount);
-      setForceUpdate(prev => prev + 1); // Force re-render
       setIsInitialized(true); // Mark as initialized
     } else if (!loading && reduxCartItems.length === 0 && reduxTotalAmount === 0) {
       // Only mark as initialized if we're not loading and have confirmed empty cart
       console.log('CartScreen: Confirmed empty cart, marking as initialized');
       setIsInitialized(true);
     }
-  }, [reduxCartItems, reduxTotalAmount, loading]);
+  }, [reduxCartItems, reduxTotalAmount, loading, isRefreshing]);
 
   // Debug: Monitor local cart state changes
   useEffect(() => {
     console.log('CartScreen: Local cart state updated - Items:', localCartItems.length, 'Total:', localTotalAmount);
-    localCartItems.forEach(item => {
-      console.log(`CartScreen: Item ${item.name} - Quantity: ${item.quantity_kg}, Price: ${item.price_per_kg}`);
+    localCartItems.forEach((item, index) => {
+      console.log(`CartScreen: Item ${index} - Name: ${item.name}, Quantity: ${item.quantity_kg}, Unit: ${item.unit_type}, Price: ${item.price_per_kg}`);
+      console.log('CartScreen: Full item object:', JSON.stringify(item, null, 2));
     });
   }, [localCartItems, localTotalAmount]);
 
@@ -142,8 +136,9 @@ const CartScreen = ({ navigation }) => {
     const currentItem = localCartItems.find(item => item.id === itemId);
     if (!currentItem) return;
 
-    const newQuantity = Math.max(1, currentItem.quantity_kg + change);
-    console.log('CartScreen: Updating quantity for item:', currentItem.name, 'from', currentItem.quantity_kg, 'to', newQuantity);
+    const currentQuantity = currentItem.quantity_kg || currentItem.quantity || 0;
+    const newQuantity = Math.max(1, currentQuantity + change);
+    console.log('CartScreen: Updating quantity for item:', currentItem.name, 'from', currentQuantity, 'to', newQuantity);
     
     // Don't allow quantity less than 1
     if (newQuantity < 1) {
@@ -163,7 +158,7 @@ const CartScreen = ({ navigation }) => {
     setUpdatingItems(prev => new Set(prev).add(itemId));
     
     // Store original values for rollback on error
-    const originalQuantity = currentItem.quantity_kg;
+    const originalQuantity = currentQuantity;
     const originalTotal = localTotalAmount;
     
     // Update local state immediately for instant feedback (optimistic update)
@@ -175,7 +170,7 @@ const CartScreen = ({ navigation }) => {
     
     // Calculate new total amount
     const newLocalTotalAmount = updatedLocalCartItems.reduce((sum, item) => 
-      sum + (parseFloat(item.price_per_kg) * item.quantity_kg), 0
+      sum + (parseFloat(item.price_per_kg) * (item.quantity_kg || item.quantity || 0)), 0
     );
     
     console.log('CartScreen: Updating local state - new quantity:', newQuantity, 'new total:', newLocalTotalAmount);
@@ -186,14 +181,26 @@ const CartScreen = ({ navigation }) => {
     setForceUpdate(prev => prev + 1); // Force re-render
     
     // Add small delay to prevent rapid successive clicks
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise(resolve => setTimeout(resolve, 25));
     
     try {
       console.log('CartScreen: Making API call to update quantity');
       await dispatch(updateCartQuantity({ id: itemId, quantity: newQuantity })).unwrap();
       console.log('CartScreen: API call successful, quantity updated');
-      setSuccessMessage('Quantity updated successfully!');
-      setShowSuccessModal(true);
+      
+      // Small delay to ensure Redux state is updated, then sync with Redux
+      setTimeout(() => {
+        console.log('CartScreen: Syncing with Redux state after successful update');
+        // The useEffect will automatically sync local state with Redux state
+        // This ensures the UI shows the correct quantity from Redux
+      }, 50);
+      
+      // Show success modal after API call succeeds
+      if (!showSuccessModal) {
+        setSuccessMessage('Quantity updated successfully!');
+        setShowSuccessModal(true);
+      }
+      
     } catch (error) {
       console.error('CartScreen: Quantity update error:', error);
       // Show specific error message from API
@@ -236,30 +243,47 @@ const CartScreen = ({ navigation }) => {
     // Mark this item as being removed
     setRemovingItems(prev => new Set(prev).add(itemToRemove.id));
     
+    // Store original values for rollback on error
+    const originalCartItems = [...localCartItems];
+    const originalTotal = localTotalAmount;
+    
+    // Update local state immediately for instant feedback (optimistic update)
+    const updatedLocalCartItems = localCartItems.filter(item => item.id !== itemToRemove.id);
+    const newLocalTotalAmount = updatedLocalCartItems.reduce((sum, item) => 
+      sum + (parseFloat(item.price_per_kg) * (item.quantity_kg || item.quantity || 0)), 0
+    );
+    
+    console.log('CartScreen: Optimistically removing item, new total:', newLocalTotalAmount);
+    
+    // Update local state immediately
+    setLocalCartItems([...updatedLocalCartItems]);
+    setLocalTotalAmount(newLocalTotalAmount);
+    setForceUpdate(prev => prev + 1);
+    
+    // Clear the item to remove and close modal
+    setItemToRemove(null);
+    setShowConfirmationModal(false);
+    
     try {
       await dispatch(removeFromCart(itemToRemove.id)).unwrap();
       console.log('CartScreen: Item removed successfully');
-      setSuccessMessage(`${itemToRemove.name} removed from cart successfully!`);
-      setShowSuccessModal(true);
       
-      // Update local state immediately after successful removal
-      // No need to refresh entire cart - just remove the item locally
-      const updatedLocalCartItems = localCartItems.filter(item => item.id !== itemToRemove.id);
-      const newLocalTotalAmount = updatedLocalCartItems.reduce((sum, item) => 
-        sum + (parseFloat(item.price_per_kg) * item.quantity_kg), 0
-      );
+      // Show success modal after API call succeeds
+      if (!showSuccessModal) {
+        setSuccessMessage(`${itemToRemove.name} removed from cart successfully!`);
+        setShowSuccessModal(true);
+      }
       
-      setLocalCartItems([...updatedLocalCartItems]); // Create new array reference
-      setLocalTotalAmount(newLocalTotalAmount);
-      setForceUpdate(prev => prev + 1); // Force re-render
-      
-      // Clear the item to remove
-      setItemToRemove(null);
-      setShowConfirmationModal(false);
     } catch (error) {
       console.error('CartScreen: Remove from cart error:', error);
       setErrorMessage(error.message || 'Failed to remove item from cart. Please try again.');
       setShowErrorModal(true);
+      
+      console.log('CartScreen: Rolling back optimistic remove due to error');
+      // Revert local state on error (rollback optimistic update)
+      setLocalCartItems([...originalCartItems]);
+      setLocalTotalAmount(originalTotal);
+      setForceUpdate(prev => prev + 1);
       
       // Clear the item to remove on error
       setItemToRemove(null);
@@ -321,29 +345,29 @@ const CartScreen = ({ navigation }) => {
             <TouchableOpacity 
               style={[styles.quantityButton, isItemUpdating && styles.disabledButton]} 
               onPress={() => handleQuantityChange(item.id, -1)}
-              disabled={isItemUpdating || item.quantity_kg <= 1}
+              disabled={isItemUpdating || (item.quantity_kg || item.quantity || 0) <= 1}
             >
               {isItemUpdating ? (
                 <SkeletonLoader type="category" width={14} height={14} borderRadius={7} />
               ) : (
-                <Icon name="minus" size={16} color={item.quantity_kg <= 1 ? "#ccc" : "#666"} />
+                <Icon name="minus" size={16} color={(item.quantity_kg || item.quantity || 0) <= 1 ? "#ccc" : "#666"} />
               )}
             </TouchableOpacity>
             <Text style={[
               styles.quantityText, 
-              (item.quantity_kg <= 1 || item.quantity_kg >= 99) && styles.quantityTextLimit
+              ((item.quantity_kg || item.quantity || 0) <= 1 || (item.quantity_kg || item.quantity || 0) >= 99) && styles.quantityTextLimit
             ]}>
-              {item.quantity_kg} {item.unit_type}
+              {item.quantity_kg || item.quantity || 0} {item.unit_type || 'kg'}
             </Text>
             <TouchableOpacity 
               style={[styles.quantityButton, isItemUpdating && styles.disabledButton]} 
               onPress={() => handleQuantityChange(item.id, 1)}
-              disabled={isItemUpdating || item.quantity_kg >= 99}
+              disabled={isItemUpdating || (item.quantity_kg || item.quantity || 0) >= 99}
             >
               {isItemUpdating ? (
                 <SkeletonLoader type="category" width={14} height={14} borderRadius={7} />
               ) : (
-                <Icon name="plus" size={16} color={item.quantity_kg >= 99 ? "#ccc" : "#019a34"} />
+                <Icon name="plus" size={16} color={(item.quantity_kg || item.quantity || 0) >= 99 ? "#ccc" : "#019a34"} />
               )}
             </TouchableOpacity>
           </View>
@@ -415,6 +439,7 @@ const CartScreen = ({ navigation }) => {
 
   const handleSuccessModalClose = () => {
     setShowSuccessModal(false);
+    setSuccessMessage('');
     // No need to refresh cart - local state is already updated
   };
 
@@ -434,7 +459,7 @@ const CartScreen = ({ navigation }) => {
         <StatusBar backgroundColor="#019a34" barStyle="light-content" />
         <CommonHeader 
           screenName="Cart"
-          showBackButton={true}
+          showBackButton={false}
           onBackPress={handleBackPress}
           showNotification={true}
           onNotificationPress={handleNotificationPress}

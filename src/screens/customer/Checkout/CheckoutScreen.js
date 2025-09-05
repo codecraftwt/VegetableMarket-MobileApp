@@ -24,6 +24,11 @@ const CheckoutScreen = ({ navigation }) => {
   const dispatch = useDispatch();
   const { totalAmount, loading, cartItems, addresses: cartAddresses, paymentSettings } = useSelector(state => state.cart);
   const { user, profile, loading: profileLoading } = useSelector(state => state.profile);
+  
+  // Debug user data (only in development)
+  if (__DEV__) {
+    console.log('Profile state:', { user, profile, profileLoading });
+  }
   const { 
     orderData, 
     razorpayOrderId, 
@@ -57,9 +62,10 @@ const CheckoutScreen = ({ navigation }) => {
   // Use addresses from cart instead of profile
   const addresses = cartAddresses || [];
 
-  // Fetch cart when component mounts (cart already includes addresses and payment settings)
+  // Fetch cart and profile when component mounts
   useEffect(() => {
     dispatch(fetchCart());
+    dispatch(fetchProfile()); // Fetch profile to ensure user data is available
     
     // Cleanup function
     return () => {
@@ -69,11 +75,11 @@ const CheckoutScreen = ({ navigation }) => {
 
   // Set default selections when data loads
   useEffect(() => {
-    if (addresses.length > 0) {
+    if (addresses && addresses.length > 0) {
       setSelectedAddress(addresses[0]); // Select first address by default
     }
     // Set default payment method from cart data - only if it's active
-    if (paymentSettings.length > 0) {
+    if (paymentSettings && paymentSettings.length > 0) {
       const activePaymentMethod = paymentSettings.find(payment => payment.status === 'active');
       if (activePaymentMethod) {
         setSelectedPaymentMethod(activePaymentMethod);
@@ -83,10 +89,8 @@ const CheckoutScreen = ({ navigation }) => {
 
   // Handle order placement and Razorpay integration
   useEffect(() => {
-    console.log('Order effect triggered:', { orderSuccess, razorpayOrderId, paymentMethod: selectedPaymentMethod?.payment_method });
-    
     if (orderSuccess && razorpayOrderId && selectedPaymentMethod?.payment_method === 'RAZORPAY') {
-      console.log('Initializing Razorpay payment...');
+      console.log('Initializing Razorpay payment with Order ID:', razorpayOrderId);
       // Initialize Razorpay payment
       handleRazorpayPayment();
     } else if (orderSuccess && selectedPaymentMethod?.payment_method !== 'RAZORPAY') {
@@ -101,15 +105,8 @@ const CheckoutScreen = ({ navigation }) => {
 
   // Handle payment verification
   useEffect(() => {
-    console.log('Payment verification effect triggered:', { 
-      paymentVerified, 
-      paymentVerificationError,
-      paymentVerificationLoading 
-    });
-    
     if (paymentVerified) {
       console.log('Payment verified successfully, showing order confirmation modal');
-      console.log('Order data after verification:', orderData);
       setSuccessMessage('Order confirmed! Your payment was successful and order has been placed.');
       setShowSuccessModal(true);
       // Don't clear order data immediately, let user see the modal first
@@ -118,11 +115,6 @@ const CheckoutScreen = ({ navigation }) => {
     // Handle payment verification errors
     if (paymentVerificationError) {
       console.log('Payment verification failed:', paymentVerificationError);
-      console.log('Error details:', {
-        message: paymentVerificationError.message,
-        status: paymentVerificationError.status,
-        data: paymentVerificationError.data
-      });
       
       // Check if this is a backend error or payment verification error
       if (paymentVerificationError.status === 500 || paymentVerificationError.status === 400) {
@@ -136,7 +128,7 @@ const CheckoutScreen = ({ navigation }) => {
       // Clear the error after showing it
       dispatch(clearOrderData());
     }
-  }, [paymentVerified, paymentVerificationError, paymentVerificationLoading, orderData, setSuccessMessage, setShowErrorModal, setShowSuccessModal, dispatch, clearOrderData]);
+  }, [paymentVerified, paymentVerificationError, dispatch]);
 
   // Handle order errors
   useEffect(() => {
@@ -173,16 +165,119 @@ const CheckoutScreen = ({ navigation }) => {
     setShowConfirmPaymentModal(true);
   };
 
-  const handleRazorpayPayment = useCallback(() => {
-    console.log('handleRazorpayPayment called with:', { razorpayKey, razorpayOrderId, razorpayAmount });
+  // Define the payment handler function outside of the main function
+  const handlePaymentSuccess = useCallback((response) => {
+    console.log('Processing Razorpay payment response:', {
+      payment_id: response.razorpay_payment_id,
+      order_id: response.razorpay_order_id,
+      signature: response.razorpay_signature?.substring(0, 20) + '...'
+    });
     
+    // Validate payment response
+    if (!response.razorpay_payment_id || !response.razorpay_order_id || !response.razorpay_signature) {
+      console.error('Invalid Razorpay response:', response);
+      setErrorMessage('Invalid payment response. Please contact support.');
+      setShowErrorModal(true);
+      return;
+    }
+    
+    // Validate required data
+    if (!selectedAddress || !selectedAddress.id) {
+      console.error('Selected address is null or missing ID');
+      setErrorMessage('No delivery address selected. Please select an address and try again.');
+      setShowErrorModal(true);
+      return;
+    }
+    
+    // Try to get user data from profile or use fallback
+    const currentUser = user || profile?.user || { id: razorpayEmail }; // Fallback to email if no user ID
+    
+    if (!currentUser || !currentUser.id) {
+      console.error('User is null or missing ID. User object:', currentUser);
+      setErrorMessage('User session expired. Please login again.');
+      setShowErrorModal(true);
+      return;
+    }
+    
+    // Validate that the order_id from response matches our expected order_id
+    if (response.razorpay_order_id !== razorpayOrderId) {
+      console.error('ORDER ID MISMATCH!');
+      console.error('Expected order_id:', razorpayOrderId);
+      console.error('Received order_id:', response.razorpay_order_id);
+      setErrorMessage('Order ID mismatch detected. Please contact support.');
+      setShowErrorModal(true);
+      return;
+    }
+    
+    // Payment successful, verify with backend
+    // CRITICAL: Use the order_id from Razorpay response, not from Redux state
+    const paymentData = {
+      razorpay_payment_id: response.razorpay_payment_id,
+      razorpay_order_id: response.razorpay_order_id, // Use from response, not razorpayOrderId
+      razorpay_signature: response.razorpay_signature,
+      user_id: currentUser.id,
+      address_id: selectedAddress.id,
+      total_amount: totalAmount,
+      cart_items: cartItems.map(item => ({
+        id: item.id,
+        cart_id: item.cart_id,
+        vegetable_id: item.vegetable_id,
+        quantity_kg: item.quantity_kg,
+        price_per_kg: item.price_per_kg,
+        subtotal: item.subtotal,
+        created_at: item.created_at,
+        updated_at: item.updated_at,
+        vegetable: {
+          id: item.vegetable_id,
+          farmer_id: item.farmer_id,
+          category_id: item.category_id,
+          name: item.name,
+          description: item.description,
+          price_per_kg: item.price_per_kg,
+          unit_type: item.unit_type,
+          stock_kg: item.stock_kg,
+          quantity_available: item.quantity_available,
+          status: item.status,
+          is_organic: item.is_organic,
+          harvest_date: item.harvest_date,
+          grade: item.grade,
+          is_deleted: item.is_deleted,
+          created_at: item.created_at,
+          updated_at: item.updated_at,
+        }
+      }))
+    };
+    
+    console.log('Sending payment verification:', {
+      order_id: paymentData.razorpay_order_id,
+      user_id: paymentData.user_id,
+      address_id: paymentData.address_id,
+      total_amount: paymentData.total_amount,
+      cart_items_count: paymentData.cart_items.length
+    });
+    
+    try {
+      dispatch(verifyRazorpayPayment(paymentData));
+      console.log('verifyRazorpayPayment dispatched successfully');
+      
+      // Show loading state for payment verification
+      setSuccessMessage('Payment successful! Verifying payment and creating your order...');
+      setShowSuccessModal(true);
+    } catch (error) {
+      console.error('Error dispatching verifyRazorpayPayment:', error);
+      setErrorMessage('Failed to verify payment. Please contact support.');
+      setShowErrorModal(true);
+    }
+  }, [razorpayOrderId, user, selectedAddress, totalAmount, cartItems, dispatch, setErrorMessage, setShowErrorModal, setSuccessMessage]);
+
+  const handleRazorpayPayment = useCallback(() => {
     if (!razorpayKey || !razorpayOrderId || !razorpayAmount) {
       console.log('Razorpay configuration missing:', { razorpayKey, razorpayOrderId, razorpayAmount });
       setErrorMessage('Razorpay configuration error. Please try again.');
       setShowErrorModal(true);
       return;
     }
-
+console.log('razorpayKey', razorpayKey);
     const options = {
       description: 'Vegetable Market Order',
       image: 'https://your-logo-url.com/logo.png',
@@ -218,90 +313,12 @@ const CheckoutScreen = ({ navigation }) => {
           }
         }
       },
-      handler: function (response) {
-        console.log('Razorpay payment successful:', response);
-        console.log('Payment response received, starting verification process...');
-        
-        // Validate payment response
-        if (!response.razorpay_payment_id || !response.razorpay_order_id || !response.razorpay_signature) {
-          console.error('Invalid Razorpay response:', response);
-          setErrorMessage('Invalid payment response. Please contact support.');
-          setShowErrorModal(true);
-          return;
-        }
-        
-        console.log('Payment response validation passed, preparing verification data...');
-        
-        // Payment successful, verify with backend
-        const paymentData = {
-          razorpay_payment_id: response.razorpay_payment_id,
-          razorpay_order_id: response.razorpay_order_id,
-          razorpay_signature: response.razorpay_signature,
-          user_id: user?.id,
-          address_id: selectedAddress.id,
-          total_amount: totalAmount,
-          cart_items: cartItems.map(item => ({
-            id: item.id,
-            cart_id: item.cart_id,
-            vegetable_id: item.vegetable_id,
-            quantity_kg: item.quantity_kg,
-            price_per_kg: item.price_per_kg,
-            subtotal: item.subtotal,
-            created_at: item.created_at,
-            updated_at: item.updated_at,
-            vegetable: {
-              id: item.vegetable_id,
-              farmer_id: item.farmer_id,
-              category_id: item.category_id,
-              name: item.name,
-              description: item.description,
-              price_per_kg: item.price_per_kg,
-              unit_type: item.unit_type,
-              stock_kg: item.stock_kg,
-              quantity_available: item.quantity_available,
-              status: item.status,
-              is_organic: item.is_organic,
-              harvest_date: item.harvest_date,
-              grade: item.grade,
-              is_deleted: item.is_deleted,
-              created_at: item.created_at,
-              updated_at: item.updated_at,
-            }
-          }))
-        };
-        
-        console.log('Payment data prepared successfully:', {
-          razorpay_payment_id: paymentData.razorpay_payment_id,
-          razorpay_order_id: paymentData.razorpay_order_id,
-          user_id: paymentData.user_id,
-          address_id: paymentData.address_id,
-          total_amount: paymentData.total_amount,
-          cart_items_count: paymentData.cart_items.length
-        });
-        
-        console.log('Dispatching verifyRazorpayPayment with data:', paymentData);
-        console.log('Cart items being sent:', cartItems.length);
-        console.log('User ID:', user?.id);
-        console.log('Address ID:', selectedAddress.id);
-        console.log('Total Amount:', totalAmount);
-        
-        try {
-          dispatch(verifyRazorpayPayment(paymentData));
-          console.log('verifyRazorpayPayment dispatched successfully');
-          
-          // Show loading state for payment verification
-          setSuccessMessage('Payment successful! Verifying payment and creating your order...');
-          setShowSuccessModal(true);
-        } catch (error) {
-          console.error('Error dispatching verifyRazorpayPayment:', error);
-          setErrorMessage('Failed to verify payment. Please contact support.');
-          setShowErrorModal(true);
-        }
-      },
       modal: {
         ondismiss: function () {
           // Payment modal dismissed
-          console.log('Payment modal dismissed');
+          console.log('=== RAZORPAY MODAL DISMISSED ===');
+          console.log('User dismissed the payment modal');
+          console.log('===============================');
         }
       },
       // Add additional debugging
@@ -311,17 +328,22 @@ const CheckoutScreen = ({ navigation }) => {
     };
 
     try {
-      console.log('Opening Razorpay checkout with options:', {
-        key: options.key,
-        amount: options.amount,
-        order_id: options.order_id,
-        currency: options.currency
-      });
-      
-      RazorpayCheckout.open(options);
+      RazorpayCheckout.open(options)
+        .then((response) => {
+          console.log('Razorpay payment successful:', response);
+          handlePaymentSuccess(response);
+        })
+        .catch((error) => {
+          console.error('Razorpay payment failed:', error);
+          setErrorMessage('Payment failed. Please try again.');
+          setShowErrorModal(true);
+        });
       console.log('Razorpay checkout opened successfully');
     } catch (error) {
+      console.log('=== RAZORPAY INITIALIZATION ERROR ===');
       console.error('Razorpay error:', error);
+      console.log('Error details:', JSON.stringify(error, null, 2));
+      console.log('=====================================');
       setErrorMessage('Failed to open payment gateway. Please try again.');
       setShowErrorModal(true);
     }
@@ -332,7 +354,7 @@ const CheckoutScreen = ({ navigation }) => {
     
     // Place order first
     const orderData = {
-      address_id: selectedAddress.id,
+      address_id: selectedAddress?.id,
       payment_method: selectedPaymentMethod.payment_method
     };
     
@@ -398,7 +420,7 @@ const CheckoutScreen = ({ navigation }) => {
         razorpay_order_id: orderData.razorpay_order_id,
         razorpay_signature: orderData.razorpay_signature,
         user_id: user?.id,
-        address_id: selectedAddress.id,
+        address_id: selectedAddress?.id,
         total_amount: totalAmount,
         cart_items: cartItems.map(item => ({
           id: item.id,
@@ -753,6 +775,7 @@ const CheckoutScreen = ({ navigation }) => {
         message={successMessage}
         buttonText="View My Orders"
         onButtonPress={handleSuccessModalClose}
+        buttonStyle={styles.successModalButton}
       />
 
       {/* Error Modal */}
@@ -1282,6 +1305,16 @@ const styles = StyleSheet.create({
     color: '#856404',
     fontFamily: 'Poppins-Regular',
     marginLeft: p(5),
+  },
+  successModalButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: p(12),
+    paddingHorizontal: p(20),
+    backgroundColor: '#019a34',
+    borderRadius: p(25),
+    minHeight: p(50),
   },
 });
 

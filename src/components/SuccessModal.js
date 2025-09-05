@@ -15,7 +15,8 @@ const SuccessModal = ({
   onButtonPress,
   showSecondaryButton = false,
   secondaryButtonText = 'Cancel',
-  onSecondaryButtonPress
+  onSecondaryButtonPress,
+  buttonStyle
 }) => {
   const handleButtonPress = () => {
     if (onButtonPress) {
@@ -73,11 +74,11 @@ const SuccessModal = ({
             )}
             
             <TouchableOpacity 
-              style={[styles.button, styles.primaryButton]} 
+              style={[styles.button, styles.primaryButton, buttonStyle]} 
               onPress={handleButtonPress}
               activeOpacity={0.8}
             >
-              <Text style={styles.buttonText}>{buttonText}</Text>
+              <Text style={styles.buttonText} numberOfLines={1}>{buttonText}</Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
@@ -142,6 +143,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flex: 1,
     maxWidth: p(120),
+    flexDirection: 'row',
+    justifyContent: 'center',
   },
   primaryButton: {
     backgroundColor: '#4CAF50',
@@ -155,6 +158,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: fontSizes.base,
     fontFamily: 'Poppins-Bold',
+    textAlign: 'center',
   },
   secondaryButtonText: {
     color: '#4CAF50',
