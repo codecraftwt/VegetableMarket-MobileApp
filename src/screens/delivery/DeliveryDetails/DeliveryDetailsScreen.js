@@ -27,7 +27,16 @@ import SuccessModal from '../../../components/SuccessModal';
 const DeliveryDetailsScreen = ({ navigation, route }) => {
   const dispatch = useDispatch();
   const { deliveryDetails, loadingDetails, error } = useSelector(state => state.delivery);
-  const { loading: updateOrderStatusLoading, error: updateOrderStatusError, success: updateOrderStatusSuccess, message: updateOrderStatusMessage } = useSelector(state => state.todaysTask);
+  const { 
+    loading: updateOrderStatusLoading, 
+    error: updateOrderStatusError, 
+    success: updateOrderStatusSuccess, 
+    message: updateOrderStatusMessage,
+    loading: updatePaymentStatusLoading,
+    error: updatePaymentStatusError,
+    success: updatePaymentStatusSuccess,
+    message: updatePaymentStatusMessage
+  } = useSelector(state => state.todaysTask);
   const { orderId } = route.params;
   
   const [showErrorModal, setShowErrorModal] = useState(false);
@@ -55,10 +64,16 @@ const DeliveryDetailsScreen = ({ navigation, route }) => {
   }, [updateOrderStatusSuccess, updateOrderStatusMessage]);
 
   useEffect(() => {
-    if (updateOrderStatusError) {
+    if (updateOrderStatusError || updatePaymentStatusError) {
       setShowErrorModal(true);
     }
-  }, [updateOrderStatusError]);
+  }, [updateOrderStatusError, updatePaymentStatusError]);
+
+  useEffect(() => {
+    if (updatePaymentStatusSuccess && updatePaymentStatusMessage) {
+      setShowSuccessModal(true);
+    }
+  }, [updatePaymentStatusSuccess, updatePaymentStatusMessage]);
 
   const handleBackPress = () => {
     navigation.goBack();
@@ -90,6 +105,12 @@ const DeliveryDetailsScreen = ({ navigation, route }) => {
 
   const handleUpdatePaymentStatus = (orderId, paymentStatus) => {
     dispatch(updatePaymentStatus({ orderId, paymentStatus }));
+  };
+
+  const handleMarkPaymentPaid = () => {
+    if (deliveryDetails?.order?.id) {
+      dispatch(updatePaymentStatus({ orderId: deliveryDetails.order.id, paymentStatus: 'paid' }));
+    }
   };
 
   const getStatusColor = (status) => {
@@ -292,23 +313,6 @@ const DeliveryDetailsScreen = ({ navigation, route }) => {
     return (
       <View style={styles.section}>
         <View style={styles.actionButtonsContainer}>
-          {order.delivery_status === 'ready_for_delivery' && (
-            <TouchableOpacity
-              style={[styles.actionButton, styles.startButton, updateOrderStatusLoading && styles.disabledButton]}
-              onPress={handleStartDelivery}
-              disabled={updateOrderStatusLoading}
-            >
-              {updateOrderStatusLoading ? (
-                <Icon name="spinner" size={p(16)} color="#fff" />
-              ) : (
-                <Icon name="play" size={p(16)} color="#fff" />
-              )}
-              <Text style={styles.actionButtonText}>
-                {updateOrderStatusLoading ? 'Starting...' : 'Start Delivery'}
-              </Text>
-            </TouchableOpacity>
-          )}
-          
           {order.delivery_status === 'out_for_delivery' && (
             <TouchableOpacity
               style={[styles.actionButton, styles.completeButton, updateOrderStatusLoading && styles.disabledButton]}
@@ -389,7 +393,7 @@ const DeliveryDetailsScreen = ({ navigation, route }) => {
         visible={showErrorModal}
         onClose={() => setShowErrorModal(false)}
         title="Error"
-        message={error || updateOrderStatusError || "Failed to load delivery details. Please try again."}
+        message={error || updateOrderStatusError || updatePaymentStatusError || "Failed to load delivery details. Please try again."}
         buttonText="OK"
         onButtonPress={() => setShowErrorModal(false)}
       />
@@ -628,6 +632,9 @@ const styles = StyleSheet.create({
   },
   completeButton: {
     backgroundColor: '#28a745',
+  },
+  paymentButton: {
+    backgroundColor: '#007bff',
   },
   disabledButton: {
     opacity: 0.6,

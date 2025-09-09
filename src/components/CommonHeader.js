@@ -88,7 +88,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: p(20),
     // paddingTop: p(60),
     // paddingBottom: p(20),
-    paddingVertical: Platform.OS === 'ios' ? p(7) : p(15),
+    paddingVertical: Platform.OS === 'ios' ? p(7) : p(10),
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,

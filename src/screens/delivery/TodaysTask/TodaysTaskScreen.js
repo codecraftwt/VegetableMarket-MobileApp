@@ -20,7 +20,7 @@ import { fetchTodaysTasks, updateTaskStatus, updateOrderStatus, updateAssignment
 
 const TodaysTaskScreen = ({ navigation }) => {
   const dispatch = useDispatch();
-  const { tasks, loading, error } = useSelector(state => state.todaysTask);
+  const { tasks, loading, error, loading: updatePaymentStatusLoading } = useSelector(state => state.todaysTask);
   
   const [completedTasks, setCompletedTasks] = useState(0);
 
@@ -76,6 +76,22 @@ const TodaysTaskScreen = ({ navigation }) => {
             } else if (newStatus === 'ready_for_delivery') {
               setCompletedTasks(prev => Math.max(0, prev - 1));
             }
+          },
+        },
+      ]
+    );
+  };
+
+  const handlePaymentStatusChange = (orderId, paymentStatus) => {
+    Alert.alert(
+      'Confirm Payment',
+      `Are you sure you want to mark payment as ${paymentStatus}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Confirm',
+          onPress: () => {
+            dispatch(updatePaymentStatus({ orderId, paymentStatus }));
           },
         },
       ]
@@ -229,6 +245,25 @@ const TodaysTaskScreen = ({ navigation }) => {
           <View style={styles.completedIndicator}>
             <Icon name="check-circle" size={p(20)} color="#059669" />
             <Text style={styles.completedText}>Delivery Completed</Text>
+          </View>
+        )}
+
+        {task.payment_status === 'pending' && (
+          <View style={styles.actionButtons}>
+            <TouchableOpacity
+              style={[styles.actionButton, styles.paymentButton, updatePaymentStatusLoading && styles.disabledButton]}
+              onPress={() => handlePaymentStatusChange(task.id, 'paid')}
+              disabled={updatePaymentStatusLoading}
+            >
+              {updatePaymentStatusLoading ? (
+                <Icon name="spinner" size={p(16)} color="#fff" />
+              ) : (
+                <Icon name="credit-card" size={p(16)} color="#fff" />
+              )}
+              <Text style={styles.actionButtonText}>
+                {updatePaymentStatusLoading ? 'Updating...' : 'Mark Payment Paid'}
+              </Text>
+            </TouchableOpacity>
           </View>
         )}
 
@@ -551,6 +586,12 @@ const styles = StyleSheet.create({
   },
   completeButton: {
     backgroundColor: '#28a745',
+  },
+  paymentButton: {
+    backgroundColor: '#007bff',
+  },
+  disabledButton: {
+    opacity: 0.6,
   },
   actionButtonText: {
     fontSize: fontSizes.sm,

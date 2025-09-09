@@ -16,11 +16,12 @@ import CommonHeader from '../../../components/CommonHeader';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { p } from '../../../utils/Responsive';
 import { fontSizes } from '../../../utils/fonts';
-import { updateTaskStatus } from '../../../redux/slices/todaysTaskSlice';
+import { updateTaskStatus, updatePaymentStatus } from '../../../redux/slices/todaysTaskSlice';
 
 const TodaysTaskDetailsScreen = ({ navigation, route }) => {
   const dispatch = useDispatch();
   const { taskData } = route.params;
+  const { loading: updatePaymentStatusLoading } = useSelector(state => state.todaysTask);
   
   const handleBackPress = () => {
     navigation.goBack();
@@ -41,6 +42,24 @@ const TodaysTaskDetailsScreen = ({ navigation, route }) => {
           onPress: () => {
             dispatch(updateTaskStatus({ taskId, status: newStatus }));
             // Navigate back after status update
+            navigation.goBack();
+          },
+        },
+      ]
+    );
+  };
+
+  const handlePaymentStatusChange = (orderId, paymentStatus) => {
+    Alert.alert(
+      'Confirm Payment',
+      `Are you sure you want to mark payment as ${paymentStatus}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Confirm',
+          onPress: () => {
+            dispatch(updatePaymentStatus({ orderId, paymentStatus }));
+            // Navigate back after payment status update
             navigation.goBack();
           },
         },
@@ -269,6 +288,23 @@ const TodaysTaskDetailsScreen = ({ navigation, route }) => {
               <Icon name="check-circle" size={p(20)} color="#28a745" />
               <Text style={styles.completedText}>Delivery Completed</Text>
             </View>
+          )}
+
+          {taskData.payment_status === 'pending' && (
+            <TouchableOpacity
+              style={[styles.actionButton, styles.paymentButton, updatePaymentStatusLoading && styles.disabledButton]}
+              onPress={() => handlePaymentStatusChange(taskData.id, 'paid')}
+              disabled={updatePaymentStatusLoading}
+            >
+              {updatePaymentStatusLoading ? (
+                <Icon name="spinner" size={p(16)} color="#fff" />
+              ) : (
+                <Icon name="credit-card" size={p(16)} color="#fff" />
+              )}
+              <Text style={styles.actionButtonText}>
+                {updatePaymentStatusLoading ? 'Updating...' : 'Mark Payment Paid'}
+              </Text>
+            </TouchableOpacity>
           )}
         </View>
       </View>
@@ -517,6 +553,12 @@ const styles = StyleSheet.create({
   },
   completeButton: {
     backgroundColor: '#28a745',
+  },
+  paymentButton: {
+    backgroundColor: '#007bff',
+  },
+  disabledButton: {
+    opacity: 0.6,
   },
   actionButtonText: {
     fontSize: fontSizes.base,

@@ -227,6 +227,11 @@ const ordersSlice = createSlice({
         state.loading = false;
         state.orders = action.payload.data || [];
         state.error = null;
+        
+        // Log the additional delivery_boy data if present
+        if (action.payload.data && action.payload.data.length > 0) {
+          console.log('Orders fetched with delivery_boy data:', action.payload.data);
+        }
       })
       .addCase(fetchMyOrders.rejected, (state, action) => {
         state.loading = false;

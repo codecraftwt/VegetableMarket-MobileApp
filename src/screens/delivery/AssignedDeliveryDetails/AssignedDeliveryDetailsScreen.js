@@ -29,11 +29,24 @@ import SuccessModal from '../../../components/SuccessModal';
 const AssignedDeliveryDetailsScreen = ({ navigation, route }) => {
   const dispatch = useDispatch();
   const { assignedDeliveryDetails, loadingAssignedDetails, error } = useSelector(state => state.delivery);
-  const { loading: updateOrderStatusLoading, error: updateOrderStatusError, success: updateOrderStatusSuccess, message: updateOrderStatusMessage } = useSelector(state => state.todaysTask);
+  const { 
+    loading: updateOrderStatusLoading, 
+    error: updateOrderStatusError, 
+    success: updateOrderStatusSuccess, 
+    message: updateOrderStatusMessage,
+    loading: updatePaymentStatusLoading,
+    error: updatePaymentStatusError,
+    success: updatePaymentStatusSuccess,
+    message: updatePaymentStatusMessage
+  } = useSelector(state => state.todaysTask);
   const { orderId } = route.params;
   
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  
+  // Local state to track current order and payment status for immediate UI updates
+  const [currentDeliveryStatus, setCurrentDeliveryStatus] = useState(null);
+  const [currentPaymentStatus, setCurrentPaymentStatus] = useState(null);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -46,11 +59,15 @@ const AssignedDeliveryDetailsScreen = ({ navigation, route }) => {
     }, [orderId, dispatch])
   );
 
-  // Debug the API response structure
+  // Debug the API response structure and initialize local state
   useEffect(() => {
     if (assignedDeliveryDetails) {
       console.log('Assigned delivery details received:', JSON.stringify(assignedDeliveryDetails, null, 2));
       console.log('QR URL location:', assignedDeliveryDetails?.order?.upi_qr_url);
+      
+      // Initialize local state with current values
+      setCurrentDeliveryStatus(assignedDeliveryDetails.order?.delivery_status);
+      setCurrentPaymentStatus(assignedDeliveryDetails.order?.payment_status);
     }
   }, [assignedDeliveryDetails]);
 
@@ -64,16 +81,46 @@ const AssignedDeliveryDetailsScreen = ({ navigation, route }) => {
   useEffect(() => {
     if (updateOrderStatusSuccess && updateOrderStatusMessage) {
       setShowSuccessModal(true);
-      // Clear the success state immediately to prevent re-triggering
-      dispatch(clearTodaysTaskSuccess());
+      
+      // Update local state immediately based on the action performed
+      if (updateOrderStatusMessage.includes('out_for_delivery') || updateOrderStatusMessage.includes('started')) {
+        setCurrentDeliveryStatus('out_for_delivery');
+      } else if (updateOrderStatusMessage.includes('delivered') || updateOrderStatusMessage.includes('completed')) {
+        setCurrentDeliveryStatus('delivered');
+      }
     }
-  }, [updateOrderStatusSuccess, updateOrderStatusMessage, dispatch]);
+  }, [updateOrderStatusSuccess, updateOrderStatusMessage]);
 
   useEffect(() => {
-    if (updateOrderStatusError) {
+    if (updateOrderStatusError || updatePaymentStatusError) {
       setShowErrorModal(true);
+      
+      // Revert local state changes if API call failed
+      if (updateOrderStatusError) {
+        // Revert to original state from Redux
+        if (assignedDeliveryDetails?.order?.delivery_status) {
+          setCurrentDeliveryStatus(assignedDeliveryDetails.order.delivery_status);
+        }
+      }
+      if (updatePaymentStatusError) {
+        // Revert to original state from Redux
+        if (assignedDeliveryDetails?.order?.payment_status) {
+          setCurrentPaymentStatus(assignedDeliveryDetails.order.payment_status);
+        }
+      }
     }
-  }, [updateOrderStatusError]);
+  }, [updateOrderStatusError, updatePaymentStatusError, assignedDeliveryDetails]);
+
+  useEffect(() => {
+    if (updatePaymentStatusSuccess && updatePaymentStatusMessage) {
+      setShowSuccessModal(true);
+      
+      // Update local payment status immediately
+      if (updatePaymentStatusMessage.includes('paid') || updatePaymentStatusMessage.includes('payment')) {
+        setCurrentPaymentStatus('paid');
+      }
+    }
+  }, [updatePaymentStatusSuccess, updatePaymentStatusMessage]);
 
   const handleBackPress = () => {
     navigation.goBack();
@@ -85,12 +132,16 @@ const AssignedDeliveryDetailsScreen = ({ navigation, route }) => {
 
   const handleStartDelivery = () => {
     if (assignedDeliveryDetails?.order?.id) {
+      // Update local state immediately for instant UI feedback
+      setCurrentDeliveryStatus('out_for_delivery');
       dispatch(updateOrderStatus({ orderId: assignedDeliveryDetails.order.id, status: 'out_for_delivery' }));
     }
   };
 
   const handleMarkComplete = () => {
     if (assignedDeliveryDetails?.order?.id) {
+      // Update local state immediately for instant UI feedback
+      setCurrentDeliveryStatus('delivered');
       dispatch(updateOrderStatus({ orderId: assignedDeliveryDetails.order.id, status: 'delivered' }));
     }
   };
@@ -103,11 +154,19 @@ const AssignedDeliveryDetailsScreen = ({ navigation, route }) => {
     dispatch(updatePaymentStatus({ orderId, paymentStatus }));
   };
 
+  const handleMarkPaymentPaid = () => {
+    if (assignedDeliveryDetails?.order?.id) {
+      // Update local state immediately for instant UI feedback
+      setCurrentPaymentStatus('paid');
+      dispatch(updatePaymentStatus({ orderId: assignedDeliveryDetails.order.id, paymentStatus: 'paid' }));
+    }
+  };
+
   const getStatusColor = (status) => {
     switch (status) {
       case 'ready_for_delivery':
         return '#ffc107';
-      case 'in_progress':
+      case 'out_for_delivery':
         return '#019a34';
       case 'delivered':
         return '#28a745';
@@ -122,8 +181,8 @@ const AssignedDeliveryDetailsScreen = ({ navigation, route }) => {
     switch (status) {
       case 'ready_for_delivery':
         return 'Ready for Delivery';
-      case 'in_progress':
-        return 'In Progress';
+      case 'out_for_delivery':
+        return 'Out for Delivery';
       case 'delivered':
         return 'Delivered';
       case 'cancelled':
@@ -138,6 +197,10 @@ const AssignedDeliveryDetailsScreen = ({ navigation, route }) => {
     
     const { order } = assignedDeliveryDetails;
     
+    // Use local state for immediate UI updates, fallback to Redux state
+    const deliveryStatus = currentDeliveryStatus || order.delivery_status;
+    const paymentStatus = currentPaymentStatus || order.payment_status;
+    
     return (
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Order Information</Text>
@@ -151,14 +214,14 @@ const AssignedDeliveryDetailsScreen = ({ navigation, route }) => {
             <Icon name="credit-card" size={p(16)} color="#019a34" />
             <Text style={styles.infoLabel}>Payment:</Text>
             <Text style={styles.infoValue}>
-              {order.payment_method} ({order.payment_status})
+              {order.payment_method} ({paymentStatus})
             </Text>
           </View>
           <View style={styles.infoRow}>
             <Icon name="truck" size={p(16)} color="#019a34" />
             <Text style={styles.infoLabel}>Status:</Text>
-            <View style={[styles.statusBadge, { backgroundColor: getStatusColor(order.delivery_status) }]}>
-              <Text style={styles.statusText}>{getStatusText(order.delivery_status)}</Text>
+            <View style={[styles.statusBadge, { backgroundColor: getStatusColor(deliveryStatus) }]}>
+              <Text style={styles.statusText}>{getStatusText(deliveryStatus)}</Text>
             </View>
           </View>
           <View style={styles.infoRow}>
@@ -282,10 +345,15 @@ const AssignedDeliveryDetailsScreen = ({ navigation, route }) => {
     
     const { order } = assignedDeliveryDetails;
     
+    // Use local state for immediate UI updates, fallback to Redux state
+    const deliveryStatus = currentDeliveryStatus || order.delivery_status;
+    const paymentStatus = currentPaymentStatus || order.payment_status;
+    
     return (
       <View style={styles.section}>
         <View style={styles.actionButtonsContainer}>
-          {order.delivery_status === 'ready_for_delivery' && (
+          {/* Step 1: ONLY Start Delivery button when ready for delivery */}
+          {deliveryStatus === 'ready_for_delivery' && (
             <TouchableOpacity
               style={[styles.actionButton, styles.startButton, updateOrderStatusLoading && styles.disabledButton]}
               onPress={handleStartDelivery}
@@ -302,7 +370,26 @@ const AssignedDeliveryDetailsScreen = ({ navigation, route }) => {
             </TouchableOpacity>
           )}
           
-          {order.delivery_status === 'out_for_delivery' && (
+          {/* Step 2: ONLY Mark Payment Paid button when out for delivery and payment is pending */}
+          {deliveryStatus === 'out_for_delivery' && paymentStatus === 'pending' && (
+            <TouchableOpacity
+              style={[styles.actionButton, styles.paymentButton, updatePaymentStatusLoading && styles.disabledButton]}
+              onPress={handleMarkPaymentPaid}
+              disabled={updatePaymentStatusLoading}
+            >
+              {updatePaymentStatusLoading ? (
+                <Icon name="spinner" size={p(16)} color="#fff" />
+              ) : (
+                <Icon name="credit-card" size={p(16)} color="#fff" />
+              )}
+              <Text style={styles.actionButtonText}>
+                {updatePaymentStatusLoading ? 'Updating...' : 'Mark Payment Paid'}
+              </Text>
+            </TouchableOpacity>
+          )}
+
+          {/* Step 3: ONLY Mark Complete button when out for delivery and payment is paid */}
+          {deliveryStatus === 'out_for_delivery' && paymentStatus === 'paid' && (
             <TouchableOpacity
               style={[styles.actionButton, styles.completeButton, updateOrderStatusLoading && styles.disabledButton]}
               onPress={handleMarkComplete}
@@ -317,6 +404,14 @@ const AssignedDeliveryDetailsScreen = ({ navigation, route }) => {
                 {updateOrderStatusLoading ? 'Completing...' : 'Mark Complete'}
               </Text>
             </TouchableOpacity>
+          )}
+
+          {/* Final State: Delivery Completed */}
+          {deliveryStatus === 'delivered' && (
+            <View style={styles.completedIndicator}>
+              <Icon name="check-circle" size={p(20)} color="#28a745" />
+              <Text style={styles.completedText}>Delivery Completed</Text>
+            </View>
           )}
         </View>
       </View>
@@ -367,27 +462,27 @@ const AssignedDeliveryDetailsScreen = ({ navigation, route }) => {
       </View>
 
       {/* Success Modal */}
-      {/* <SuccessModal
+      <SuccessModal
         visible={showSuccessModal}
         onClose={() => {
           setShowSuccessModal(false);
           dispatch(clearTodaysTaskSuccess());
         }}
         title="Success"
-        message={updateOrderStatusMessage || "Order status updated successfully!"}
+        message={updateOrderStatusMessage || updatePaymentStatusMessage || "Action completed successfully!"}
         buttonText="OK"
         onButtonPress={() => {
           setShowSuccessModal(false);
           dispatch(clearTodaysTaskSuccess());
         }}
-      /> */}
+      />
 
       {/* Error Modal */}
       <ErrorModal
         visible={showErrorModal}
         onClose={() => setShowErrorModal(false)}
         title="Error"
-        message={error || updateOrderStatusError || "Failed to load delivery details. Please try again."}
+        message={error || updateOrderStatusError || updatePaymentStatusError || "Failed to load delivery details. Please try again."}
         buttonText="OK"
         onButtonPress={() => setShowErrorModal(false)}
       />
@@ -597,6 +692,9 @@ const styles = StyleSheet.create({
   completeButton: {
     backgroundColor: '#28a745',
   },
+  paymentButton: {
+    backgroundColor: '#007bff',
+  },
   actionButtonText: {
     fontSize: fontSizes.base,
     fontFamily: 'Poppins-SemiBold',
@@ -604,6 +702,20 @@ const styles = StyleSheet.create({
   },
   disabledButton: {
     opacity: 0.6,
+  },
+  completedIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: p(12),
+    backgroundColor: '#d4edda',
+    borderRadius: p(12),
+    gap: p(8),
+  },
+  completedText: {
+    fontSize: fontSizes.base,
+    fontFamily: 'Poppins-SemiBold',
+    color: '#28a745',
   },
   emptyContainer: {
     flex: 1,

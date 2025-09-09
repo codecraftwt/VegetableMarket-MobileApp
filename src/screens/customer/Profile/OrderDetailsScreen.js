@@ -10,6 +10,7 @@ import {
   Alert,
   Linking,
   Image,
+  RefreshControl,
 } from 'react-native';
 import CommonHeader from '../../../components/CommonHeader';
 import Icon from 'react-native-vector-icons/FontAwesome';
@@ -68,11 +69,9 @@ const OrderDetailsScreen = ({ navigation, route }) => {
         setOrder(updatedOrder);
         // Also update the route params for consistency
         navigation.setParams({ order: updatedOrder });
-        // Show success message
-        Alert.alert('Success', 'Order details refreshed successfully!');
       }
     } catch (error) {
-      Alert.alert('Error', 'Failed to refresh order details');
+      console.log('Failed to refresh order details:', error);
     } finally {
       setRefreshing(false);
     }
@@ -215,28 +214,21 @@ const OrderDetailsScreen = ({ navigation, route }) => {
         navigation={navigation}
       />
       
-      {/* Refresh Button */}
-      <View style={styles.refreshContainer}>
-        <TouchableOpacity 
-          style={[styles.refreshButton, refreshing && styles.refreshButtonDisabled]} 
-          onPress={handleRefresh}
-          disabled={refreshing}
-        >
-          <Icon 
-            name={refreshing ? 'spinner' : 'refresh'} 
-            size={16} 
-            color={refreshing ? '#95a5a6' : '#019a34'} 
-          />
-          <Text style={[styles.refreshButtonText, refreshing && styles.refreshButtonTextDisabled]}>
-            {refreshing ? 'Refreshing...' : 'Refresh'}
-          </Text>
-        </TouchableOpacity>
-      </View>
       
       <ScrollView 
         style={styles.content} 
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            colors={['#019a34']}
+            tintColor="#019a34"
+            title="Pull to refresh"
+            titleColor="#019a34"
+          />
+        }
       >
         {/* Order Summary Card */}
         <View style={styles.summaryCard}>
@@ -307,6 +299,36 @@ const OrderDetailsScreen = ({ navigation, route }) => {
             <Text style={styles.addressText}>{formatDeliveryAddress()}</Text>
           </View>
         </View>
+
+        {/* Delivery Boy Information */}
+        {order.delivery_boy && (
+          <View style={styles.deliveryBoyCard}>
+            <Text style={styles.sectionTitle}>Delivery Agent</Text>
+            
+            <View style={styles.deliveryBoyInfo}>
+              <View style={styles.deliveryBoyHeader}>
+                <View style={styles.deliveryBoyAvatar}>
+                  <Icon name="user" size={24} color="#019a34" />
+                </View>
+                <View style={styles.deliveryBoyDetails}>
+                  <Text style={styles.deliveryBoyName}>{order.delivery_boy.name}</Text>
+                  <Text style={styles.deliveryBoyId}>ID: {order.delivery_boy.id}</Text>
+                </View>
+              </View>
+              
+              <View style={styles.deliveryBoyContact}>
+                <View style={styles.contactRow}>
+                  <Icon name="envelope" size={14} color="#666" />
+                  <Text style={styles.contactText}>{order.delivery_boy.email}</Text>
+                </View>
+                <View style={styles.contactRow}>
+                  <Icon name="phone" size={14} color="#666" />
+                  <Text style={styles.contactText}>{order.delivery_boy.phone}</Text>
+                </View>
+              </View>
+            </View>
+          </View>
+        )}
 
         {/* Order Items */}
         <View style={styles.itemsCard}>
@@ -661,6 +683,62 @@ const styles = StyleSheet.create({
     marginLeft: p(26),
   },
 
+  // Delivery Boy Card
+  deliveryBoyCard: {
+    backgroundColor: '#fff',
+    borderRadius: p(15),
+    padding: p(20),
+    marginBottom: p(15),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  deliveryBoyInfo: {
+    gap: p(15),
+  },
+  deliveryBoyHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: p(15),
+  },
+  deliveryBoyAvatar: {
+    width: p(50),
+    height: p(50),
+    borderRadius: p(25),
+    backgroundColor: '#f0f8f0',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  deliveryBoyDetails: {
+    flex: 1,
+  },
+  deliveryBoyName: {
+    fontSize: fontSizes.lg,
+    color: '#333',
+    fontFamily: 'Poppins-Bold',
+    marginBottom: p(3),
+  },
+  deliveryBoyId: {
+    fontSize: fontSizes.sm,
+    color: '#666',
+    fontFamily: 'Poppins-Regular',
+  },
+  deliveryBoyContact: {
+    gap: p(8),
+  },
+  contactRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: p(10),
+  },
+  contactText: {
+    fontSize: fontSizes.sm,
+    color: '#666',
+    fontFamily: 'Poppins-Regular',
+  },
+
   // Items Card
   itemsCard: {
     backgroundColor: '#fff',
@@ -933,38 +1011,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-Bold',
   },
 
-  // Refresh Button
-  refreshContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: p(10),
-    marginBottom: p(15),
-  },
-  refreshButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f0f8f0',
-    paddingVertical: p(10),
-    paddingHorizontal: p(20),
-    borderRadius: p(25),
-    gap: p(8),
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  refreshButtonText: {
-    color: '#019a34',
-    fontSize: fontSizes.base,
-    fontFamily: 'Poppins-Bold',
-  },
-  refreshButtonDisabled: {
-    opacity: 0.7,
-  },
-  refreshButtonTextDisabled: {
-    color: '#95a5a6',
-  },
 });
 
 export default OrderDetailsScreen;

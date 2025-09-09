@@ -256,7 +256,11 @@ const profileSlice = createSlice({
         state.user = action.payload.data;
         state.address = action.payload.data.address;
         state.addresses = action.payload.data.addresses || [action.payload.data.address].filter(Boolean);
-        state.profile = action.payload.data.profile;
+        // Handle case where profile data might be embedded in user object or separate
+        state.profile = action.payload.data.profile || {
+          profile_picture: action.payload.data.profile_picture,
+          bio: action.payload.data.bio
+        };
         state.error = null;
       })
       .addCase(fetchProfile.rejected, (state, action) => {

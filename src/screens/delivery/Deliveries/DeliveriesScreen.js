@@ -142,6 +142,8 @@ const DeliveriesScreen = ({ navigation }) => {
       switch (delivery.delivery_status) {
         case 'ready_for_delivery':
           return 'pending';
+        case 'out_for_delivery':
+          return 'in_progress';
         case 'delivered':
           return 'completed';
         default:
@@ -174,7 +176,7 @@ const DeliveriesScreen = ({ navigation }) => {
       case 'pending':
         return 'Ready for Delivery';
       case 'in_progress':
-        return 'In Progress';
+        return 'Out for Delivery';
       case 'completed':
         return 'Delivered';
       case 'available':
@@ -280,7 +282,7 @@ const DeliveriesScreen = ({ navigation }) => {
           {delivery.assignment_status && (
             <View style={styles.detailRow}>
               <View style={styles.detailIconContainer}>
-                <Icon name="user-check" size={p(14)} color="#6b7280" />
+                <Icon name="handshake-o" size={p(14)} color="#6b7280" />
               </View>
               <Text style={styles.detailText}>
                 {delivery.assignment_status}
@@ -329,6 +331,30 @@ const DeliveriesScreen = ({ navigation }) => {
           >
             <Icon name="play" size={p(16)} color="#fff" />
             <Text style={styles.actionButtonText}>Start Delivery</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {activeTab === 'assigned' && getDeliveryStatus(delivery) === 'in_progress' && delivery.payment_status === 'pending' && (
+        <View style={styles.actionButtons}>
+          <TouchableOpacity
+            style={[styles.actionButton, styles.paymentButton]}
+            onPress={() => handleUpdatePaymentStatus(delivery.id, 'paid')}
+          >
+            <Icon name="credit-card" size={p(16)} color="#fff" />
+            <Text style={styles.actionButtonText}>Mark Payment Paid</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {activeTab === 'assigned' && getDeliveryStatus(delivery) === 'in_progress' && delivery.payment_status === 'paid' && (
+        <View style={styles.actionButtons}>
+          <TouchableOpacity
+            style={[styles.actionButton, styles.completeButton]}
+            onPress={() => handleStatusChange(delivery.id, 'delivered')}
+          >
+            <Icon name="check" size={p(16)} color="#fff" />
+            <Text style={styles.actionButtonText}>Mark Complete</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -649,6 +675,9 @@ const styles = StyleSheet.create({
   },
   assignButton: {
     backgroundColor: '#17a2b8',
+  },
+  paymentButton: {
+    backgroundColor: '#007bff',
   },
   disabledButton: {
     opacity: 0.6,

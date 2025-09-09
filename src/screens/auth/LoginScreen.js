@@ -18,6 +18,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { p } from '../../utils/Responsive';
 import { loginUser, clearError } from '../../redux/slices/authSlice';
+import ErrorModal from '../../components/ErrorModal';
 
 // Font sizes constant
 const fontSizes = {
@@ -41,10 +42,14 @@ const LoginScreen = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isFocused, setIsFocused] = useState({ email: false, password: false });
   const [errors, setErrors] = useState({});
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
-  // Clear any existing errors when component mounts
+  // Handle Redux error and show error modal
   React.useEffect(() => {
     if (error) {
+      setErrorMessage(error);
+      setShowErrorModal(true);
       dispatch(clearError());
     }
   }, [dispatch, error]);
@@ -87,6 +92,12 @@ const LoginScreen = () => {
 
   const handleLogin = async () => {
     if (!validateForm()) {
+      // Show validation errors in error modal
+      const validationErrors = Object.values(errors).filter(Boolean);
+      if (validationErrors.length > 0) {
+        setErrorMessage(validationErrors.join('\n'));
+        setShowErrorModal(true);
+      }
       return;
     }
 
@@ -98,7 +109,7 @@ const LoginScreen = () => {
         console.log('Login successful:', result.message);
       }
     } catch (error) {
-      // Error is already handled by the Redux slice
+      // Error is already handled by the Redux slice and useEffect
       console.log('Login failed:', error);
     }
   };
@@ -132,6 +143,11 @@ const LoginScreen = () => {
       'Password reset functionality will be implemented here.',
       [{ text: 'OK' }],
     );
+  };
+
+  const handleCloseErrorModal = () => {
+    setShowErrorModal(false);
+    setErrorMessage('');
   };
 
   return (
@@ -236,12 +252,6 @@ const LoginScreen = () => {
                 )}
               </TouchableOpacity>
 
-              {/* Display Redux error if any */}
-              {error && (
-                <View style={styles.errorContainer}>
-                  <Text style={styles.reduxErrorText}>{error}</Text>
-                </View>
-              )}
 
               <TouchableOpacity
                 style={styles.forgotPassword}
@@ -260,6 +270,16 @@ const LoginScreen = () => {
            </ScrollView>
         </KeyboardAvoidingView>
       </ImageBackground>
+
+      {/* Error Modal */}
+      <ErrorModal
+        visible={showErrorModal}
+        onClose={handleCloseErrorModal}
+        title="Login Failed"
+        message={errorMessage}
+        buttonText="Try Again"
+        onButtonPress={handleCloseErrorModal}
+      />
     </>
   );
 };
@@ -413,20 +433,6 @@ const styles = StyleSheet.create({
     color: '#019a34',
     fontFamily: 'Poppins-SemiBold',
     fontSize: fontSizes.sm,
-  },
-  errorContainer: {
-    backgroundColor: '#fff5f5',
-    borderRadius: p(10),
-    padding: p(15),
-    marginTop: p(15),
-    borderWidth: 1,
-    borderColor: '#ff4757',
-  },
-  reduxErrorText: {
-    color: '#ff4757',
-    fontSize: fontSizes.sm,
-    fontFamily: 'Poppins-Regular',
-    textAlign: 'center',
   },
 });
 

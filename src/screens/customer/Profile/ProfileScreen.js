@@ -167,17 +167,15 @@ const ProfileScreen = ({ navigation }) => {
       if (user?.phone) updateData.phone = user.phone;
       if (profile?.bio) updateData.bio = profile.bio;
       
-      // Add address fields if they exist
-      if (address) {
-        if (address.address_label) updateData.address_label = address.address_label;
-        if (address.address_line) updateData.address_line = address.address_line;
-        if (address.city) updateData.city = address.city;
-        if (address.taluka) updateData.taluka = address.taluka;
-        if (address.district) updateData.district = address.district;
-        if (address.state) updateData.state = address.state;
-        if (address.country) updateData.country = address.country;
-        if (address.pincode) updateData.pincode = address.pincode;
-      }
+      // Add address fields - always include them (like ProfileEditScreen does)
+      updateData.address_label = address?.address_label || '';
+      updateData.address_line = address?.address_line || '';
+      updateData.city = address?.city || '';
+      updateData.taluka = address?.taluka || '';
+      updateData.district = address?.district || '';
+      updateData.state = address?.state || '';
+      updateData.country = address?.country || '';
+      updateData.pincode = address?.pincode || '';
 
       console.log('Update data prepared, dispatching updateProfile...');
       const result = await dispatch(updateProfile(updateData)).unwrap();

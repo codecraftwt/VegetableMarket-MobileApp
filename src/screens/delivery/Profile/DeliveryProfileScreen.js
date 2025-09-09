@@ -24,9 +24,8 @@ import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 
 const DeliveryProfileScreen = ({ navigation }) => {
   const dispatch = useDispatch();
-  const { user } = useSelector(state => state.auth);
   const profileState = useSelector(state => state.profile);
-  const { address, profile, loading, error } = profileState;
+  const { user, address, profile, loading, error } = profileState;
   const [showPhotoModal, setShowPhotoModal] = useState(false);
 
   // Modal states
@@ -37,12 +36,21 @@ const DeliveryProfileScreen = ({ navigation }) => {
   const [errorMessage, setErrorMessage] = useState('');
   const [isProcessingImage, setIsProcessingImage] = useState(false);
 
+  // Debug logging
+  console.log('DeliveryProfileScreen - Redux State:', profileState);
+  console.log('DeliveryProfileScreen - Error:', profileState.error);
+
   useEffect(() => {
-    dispatch(fetchProfile());
+    console.log('DeliveryProfileScreen - Dispatching fetchProfile...');
+    dispatch(fetchProfile()).then((result) => {
+      console.log('DeliveryProfileScreen - fetchProfile result:', result);
+    }).catch((error) => {
+      console.log('DeliveryProfileScreen - fetchProfile error:', error);
+    });
   }, [dispatch]);
 
   const handleNotificationPress = () => {
-    navigation.navigate('Notification');
+    console.log('Profile notification pressed');
   };
 
   const handleLogout = () => {
@@ -147,19 +155,17 @@ const DeliveryProfileScreen = ({ navigation }) => {
       // Add other required fields with current values
       if (user?.name) updateData.name = user.name;
       if (user?.phone) updateData.phone = user.phone;
-      if (profile?.bio) updateData.bio = profile.bio;
+      if (profile?.bio || user?.bio) updateData.bio = profile?.bio || user?.bio;
       
-      // Add address fields if they exist
-      if (address) {
-        if (address.address_label) updateData.address_label = address.address_label;
-        if (address.address_line) updateData.address_line = address.address_line;
-        if (address.city) updateData.city = address.city;
-        if (address.taluka) updateData.taluka = address.taluka;
-        if (address.district) updateData.district = address.district;
-        if (address.state) updateData.state = address.state;
-        if (address.country) updateData.country = address.country;
-        if (address.pincode) updateData.pincode = address.pincode;
-      }
+      // Add address fields - always include them (like ProfileEditScreen does)
+      updateData.address_label = address?.address_label || '';
+      updateData.address_line = address?.address_line || '';
+      updateData.city = address?.city || '';
+      updateData.taluka = address?.taluka || '';
+      updateData.district = address?.district || '';
+      updateData.state = address?.state || '';
+      updateData.country = address?.country || '';
+      updateData.pincode = address?.pincode || '';
 
       console.log('Update data prepared, dispatching updateProfile...');
       const result = await dispatch(updateProfile(updateData)).unwrap();
@@ -327,9 +333,9 @@ const DeliveryProfileScreen = ({ navigation }) => {
     <View style={styles.profileHeader}>
       <View style={styles.avatarContainer}>
         <TouchableOpacity style={styles.avatar} onPress={handleCameraPress}>
-          {profile?.profile_picture ? (
+          {(profile?.profile_picture || user?.profile_picture) ? (
             <Image 
-              source={{ uri: `https://vegetables.walstarmedia.com/storage/${profile.profile_picture}` }} 
+              source={{ uri: `https://vegetables.walstarmedia.com/storage/${profile?.profile_picture || user?.profile_picture}` }} 
               style={styles.profileImage} 
             />
           ) : (
@@ -412,6 +418,7 @@ const DeliveryProfileScreen = ({ navigation }) => {
       <StatusBar backgroundColor="#019a34" barStyle="light-content" />
       <CommonHeader
         screenName="Profile"
+        showBackButton={false}
         showNotification={true}
         onNotificationPress={handleNotificationPress}
         navigation={navigation}
