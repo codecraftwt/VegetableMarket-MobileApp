@@ -6,13 +6,22 @@ import Icon from 'react-native-vector-icons/FontAwesome';
 import { p } from '../../../utils/Responsive';
 import { fontSizes } from '../../../utils/fonts';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchProfile, updateProfile, updateAddress, addAddress } from '../../../redux/slices/profileSlice';
+import { fetchProfile, updateProfile, addAddress } from '../../../redux/slices/profileSlice';
+import { ROLES } from '../../../redux/slices/authSlice';
 
 const ProfileEditScreen = ({ navigation, route }) => {
   const dispatch = useDispatch();
   const profileState = useSelector(state => state.profile);
+  const authState = useSelector(state => state.auth);
   const { user, address, profile, loading, updateLoading, updateError, addAddressLoading, addAddressError } = profileState;
+  const { user: authUser } = authState;
   const [activeTab, setActiveTab] = useState('profile'); // 'profile' or 'address'
+  const [isAddingNewAddress, setIsAddingNewAddress] = useState(false);
+  
+  // Check if user is a customer
+  const isCustomer = useMemo(() => {
+    return authUser?.role_id === ROLES.CUSTOMER.id;
+  }, [authUser]);
   
   // Check if we should start with address tab (e.g., from checkout)
   useEffect(() => {
@@ -62,7 +71,7 @@ const ProfileEditScreen = ({ navigation, route }) => {
   }, [user, profile]);
 
   useEffect(() => {
-    if (address) {
+    if (address && !isAddingNewAddress) {
       setAddressData({
         addressLabel: address.address_label || '',
         addressLine: address.address_line || '',
@@ -74,7 +83,7 @@ const ProfileEditScreen = ({ navigation, route }) => {
         pincode: address.pincode || '',
       });
     }
-  }, [address]);
+  }, [address, isAddingNewAddress]);
 
   // Fetch profile data when component mounts
   useEffect(() => {
@@ -125,8 +134,14 @@ const ProfileEditScreen = ({ navigation, route }) => {
 
   const handleSaveAddress = useCallback(async () => {
     try {
-      // Map the address data to match the API specification
-      const updateAddressData = {
+      // Map the address data to match the API specification for profile update
+      const updateData = {
+        // Profile fields - keep existing values
+        name: formData.name,
+        phone: formData.phone,
+        bio: formData.bio,
+        
+        // Address fields - map to the correct API field names
         address_label: addressData.addressLabel,
         address_line: addressData.addressLine,
         city: addressData.city,
@@ -137,9 +152,12 @@ const ProfileEditScreen = ({ navigation, route }) => {
         pincode: addressData.pincode,
       };
       
-      console.log('Sending address update data:', updateAddressData);
+      console.log('Sending address update data through profile API:', updateData);
       
-      await dispatch(updateAddress(updateAddressData)).unwrap();
+      await dispatch(updateProfile(updateData)).unwrap();
+      
+      // Refresh profile data after successful update
+      dispatch(fetchProfile());
       
       // Show success modal
       setSuccessMessage('Address updated successfully!');
@@ -150,9 +168,16 @@ const ProfileEditScreen = ({ navigation, route }) => {
       setErrorMessage(error.message || 'Failed to update address');
       setShowErrorModal(true);
     }
-  }, [addressData, dispatch]);
+  }, [formData, addressData, dispatch]);
 
   const handleAddAddress = useCallback(async () => {
+    // Only allow adding addresses for customers
+    if (!isCustomer) {
+      setErrorMessage('Adding new addresses is only available for customers');
+      setShowErrorModal(true);
+      return;
+    }
+
     try {
       // Map the address data to match the API specification
       const newAddressData = {
@@ -170,22 +195,31 @@ const ProfileEditScreen = ({ navigation, route }) => {
       
       await dispatch(addAddress(newAddressData)).unwrap();
       
+      // Reset the adding new address state
+      setIsAddingNewAddress(false);
+      
+      // Refresh profile data to get the new address
+      dispatch(fetchProfile());
+      
       // Show success modal
       setSuccessMessage('Address added successfully!');
       setShowSuccessModal(true);
     } catch (error) {
       console.error('Add address error:', error);
       // Show error modal
-      setErrorMessage(error.message || 'Failed to update address');
+      setErrorMessage(error.message || 'Failed to add address');
       setShowErrorModal(true);
     }
-  }, [addressData, dispatch]);
+  }, [addressData, dispatch, isCustomer]);
 
   // Modal handlers
   const handleSuccessModalClose = useCallback(() => {
     setShowSuccessModal(false);
-    navigation.goBack();
-  }, [navigation]);
+    // Only go back if we're not in add new address mode
+    if (!isAddingNewAddress) {
+      navigation.goBack();
+    }
+  }, [navigation, isAddingNewAddress]);
 
   const handleConfirmProfileSave = useCallback(() => {
     setShowConfirmProfileModal(false);
@@ -201,6 +235,43 @@ const ProfileEditScreen = ({ navigation, route }) => {
     setShowConfirmAddAddressModal(false);
     handleAddAddress();
   }, [handleAddAddress]);
+
+  const handleAddNewAddress = useCallback(() => {
+    // Only allow adding new addresses for customers
+    if (!isCustomer) {
+      setErrorMessage('Adding new addresses is only available for customers');
+      setShowErrorModal(true);
+      return;
+    }
+    
+    setIsAddingNewAddress(true);
+    setAddressData({
+      addressLabel: '',
+      addressLine: '',
+      city: '',
+      taluka: '',
+      district: '',
+      state: '',
+      country: '',
+      pincode: '',
+    });
+  }, [isCustomer]);
+
+  const handleCancelAddAddress = useCallback(() => {
+    setIsAddingNewAddress(false);
+    if (address) {
+      setAddressData({
+        addressLabel: address.address_label || '',
+        addressLine: address.address_line || '',
+        city: address.city || '',
+        taluka: address.taluka || '',
+        district: address.district || '',
+        state: address.state || '',
+        country: address.country || '',
+        pincode: address.pincode || '',
+      });
+    }
+  }, [address]);
 
   const TabButton = useCallback(({ title, tab, icon }) => (
     <TouchableOpacity
@@ -339,7 +410,20 @@ const ProfileEditScreen = ({ navigation, route }) => {
 
   const AddressTab = () => (
     <View style={styles.tabContent}>
-      <Text style={styles.sectionTitle}>Delivery Address</Text>
+      <View style={styles.addressHeader}>
+        <Text style={styles.sectionTitle}>
+          {isAddingNewAddress ? 'Add New Address' : 'Delivery Address'}
+        </Text>
+        {isAddingNewAddress && (
+          <TouchableOpacity 
+            style={styles.cancelButton}
+            onPress={handleCancelAddAddress}
+          >
+            <Icon name="times" size={16} color="#dc3545" />
+            <Text style={styles.cancelButtonText}>Cancel</Text>
+          </TouchableOpacity>
+        )}
+      </View>
       
       <View style={styles.inputGroup}>
         <Text style={styles.inputLabel}>Address Label</Text>
@@ -448,29 +532,43 @@ const ProfileEditScreen = ({ navigation, route }) => {
         </View>
       </View>
 
-      <TouchableOpacity 
-        style={[styles.saveButton, updateLoading && styles.saveButtonDisabled]} 
-        onPress={() => setShowConfirmAddressModal(true)}
-        disabled={updateLoading}
-      >
-        {updateLoading ? (
-          <ActivityIndicator size="small" color="#fff" />
-        ) : (
-          <Text style={styles.saveButtonText}>Save Address</Text>
-        )}
-      </TouchableOpacity>
+      {isAddingNewAddress ? (
+        <TouchableOpacity 
+          style={[styles.addButton, addAddressLoading && styles.addButtonDisabled]} 
+          onPress={() => setShowConfirmAddAddressModal(true)}
+          disabled={addAddressLoading}
+        >
+          {addAddressLoading ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <Text style={styles.addButtonText}>Add Address</Text>
+          )}
+        </TouchableOpacity>
+      ) : (
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity 
+            style={[styles.saveButton, updateLoading && styles.saveButtonDisabled]} 
+            onPress={() => setShowConfirmAddressModal(true)}
+            disabled={updateLoading}
+          >
+            {updateLoading ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Text style={styles.saveButtonText}>Save Address</Text>
+            )}
+          </TouchableOpacity>
 
-      <TouchableOpacity 
-        style={[styles.addButton, addAddressLoading && styles.addButtonDisabled]} 
-        onPress={() => setShowConfirmAddAddressModal(true)}
-        disabled={addAddressLoading}
-      >
-        {addAddressLoading ? (
-          <ActivityIndicator size="small" color="#fff" />
-        ) : (
-          <Text style={styles.addButtonText}>Add New Address</Text>
-        )}
-      </TouchableOpacity>
+          {isCustomer && (
+            <TouchableOpacity 
+              style={styles.addNewButton} 
+              onPress={handleAddNewAddress}
+            >
+              <Icon name="plus" size={16} color="#007bff" />
+              <Text style={styles.addNewButtonText}>Add New Address</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
     </View>
   );
 
@@ -706,6 +804,35 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
 
+  // Address Header
+  addressHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: p(25),
+  },
+  cancelButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: p(8),
+    paddingHorizontal: p(12),
+    borderRadius: p(15),
+    backgroundColor: '#fff5f5',
+    borderWidth: 1,
+    borderColor: '#fecaca',
+  },
+  cancelButtonText: {
+    color: '#dc3545',
+    fontSize: fontSizes.sm,
+    fontFamily: 'Poppins-SemiBold',
+    marginLeft: p(4),
+  },
+
+  // Button Container
+  buttonContainer: {
+    marginTop: p(20),
+  },
+
   // Add Button
   addButton: {
     backgroundColor: '#007bff', // A different color for the add button
@@ -713,7 +840,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: p(30),
     borderRadius: p(25),
     alignItems: 'center',
-    marginTop: p(10), // Adjust spacing
+    marginTop: p(20),
   },
   addButtonText: {
     color: '#fff',
@@ -723,6 +850,26 @@ const styles = StyleSheet.create({
   addButtonDisabled: {
     backgroundColor: '#ccc',
     opacity: 0.7,
+  },
+
+  // Add New Button
+  addNewButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: p(15),
+    paddingHorizontal: p(30),
+    borderRadius: p(25),
+    backgroundColor: '#f8f9fa',
+    borderWidth: 2,
+    borderColor: '#007bff',
+    marginTop: p(10),
+  },
+  addNewButtonText: {
+    color: '#007bff',
+    fontSize: fontSizes.base,
+    fontFamily: 'Poppins-Bold',
+    marginLeft: p(8),
   },
 
   // Loading and Error States

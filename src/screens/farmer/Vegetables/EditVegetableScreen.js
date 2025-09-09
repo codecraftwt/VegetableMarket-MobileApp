@@ -68,7 +68,7 @@ const EditVegetableScreen = ({ navigation, route }) => {
   const grades = ['A', 'B', 'C'];
 
   useEffect(() => {
-    // Clear success state first
+    // Clear any lingering success state when component mounts
     dispatch(clearFarmerVegetablesSuccess());
     
     // Fetch categories from API
@@ -102,11 +102,13 @@ const EditVegetableScreen = ({ navigation, route }) => {
   }, [selectedVegetable]);
 
   useEffect(() => {
-    if (success && isSubmitting) {
+    if (success && message && isSubmitting) {
       setShowSuccessModal(true);
       setIsSubmitting(false);
+      // Clear the success state immediately to prevent re-triggering
+      dispatch(clearFarmerVegetablesSuccess());
     }
-  }, [success, isSubmitting]);
+  }, [success, message, isSubmitting, dispatch]);
 
   useEffect(() => {
     if (error && isSubmitting) {
@@ -636,10 +638,13 @@ const EditVegetableScreen = ({ navigation, route }) => {
       {/* Success Modal */}
       <SuccessModal
         visible={showSuccessModal}
-        message={message}
+        title="Vegetable Updated Successfully!"
+        message={message || 'Your vegetable has been updated successfully.'}
+        buttonText="Continue"
         onClose={() => {
           setShowSuccessModal(false);
-          dispatch(clearFarmerVegetablesSuccess());
+        }}
+        onButtonPress={() => {
           navigation.goBack();
         }}
       />

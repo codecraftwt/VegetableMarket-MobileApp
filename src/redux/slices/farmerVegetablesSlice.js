@@ -74,9 +74,12 @@ export const deleteVegetable = createAsyncThunk(
   'farmerVegetables/deleteVegetable',
   async (vegetableId, { rejectWithValue }) => {
     try {
+      console.log('Deleting vegetable with ID:', vegetableId);
       const response = await api.delete(`/farmer/vegetables/${vegetableId}`);
+      console.log('Delete response:', response.data);
       return { ...response.data, vegetableId };
     } catch (error) {
+      console.log('Delete error:', error);
       return rejectWithValue(
         error.response?.data?.message || 'Failed to delete vegetable'
       );
@@ -200,14 +203,18 @@ const farmerVegetablesSlice = createSlice({
       
       // Delete vegetable
       .addCase(deleteVegetable.pending, (state) => {
+        console.log('Delete vegetable pending');
         state.loading = true;
         state.error = null;
       })
       .addCase(deleteVegetable.fulfilled, (state, action) => {
+        console.log('Delete vegetable fulfilled:', action.payload);
         state.loading = false;
+        const originalLength = state.vegetables.length;
         state.vegetables = state.vegetables.filter(
           vegetable => vegetable.id !== action.payload.vegetableId
         );
+        console.log('Vegetables before:', originalLength, 'after:', state.vegetables.length);
         if (state.selectedVegetable && state.selectedVegetable.id === action.payload.vegetableId) {
           state.selectedVegetable = null;
         }
@@ -216,6 +223,7 @@ const farmerVegetablesSlice = createSlice({
         state.error = null;
       })
       .addCase(deleteVegetable.rejected, (state, action) => {
+        console.log('Delete vegetable rejected:', action.payload);
         state.loading = false;
         state.error = action.payload;
       })

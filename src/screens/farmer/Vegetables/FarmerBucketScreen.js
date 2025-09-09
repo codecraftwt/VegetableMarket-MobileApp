@@ -27,6 +27,11 @@ const FarmerBucketScreen = ({ navigation }) => {
   const { user } = useSelector(state => state.auth);
   const { vegetables, loading, error, success, message } = useSelector(state => state.farmerVegetables);
   
+  // Debug Redux state
+  useEffect(() => {
+    console.log('Redux state changed:', { success, message, error, vegetablesCount: vegetables.length });
+  }, [success, message, error, vegetables.length]);
+  
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
@@ -39,7 +44,14 @@ const FarmerBucketScreen = ({ navigation }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredVegetables, setFilteredVegetables] = useState([]);
 
+  // Debug selectedVegetable changes
   useEffect(() => {
+    console.log('selectedVegetable changed:', selectedVegetable);
+  }, [selectedVegetable]);
+
+  useEffect(() => {
+    // Clear any lingering success state when component mounts
+    dispatch(clearFarmerVegetablesSuccess());
     // Fetch vegetables data from API
     dispatch(fetchFarmerVegetables());
   }, [dispatch]);
@@ -47,6 +59,8 @@ const FarmerBucketScreen = ({ navigation }) => {
   // Handle navigation focus to refresh data
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
+      // Clear any lingering success state when screen comes into focus
+      dispatch(clearFarmerVegetablesSuccess());
       // Refresh vegetables data when screen comes into focus
       dispatch(fetchFarmerVegetables());
     });
@@ -54,16 +68,18 @@ const FarmerBucketScreen = ({ navigation }) => {
     return unsubscribe;
   }, [navigation, dispatch]);
 
-  // Handle success and error states
+  // Handle success and error states - only for delete operations
   useEffect(() => {
-    if (success && message) {
+    if (success && message && message.includes('deleted')) {
+      console.log('Delete success modal triggered:', message);
+      console.log('Current vegetables count:', vegetables.length);
       setShowSuccessModal(true);
-      dispatch(clearFarmerVegetablesSuccess());
     }
-  }, [success, message, dispatch]);
+  }, [success, message, vegetables.length]);
 
   useEffect(() => {
     if (error) {
+      console.log('Error modal triggered:', error);
       setShowErrorModal(true);
     }
   }, [error]);
@@ -96,6 +112,7 @@ const FarmerBucketScreen = ({ navigation }) => {
 
   const handleThreeDotsPress = (event, vegetable) => {
     event.stopPropagation();
+    console.log('Setting selected vegetable:', vegetable);
     setSelectedVegetable(vegetable);
     
     // Get the position of the touch event
@@ -110,6 +127,8 @@ const FarmerBucketScreen = ({ navigation }) => {
   };
 
   const handleDeleteVegetable = () => {
+    console.log('Delete button pressed, selectedVegetable:', selectedVegetable);
+    console.log('selectedVegetable name:', selectedVegetable?.name);
     setShowActionModal(false);
     setShowConfirmationModal(true);
   };
@@ -117,7 +136,12 @@ const FarmerBucketScreen = ({ navigation }) => {
   const handleConfirmDelete = () => {
     setShowConfirmationModal(false);
     if (selectedVegetable) {
+      console.log('Deleting vegetable with ID:', selectedVegetable.id);
       dispatch(deleteVegetable(selectedVegetable.id));
+      // Clear selectedVegetable after initiating delete
+      setSelectedVegetable(null);
+    } else {
+      console.log('No selected vegetable to delete');
     }
   };
 
@@ -148,7 +172,7 @@ const FarmerBucketScreen = ({ navigation }) => {
 
   const handleCloseActionModal = () => {
     setShowActionModal(false);
-    setSelectedVegetable(null);
+    // Don't clear selectedVegetable here as it's needed for delete confirmation
   };
 
   const toggleViewMode = () => {
@@ -417,8 +441,14 @@ const FarmerBucketScreen = ({ navigation }) => {
       {/* Success Modal */}
       <SuccessModal
         visible={showSuccessModal}
-        message={message}
+        title="Vegetable Deleted Successfully!"
+        message={message || 'The vegetable has been deleted from your inventory.'}
+        buttonText="Continue"
         onClose={() => {
+          setShowSuccessModal(false);
+          dispatch(clearFarmerVegetablesSuccess());
+        }}
+        onButtonPress={() => {
           setShowSuccessModal(false);
           dispatch(clearFarmerVegetablesSuccess());
         }}
@@ -473,7 +503,10 @@ const FarmerBucketScreen = ({ navigation }) => {
         cancelText="Cancel"
         confirmButtonStyle="destructive"
         icon="delete-alert"
-        onConfirm={handleConfirmDelete}
+        onConfirm={() => {
+          console.log('Confirm delete clicked, selectedVegetable:', selectedVegetable);
+          handleConfirmDelete();
+        }}
         onCancel={handleCancelDelete}
         onClose={handleCancelDelete}
       />

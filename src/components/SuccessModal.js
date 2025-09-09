@@ -19,10 +19,11 @@ const SuccessModal = ({
   buttonStyle
 }) => {
   const handleButtonPress = () => {
+    // Always call onClose first to ensure modal closes
+    onClose();
+    // Then call onButtonPress if provided
     if (onButtonPress) {
       onButtonPress();
-    } else {
-      onClose();
     }
   };
 
@@ -40,16 +41,13 @@ const SuccessModal = ({
       animationType="fade"
       onRequestClose={onClose}
     >
-      <TouchableOpacity 
-        style={styles.overlay} 
-        activeOpacity={1} 
-        onPress={onClose}
-      >
+      <View style={styles.overlay}>
         <TouchableOpacity 
-          style={styles.modalContainer} 
-          activeOpacity={1}
-          onPress={() => {}}
-        >
+          style={styles.overlayTouchable} 
+          activeOpacity={1} 
+          onPress={onClose}
+        />
+        <View style={styles.modalContainer}>
           {/* Success Icon */}
           <View style={styles.iconContainer}>
             <Icon name="check-circle" size={p(50)} color="#4CAF50" />
@@ -81,8 +79,8 @@ const SuccessModal = ({
               <Text style={styles.buttonText} numberOfLines={1}>{buttonText}</Text>
             </TouchableOpacity>
           </View>
-        </TouchableOpacity>
-      </TouchableOpacity>
+        </View>
+      </View>
     </Modal>
   );
 };
@@ -94,6 +92,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: p(20),
+  },
+  overlayTouchable: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
   modalContainer: {
     backgroundColor: '#fff',

@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { p } from '../utils/Responsive';
 import { fontSizes } from '../utils/fonts';
+import { handleBackNavigation, getFallbackRoute } from '../utils/navigationUtils';
 
 const CommonHeader = ({
   screenName = 'Screen',
@@ -15,10 +16,28 @@ const CommonHeader = ({
   backgroundColor = '#019a34',
   navigation,
 }) => {
+  const handleBackPress = () => {
+    console.log('Back button pressed');
+    console.log('onBackPress available:', !!onBackPress);
+    console.log('navigation available:', !!navigation);
+    console.log('screenName:', screenName);
+    
+    if (onBackPress) {
+      console.log('Using custom onBackPress handler');
+      onBackPress();
+    } else if (navigation) {
+      console.log('Using navigation utility');
+      const fallbackRoute = getFallbackRoute(screenName);
+      handleBackNavigation(navigation, fallbackRoute);
+    } else {
+      console.log('No navigation or onBackPress handler available');
+    }
+  };
+
   return (
     <View style={[styles.header, { backgroundColor }]}>
       {showBackButton ? (
-        <TouchableOpacity style={styles.backButton} onPress={onBackPress}>
+        <TouchableOpacity style={styles.backButton} onPress={handleBackPress}>
           <Icon name="chevron-left" size={18} color="#fff" />
         </TouchableOpacity>
       ) : (

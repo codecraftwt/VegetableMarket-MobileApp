@@ -8,6 +8,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { fetchMyOrders, clearOrdersError, cancelOrder, clearCancelOrderError, submitReview, clearSubmitReviewError } from '../../../redux/slices/ordersSlice';
 import { ReviewModal, ConfirmationModal } from '../../../components';
 import SkeletonLoader from '../../../components/SkeletonLoader';
+import { createBackPressHandler } from '../../../utils/navigationUtils';
 
 const MyOrdersScreen = ({ navigation }) => {
   const dispatch = useDispatch();
@@ -56,10 +57,7 @@ const MyOrdersScreen = ({ navigation }) => {
     }
   };
 
-  const handleBackPress = () => {
-    // Navigate to home screen directly instead of going back to checkout
-    navigation.navigate('Dashboard');
-  };
+  const handleBackPress = createBackPressHandler(navigation, 'MyOrders');
 
   const handleCancelOrder = (order) => {
     setSelectedOrder(order);

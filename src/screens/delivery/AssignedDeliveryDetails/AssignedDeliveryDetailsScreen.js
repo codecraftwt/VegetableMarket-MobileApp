@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   Linking,
   Image,
+  Alert,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useDispatch, useSelector } from 'react-redux';
@@ -21,7 +22,7 @@ import {
   fetchAssignedDeliveryDetails,
   clearDeliveryError
 } from '../../../redux/slices/deliverySlice';
-import { updateOrderStatus, updateAssignmentStatus, updatePaymentStatus } from '../../../redux/slices/todaysTaskSlice';
+import { updateOrderStatus, updateAssignmentStatus, updatePaymentStatus, clearTodaysTaskSuccess } from '../../../redux/slices/todaysTaskSlice';
 import ErrorModal from '../../../components/ErrorModal';
 import SuccessModal from '../../../components/SuccessModal';
 
@@ -36,11 +37,22 @@ const AssignedDeliveryDetailsScreen = ({ navigation, route }) => {
 
   useFocusEffect(
     React.useCallback(() => {
+      // Clear any lingering success state when screen comes into focus
+      dispatch(clearTodaysTaskSuccess());
+      
       if (orderId) {
         dispatch(fetchAssignedDeliveryDetails(orderId));
       }
-    }, [orderId])
+    }, [orderId, dispatch])
   );
+
+  // Debug the API response structure
+  useEffect(() => {
+    if (assignedDeliveryDetails) {
+      console.log('Assigned delivery details received:', JSON.stringify(assignedDeliveryDetails, null, 2));
+      console.log('QR URL location:', assignedDeliveryDetails?.order?.upi_qr_url);
+    }
+  }, [assignedDeliveryDetails]);
 
   useEffect(() => {
     if (error) {
@@ -52,8 +64,10 @@ const AssignedDeliveryDetailsScreen = ({ navigation, route }) => {
   useEffect(() => {
     if (updateOrderStatusSuccess && updateOrderStatusMessage) {
       setShowSuccessModal(true);
+      // Clear the success state immediately to prevent re-triggering
+      dispatch(clearTodaysTaskSuccess());
     }
-  }, [updateOrderStatusSuccess, updateOrderStatusMessage]);
+  }, [updateOrderStatusSuccess, updateOrderStatusMessage, dispatch]);
 
   useEffect(() => {
     if (updateOrderStatusError) {
@@ -185,20 +199,37 @@ const AssignedDeliveryDetailsScreen = ({ navigation, route }) => {
   };
 
   const renderUPIQR = () => {
-    if (!assignedDeliveryDetails?.order?.upi_qr_url) return null;
+    // Check for QR URL in multiple possible locations
+    const qrUrl = assignedDeliveryDetails?.order?.upi_qr_url || 
+                  assignedDeliveryDetails?.upi_qr_url ||
+                  assignedDeliveryDetails?.data?.order?.upi_qr_url;
+    
+    if (!qrUrl) {
+      return null;
+    }
+    
+    const handleOpenQRUrl = () => {
+      Linking.openURL(qrUrl).catch(err => {
+        console.error('Failed to open QR URL:', err);
+        Alert.alert('Error', 'Failed to open payment link');
+      });
+    };
     
     return (
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Payment QR Code</Text>
         <View style={styles.infoCard}>
-          <View style={styles.qrContainer}>
-            <Image 
-              source={{ uri: assignedDeliveryDetails.order.upi_qr_url }}
-              style={styles.qrImage}
-              resizeMode="contain"
-            />
-            <Text style={styles.qrText}>Scan QR code for payment</Text>
-          </View>
+          <TouchableOpacity 
+            style={styles.qrButton}
+            onPress={handleOpenQRUrl}
+            activeOpacity={0.7}
+          >
+            <View style={styles.qrIconContainer}>
+              <Icon name="qrcode" size={p(60)} color="#019a34" />
+            </View>
+            <Text style={styles.qrButtonText}>Tap to Open Payment QR</Text>
+            <Text style={styles.qrSubtext}>This will open the payment link in your browser</Text>
+          </TouchableOpacity>
         </View>
       </View>
     );
@@ -336,14 +367,20 @@ const AssignedDeliveryDetailsScreen = ({ navigation, route }) => {
       </View>
 
       {/* Success Modal */}
-      <SuccessModal
+      {/* <SuccessModal
         visible={showSuccessModal}
-        onClose={() => setShowSuccessModal(false)}
+        onClose={() => {
+          setShowSuccessModal(false);
+          dispatch(clearTodaysTaskSuccess());
+        }}
         title="Success"
         message={updateOrderStatusMessage || "Order status updated successfully!"}
         buttonText="OK"
-        onButtonPress={() => setShowSuccessModal(false)}
-      />
+        onButtonPress={() => {
+          setShowSuccessModal(false);
+          dispatch(clearTodaysTaskSuccess());
+        }}
+      /> */}
 
       {/* Error Modal */}
       <ErrorModal
@@ -426,20 +463,36 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-SemiBold',
     color: '#fff',
   },
-  qrContainer: {
+  qrButton: {
     alignItems: 'center',
-    paddingVertical: p(20),
+    paddingVertical: p(30),
+    paddingHorizontal: p(20),
   },
-  qrImage: {
-    width: p(200),
-    height: p(200),
-    marginBottom: p(12),
+  qrIconContainer: {
+    width: p(100),
+    height: p(100),
+    borderRadius: p(50),
+    backgroundColor: '#f0f8f0',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: p(16),
+    borderWidth: 2,
+    borderColor: '#019a34',
+    borderStyle: 'dashed',
   },
-  qrText: {
+  qrButtonText: {
+    fontSize: fontSizes.base,
+    fontFamily: 'Poppins-SemiBold',
+    color: '#019a34',
+    textAlign: 'center',
+    marginBottom: p(8),
+  },
+  qrSubtext: {
     fontSize: fontSizes.sm,
     fontFamily: 'Poppins-Regular',
     color: '#666',
     textAlign: 'center',
+    lineHeight: p(18),
   },
   farmerCard: {
     backgroundColor: '#fff',

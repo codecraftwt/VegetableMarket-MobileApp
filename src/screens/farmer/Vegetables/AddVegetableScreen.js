@@ -58,6 +58,8 @@ const AddVegetableScreen = ({ navigation }) => {
   const grades = ['A', 'B', 'C'];
 
   useEffect(() => {
+    // Clear any lingering success state when component mounts
+    dispatch(clearFarmerVegetablesSuccess());
     // Fetch categories from API when component mounts
     dispatch(fetchVegetableCategories());
   }, [dispatch]);
@@ -65,6 +67,7 @@ const AddVegetableScreen = ({ navigation }) => {
   useEffect(() => {
     if (success && message) {
       setShowSuccessModal(true);
+      // Clear the success state immediately to prevent re-triggering
       dispatch(clearFarmerVegetablesSuccess());
     }
   }, [success, message, dispatch]);
@@ -499,10 +502,13 @@ const AddVegetableScreen = ({ navigation }) => {
       {/* Success Modal */}
       <SuccessModal
         visible={showSuccessModal}
-        message={message}
+        title="Vegetable Added Successfully!"
+        message={message || 'Your vegetable has been added to your inventory.'}
+        buttonText="Continue"
         onClose={() => {
           setShowSuccessModal(false);
-          dispatch(clearFarmerVegetablesSuccess());
+        }}
+        onButtonPress={() => {
           navigation.goBack();
         }}
       />
