@@ -426,38 +426,38 @@ const styles = StyleSheet.create({
   // Product Image Section
   imageSection: {
     backgroundColor: '#f0f8f0',
-    padding: p(20),
+    padding: p(16),
     marginBottom: p(0),
   },
   productImage: {
     width: '100%',
     height: p(250),
-    borderRadius: p(20),
+    borderRadius: p(8),
     resizeMode: 'cover',
   },
   
   // Product Information Card
   productCard: {
     backgroundColor: '#f6fbf7',
-    borderTopLeftRadius: p(20),
-    borderTopRightRadius: p(20),
-    padding: p(20),
-    marginTop: p(-20),
+    borderTopLeftRadius: p(8),
+    borderTopRightRadius: p(8),
+    padding: p(16),
+    marginTop: p(-16),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
+    shadowOffset: { width: 0, height: -1 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 5,
+    shadowRadius: 6,
+    elevation: 2,
   },
   productName: {
-    fontSize: fontSizes.xl,
-    color: '#333',
-    marginBottom: p(10),
-    fontFamily: 'Montserrat-Bold',
+    fontSize: fontSizes.lg,
+    color: '#1a1a1a',
+    marginBottom: p(8),
+    fontFamily: 'Poppins-Bold',
   },
   starRating: {
     flexDirection: 'row',
-    marginBottom: p(15),
+    marginBottom: p(12),
     gap: p(3),
   },
   
@@ -466,54 +466,54 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: p(20),
+    marginBottom: p(16),
   },
   productPrice: {
-    fontSize: fontSizes.lg,
+    fontSize: fontSizes.base,
     color: '#019a34',
-    fontFamily: 'Rubik-Bold',
+    fontFamily: 'Poppins-Bold',
   },
   quantitySelector: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#f8f9fa',
-    borderRadius: p(25),
-    paddingHorizontal: p(5),
+    borderRadius: p(8),
+    paddingHorizontal: p(8),
   },
   quantityButton: {
-    width: p(40),
-    height: p(40),
-    borderRadius: p(20),
+    width: p(32),
+    height: p(32),
+    borderRadius: p(16),
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#fff',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    shadowRadius: 3,
+    elevation: 1,
   },
   quantityText: {
-    fontSize: fontSizes.base,
+    fontSize: fontSizes.sm,
     color: '#333',
-    marginHorizontal: p(15),
+    marginHorizontal: p(12),
     fontFamily: 'Poppins-SemiBold',
   },
   
   // Product Details Section
   detailsSection: {
-    marginBottom: p(25),
+    marginBottom: p(20),
   },
   detailsTitle: {
-    fontSize: fontSizes.lg,
-    color: '#333',
-    marginBottom: p(10),
-    fontFamily: 'Montserrat-Bold',
+    fontSize: fontSizes.base,
+    color: '#1a1a1a',
+    marginBottom: p(8),
+    fontFamily: 'Poppins-Bold',
   },
   detailsText: {
-    fontSize: fontSizes.base,
+    fontSize: fontSizes.sm,
     color: '#666',
-    lineHeight: p(22),
+    lineHeight: p(18),
     fontFamily: 'Poppins-Regular',
   },
   readMoreText: {
@@ -523,49 +523,49 @@ const styles = StyleSheet.create({
   
   // Farmer Section
   farmerSection: {
-    marginBottom: p(25),
+    marginBottom: p(20),
     backgroundColor: '#f0f8f0',
-    borderRadius: p(15),
-    padding: p(15),
+    borderRadius: p(8),
+    padding: p(12),
   },
   farmerTitle: {
-    fontSize: fontSizes.lg,
-    color: '#333',
-    marginBottom: p(10),
-    fontFamily: 'Montserrat-Bold',
+    fontSize: fontSizes.base,
+    color: '#1a1a1a',
+    marginBottom: p(8),
+    fontFamily: 'Poppins-Bold',
   },
   farmerInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: p(8),
+    marginBottom: p(6),
   },
   farmerIcon: {
-    marginRight: p(10),
+    marginRight: p(8),
   },
   farmerName: {
-    fontSize: fontSizes.base,
+    fontSize: fontSizes.sm,
     color: '#019a34',
     fontFamily: 'Poppins-Bold',
     flex: 1,
   },
   farmerChevron: {
-    marginLeft: p(10),
+    marginLeft: p(8),
   },
   farmerPhone: {
-    fontSize: fontSizes.base,
+    fontSize: fontSizes.sm,
     color: '#666',
     fontFamily: 'Poppins-Regular',
   },
   
   // Related Products Section
   relatedSection: {
-    marginBottom: p(20),
+    marginBottom: p(16),
   },
   relatedTitle: {
-    fontSize: fontSizes.lg,
-    color: '#333',
-    marginBottom: p(15),
-    fontFamily: 'Montserrat-Bold',
+    fontSize: fontSizes.base,
+    color: '#1a1a1a',
+    marginBottom: p(12),
+    fontFamily: 'Poppins-Bold',
   },
   
   // Bottom Fixed Bar
@@ -574,8 +574,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: p(20),
-    paddingVertical: p(15),
+    paddingHorizontal: p(16),
+    paddingVertical: p(12),
     borderTopWidth: 1,
     borderTopColor: '#e9ecef',
   },
@@ -583,81 +583,81 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   totalLabel: {
-    fontSize: fontSizes.sm,
+    fontSize: fontSizes.xs,
     color: '#666',
-    marginBottom: p(5),
+    marginBottom: p(4),
     fontFamily: 'Poppins-Regular',
   },
   totalPrice: {
-    fontSize: fontSizes.lg,
+    fontSize: fontSizes.base,
     color: '#019a34',
-    fontFamily: 'Rubik-Bold',
+    fontFamily: 'Poppins-Bold',
   },
   addToCartButton: {
     backgroundColor: '#019a34',
-    paddingHorizontal: p(25),
-    paddingVertical: p(10),
-    borderRadius: p(25),
+    paddingHorizontal: p(20),
+    paddingVertical: p(8),
+    borderRadius: p(8),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 2,
   },
   addToCartText: {
     color: '#fff',
-    fontSize: fontSizes.base,
+    fontSize: fontSizes.sm,
     fontFamily: 'Poppins-Bold',
   },
 
   // Skeleton Loader Styles
   skeletonProductName: {
-    marginBottom: p(10),
+    marginBottom: p(8),
   },
   skeletonStarRating: {
     flexDirection: 'row',
-    marginBottom: p(15),
+    marginBottom: p(12),
     gap: p(3),
   },
   skeletonQuantityText: {
-    marginHorizontal: p(15),
+    marginHorizontal: p(12),
   },
   skeletonDetailsTitle: {
-    marginBottom: p(10),
-  },
-  skeletonDetailsText: {
     marginBottom: p(8),
   },
+  skeletonDetailsText: {
+    marginBottom: p(6),
+  },
   skeletonFarmerTitle: {
-    marginBottom: p(10),
+    marginBottom: p(8),
   },
   skeletonFarmerInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: p(8),
+    marginBottom: p(6),
   },
   skeletonFarmerName: {
-    marginLeft: p(10),
+    marginLeft: p(8),
     flex: 1,
   },
   skeletonRelatedTitle: {
-    marginBottom: p(15),
+    marginBottom: p(12),
   },
   skeletonRelatedProduct: {
-    marginRight: p(15),
+    marginRight: p(12),
     width: p(160),
   },
   skeletonRelatedImage: {
-    marginBottom: p(10),
+    marginBottom: p(8),
   },
   skeletonRelatedName: {
-    marginBottom: p(5),
+    marginBottom: p(4),
   },
   skeletonRelatedRating: {
-    marginBottom: p(5),
+    marginBottom: p(4),
   },
   skeletonRelatedPrice: {
-    marginTop: p(5),
+    marginTop: p(4),
   },
 });
 

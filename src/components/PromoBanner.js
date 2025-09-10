@@ -187,11 +187,11 @@ const PromoBanner = ({ navigation }) => {
 
 const styles = StyleSheet.create({
   container: {
-    marginVertical: p(10),
+    marginVertical: p(8),
   },
   bannerContainer: {
     height: p(180),
-    borderRadius: p(20),
+    borderRadius: p(8),
     overflow: 'hidden',
   },
   scrollView: {
@@ -203,36 +203,36 @@ const styles = StyleSheet.create({
   bannerContent: {
     flex: 1,
     backgroundColor: '#019a34',
-    borderRadius: p(20),
-    padding: p(20),
+    borderRadius: p(8),
+    padding: p(16),
     flexDirection: 'row',
     alignItems: 'center',
   },
   textContainer: {
     flex: 1,
-    marginRight: p(15),
+    marginRight: p(12),
   },
   bannerHeader: {
     color: '#fff',
-    fontSize: fontSizes.md, // Reduced from lg to md for one line
-    lineHeight: p(20), // Reduced line height
-    marginBottom: p(10),
-    fontFamily: 'Montserrat-Bold',
-    numberOfLines: 1, // Ensure text stays in one line
+    fontSize: fontSizes.sm,
+    lineHeight: p(18),
+    marginBottom: p(8),
+    fontFamily: 'Poppins-Bold',
+    numberOfLines: 1,
   },
   bannerDescription: {
     color: '#fff',
-    fontSize: fontSizes.sm,
-    lineHeight: p(18),
-    marginBottom: p(15),
+    fontSize: fontSizes.xs,
+    lineHeight: p(16),
+    marginBottom: p(12),
     fontFamily: 'Poppins-Regular',
     opacity: 0.9,
   },
   shopNowButton: {
     backgroundColor: '#fff',
-    paddingHorizontal: p(14), // Reduced from 20 to 16
-    paddingVertical: p(6), // Reduced from 10 to 8
-    borderRadius: p(16), // Reduced from 20 to 16
+    paddingHorizontal: p(12),
+    paddingVertical: p(6),
+    borderRadius: p(8),
     alignSelf: 'flex-start',
   },
   shopNowText: {
@@ -243,7 +243,7 @@ const styles = StyleSheet.create({
   imageContainer: {
     width: p(100),
     height: p(60),
-    borderRadius: p(15),
+    borderRadius: p(8),
     overflow: 'hidden',
   },
   bannerImage: {
@@ -253,13 +253,13 @@ const styles = StyleSheet.create({
   dotsContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: p(15),
-    gap: p(8),
+    marginTop: p(12),
+    gap: p(6),
   },
   dot: {
-    width: p(8),
-    height: p(8),
-    borderRadius: p(4),
+    width: p(6),
+    height: p(6),
+    borderRadius: p(3),
     backgroundColor: 'rgba(1, 154, 52, 0.3)',
   },
   activeDot: {

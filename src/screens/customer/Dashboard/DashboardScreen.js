@@ -260,16 +260,16 @@ const styles = StyleSheet.create({
   // Search Bar Styles
   searchContainer: {
     backgroundColor: '#fff',
-    paddingHorizontal: p(20),
+    paddingHorizontal: p(16),
     paddingVertical: p(8),
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#f8f9fa',
-    borderRadius: p(20),
-    paddingHorizontal: p(20),
-    paddingVertical: p(5),
+    borderRadius: p(8),
+    paddingHorizontal: p(16),
+    paddingVertical: p(8),
     borderWidth: 1,
     borderColor: '#e9ecef',
   },
@@ -277,74 +277,76 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: fontSizes.base,
     color: '#333',
-    marginRight: p(10),
+    marginRight: p(8),
     fontFamily: 'Poppins-Regular',
   },
   // Content Styles
   content: {
     flex: 1,
-    paddingHorizontal: p(20),
+    paddingHorizontal: p(16),
   },
 
   // Categories Styles
   categoriesContainer: {
-    marginBottom: p(0),
-    marginVertical: p(20),
+    marginBottom: p(16),
+    marginVertical: p(16),
   },
   sectionTitle: {
-    fontSize: fontSizes.xl,
-    color: '#333',
-    marginBottom: p(15),
-    fontFamily: 'Poppins-SemiBold',
+    fontSize: fontSizes.base,
+    color: '#1a1a1a',
+    marginBottom: p(12),
+    fontFamily: 'Poppins-Bold',
   },
   // Popular Items Styles
   popularContainer: {
-    marginVertical: p(20),
-    paddingBottom: p(10),
+    marginVertical: p(16),
+    paddingBottom: p(8),
   },
   // Skeleton Loader Styles
   skeletonCategoryWrapper: {
     alignItems: 'center',
-    marginRight: p(20),
+    marginRight: p(16),
   },
   skeletonText: {
-    marginTop: p(10),
+    marginTop: p(8),
   },
   skeletonProductWrapper: {
-    marginRight: p(15),
+    marginRight: p(12),
   },
   skeletonCard: {
     backgroundColor: '#fff',
-    borderRadius: p(15),
-    padding: p(10),
+    borderRadius: p(8),
+    padding: p(12),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowRadius: 6,
+    elevation: 2,
     width: p(160),
     height: p(240),
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
   },
   skeletonImage: {
-    marginBottom: p(15),
+    marginBottom: p(12),
   },
   skeletonTitle: {
-    marginBottom: p(3),
+    marginBottom: p(4),
   },
   skeletonRating: {
-    marginBottom: p(5),
+    marginBottom: p(6),
   },
   skeletonPrice: {
-    marginTop: p(5),
+    marginTop: p(6),
   },
   emptyState: {
     alignItems: 'center',
-    paddingVertical: p(30),
+    paddingVertical: p(24),
   },
   emptyStateText: {
-    marginTop: p(10),
+    marginTop: p(8),
     fontSize: fontSizes.base,
-    color: '#999',
+    color: '#666',
     fontFamily: 'Poppins-Regular',
   },
 });

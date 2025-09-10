@@ -264,53 +264,55 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingHorizontal: p(20),
+    paddingHorizontal: p(16),
   },
 
   // Categories Styles
   categoriesContainer: {
-    marginTop: p(15),
+    marginTop: p(12),
   },
   sectionTitle: {
-    fontSize: fontSizes.xl,
-    color: '#333',
-    marginBottom: p(15),
-    fontFamily: 'Montserrat-Bold',
+    fontSize: fontSizes.base,
+    color: '#1a1a1a',
+    marginBottom: p(12),
+    fontFamily: 'Poppins-Bold',
   },
   // Skeleton Loader Styles
   skeletonCategoryWrapper: {
     alignItems: 'center',
-    marginRight: p(20),
+    marginRight: p(16),
   },
   skeletonText: {
-    marginTop: p(10),
+    marginTop: p(8),
   },
   skeletonCard: {
     backgroundColor: '#fff',
-    borderRadius: p(15),
-    padding: p(10),
+    borderRadius: p(8),
+    padding: p(12),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowRadius: 6,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
   },
   skeletonImage: {
-    marginBottom: p(15),
+    marginBottom: p(12),
   },
   skeletonTitle: {
-    marginBottom: p(3),
+    marginBottom: p(4),
   },
   skeletonRating: {
-    marginBottom: p(5),
+    marginBottom: p(6),
   },
   skeletonPrice: {
-    marginTop: p(5),
+    marginTop: p(6),
   },
 
   // Vegetables Styles
   vegetablesContainer: {
-    marginVertical: p(20),
+    marginVertical: p(16),
     paddingBottom: p(220),
   },
   vegetablesGrid: {
@@ -320,7 +322,7 @@ const styles = StyleSheet.create({
   },
   productCardWrapper: {
     width: '48%', // Adjust as needed for the grid layout
-    marginBottom: p(20),
+    marginBottom: p(16),
   },
   productsScrollView: {
     // Add any specific styles for the ScrollView if needed
@@ -330,21 +332,21 @@ const styles = StyleSheet.create({
   },
   emptyState: {
     alignItems: 'center',
-    paddingVertical: p(50),
-    marginTop: p(20),
+    paddingVertical: p(40),
+    marginTop: p(16),
   },
   emptyStateTitle: {
-    fontSize: fontSizes.lg,
-    color: '#666',
-    marginTop: p(20),
-    fontFamily: 'Montserrat-Bold',
+    fontSize: fontSizes.base,
+    color: '#1a1a1a',
+    marginTop: p(16),
+    fontFamily: 'Poppins-Bold',
   },
   emptyStateSubtitle: {
-    fontSize: fontSizes.base,
-    color: '#999',
-    marginTop: p(10),
+    fontSize: fontSizes.sm,
+    color: '#666',
+    marginTop: p(8),
     textAlign: 'center',
-    paddingHorizontal: p(20),
+    paddingHorizontal: p(16),
     fontFamily: 'Poppins-Regular',
   },
 });

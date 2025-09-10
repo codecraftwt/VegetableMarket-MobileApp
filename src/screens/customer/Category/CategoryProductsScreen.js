@@ -231,53 +231,55 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingHorizontal: p(20),
+    paddingHorizontal: p(16),
   },
   scrollContent: {
-    paddingBottom: p(20),
+    paddingBottom: p(16),
   },
 
   // Search Bar
   searchContainer: {
-    marginTop: p(20),
-    marginBottom: p(20),
+    marginTop: p(16),
+    marginBottom: p(16),
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#fff',
-    borderRadius: p(15),
-    paddingHorizontal: p(20),
+    borderRadius: p(8),
+    paddingHorizontal: p(16),
     paddingVertical: p(2),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowRadius: 6,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
   },
   searchIcon: {
-    marginRight: p(15),
+    marginRight: p(12),
   },
   searchInput: {
     flex: 1,
-    fontSize: fontSizes.base,
-    color: '#333',
+    fontSize: fontSizes.sm,
+    color: '#1a1a1a',
     fontFamily: 'Poppins-Regular',
   },
   clearButton: {
-    padding: p(5),
-    marginLeft: p(10),
+    padding: p(4),
+    marginLeft: p(8),
   },
 
   // Products Section
   productsSection: {
-    marginBottom: p(20),
+    marginBottom: p(16),
   },
   sectionTitle: {
-    fontSize: fontSizes.lg,
-    color: '#333',
-    marginBottom: p(15),
-    fontFamily: 'Poppins-SemiBold',
+    fontSize: fontSizes.base,
+    color: '#1a1a1a',
+    marginBottom: p(12),
+    fontFamily: 'Poppins-Bold',
   },
   productsGrid: {
     flexDirection: 'row',
@@ -286,57 +288,59 @@ const styles = StyleSheet.create({
   },
   productCardWrapper: {
     width: '48%',
-    marginBottom: p(20),
+    marginBottom: p(16),
   },
 
   // Empty State
   emptyState: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: p(60),
+    paddingVertical: p(48),
   },
   emptyStateTitle: {
-    fontSize: fontSizes.xl,
-    color: '#333',
-    fontFamily: 'Montserrat-Bold',
-    marginTop: p(20),
-    marginBottom: p(10),
+    fontSize: fontSizes.lg,
+    color: '#1a1a1a',
+    fontFamily: 'Poppins-Bold',
+    marginTop: p(16),
+    marginBottom: p(8),
   },
   emptyStateSubtitle: {
-    fontSize: fontSizes.base,
+    fontSize: fontSizes.sm,
     color: '#666',
     textAlign: 'center',
-    lineHeight: p(22),
+    lineHeight: p(18),
     fontFamily: 'Poppins-Regular',
   },
   // Skeleton Loader Styles
   skeletonContainer: {
-    marginBottom: p(20),
+    marginBottom: p(16),
   },
   skeletonProductCard: {
     backgroundColor: '#fff',
-    borderRadius: p(15),
-    padding: p(10),
+    borderRadius: p(8),
+    padding: p(8),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowRadius: 6,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
   },
   skeletonProductImage: {
-    marginBottom: p(15),
+    marginBottom: p(12),
   },
   skeletonProductName: {
-    marginBottom: p(3),
+    marginBottom: p(2),
   },
   skeletonProductRating: {
-    marginBottom: p(3),
+    marginBottom: p(2),
   },
   skeletonProductPrice: {
-    marginBottom: p(10),
+    marginBottom: p(8),
   },
   skeletonAddButton: {
-    marginTop: p(5),
+    marginTop: p(4),
   },
 });
 

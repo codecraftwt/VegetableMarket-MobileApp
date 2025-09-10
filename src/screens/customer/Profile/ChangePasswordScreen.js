@@ -205,51 +205,53 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingHorizontal: p(20),
+    paddingHorizontal: p(16),
   },
   scrollContent: {
     flexGrow: 1,
-    paddingBottom: p(20),
+    paddingBottom: p(16),
   },
   
   formContainer: {
     backgroundColor: '#fff',
-    borderRadius: p(15),
-    padding: p(25),
-    marginTop: p(20),
+    borderRadius: p(8),
+    padding: p(16),
+    marginTop: p(16),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowRadius: 6,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
   },
   
   title: {
-    fontSize: fontSizes.xl,
-    color: '#333',
-    marginBottom: p(30),
+    fontSize: fontSizes.lg,
+    color: '#1a1a1a',
+    marginBottom: p(24),
     textAlign: 'center',
-    fontFamily: 'Montserrat-Bold',
+    fontFamily: 'Poppins-Bold',
   },
   
   inputGroup: {
-    marginBottom: p(25),
+    marginBottom: p(20),
   },
   
   inputLabel: {
-    fontSize: fontSizes.sm,
+    fontSize: fontSizes.xs,
     color: '#666',
-    marginBottom: p(8),
+    marginBottom: p(6),
     fontFamily: 'Poppins-SemiBold',
   },
   
   textInput: {
-    fontSize: fontSizes.base,
+    fontSize: fontSizes.sm,
     color: '#333',
-    paddingVertical: p(15),
-    paddingHorizontal: p(20),
+    paddingVertical: p(12),
+    paddingHorizontal: p(16),
     backgroundColor: '#f8f9fa',
-    borderRadius: p(12),
+    borderRadius: p(8),
     borderWidth: 1,
     borderColor: '#e9ecef',
     fontFamily: 'Poppins-Regular',
@@ -257,21 +259,21 @@ const styles = StyleSheet.create({
   
   changePasswordButton: {
     backgroundColor: '#FFD700', // Yellow color as shown in the image
-    paddingVertical: p(15),
-    paddingHorizontal: p(30),
-    borderRadius: p(25),
+    paddingVertical: p(12),
+    paddingHorizontal: p(24),
+    borderRadius: p(8),
     alignItems: 'center',
-    marginTop: p(10),
+    marginTop: p(8),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowRadius: 6,
+    elevation: 2,
   },
   
   changePasswordButtonText: {
     color: '#000', // Black text as shown in the image
-    fontSize: fontSizes.base,
+    fontSize: fontSizes.sm,
     fontFamily: 'Poppins-Bold',
   },
   

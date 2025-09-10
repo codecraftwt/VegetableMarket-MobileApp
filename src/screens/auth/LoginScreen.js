@@ -298,12 +298,12 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     justifyContent: 'center',
-    padding: p(20),
+    padding: p(16),
   },
   formContainer: {
     backgroundColor: '#ffffff',
     borderRadius: p(32),
-    padding: p(36),
+    padding: p(24),
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 20 },
     shadowOpacity: 0.25,
@@ -313,7 +313,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.4)',
   },
   title: {
-    fontSize: fontSizes['3xl'],
+    fontSize: fontSizes['2xl'],
     fontFamily: 'Montserrat-Bold',
     color: '#019a34',
     marginBottom: 10,
@@ -321,32 +321,32 @@ const styles = StyleSheet.create({
     letterSpacing: 0.4,
   },
   subtitle: {
-    fontSize: fontSizes.sm,
+    fontSize: fontSizes.xs,
     fontFamily: 'Poppins-Regular',
     color: '#666',
     textAlign: 'center',
-    marginBottom: p(20),
-    lineHeight: p(24),
+    marginBottom: p(16),
+    lineHeight: p(20),
     paddingHorizontal: p(12),
   },
   inputContainer: {
-    marginBottom: p(24),
+    marginBottom: p(20),
   },
   inputLabel: {
-    fontSize: fontSizes.sm,
+    fontSize: fontSizes.xs,
     fontFamily: 'Poppins-SemiBold',
     color: '#019a34',
-    marginBottom: p(10),
+    marginBottom: p(8),
     marginLeft: p(6),
   },
   input: {
-    height: p(60),
+    height: p(52),
     backgroundColor: '#f8f9fa',
     borderWidth: 2,
     borderColor: '#e1e5e9',
     borderRadius: p(20),
-    paddingHorizontal: p(22),
-    fontSize: fontSizes.base,
+    paddingHorizontal: p(18),
+    fontSize: fontSizes.sm,
     fontFamily: 'Poppins-Regular',
     color: '#333',
     position: 'relative',
@@ -377,23 +377,23 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   passwordInput: {
-    paddingRight: p(60), // Make space for the eye icon
+    paddingRight: p(50), // Make space for the eye icon
   },
   eyeIcon: {
     position: 'absolute',
-    right: p(22),
+    right: p(18),
     top: '50%',
-    transform: [{ translateY: -12 }], // Center vertically (24/2 = 12)
+    transform: [{ translateY: -10 }], // Center vertically
     padding: p(6),
     zIndex: 1,
   },
   loginButton: {
     backgroundColor: '#019a34',
-    height: p(60),
+    height: p(52),
     borderRadius: p(20),
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: p(12),
+    marginTop: p(10),
     shadowColor: '#019a34',
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.35,
@@ -406,19 +406,19 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: 'white',
-    fontSize: fontSizes.lg,
+    fontSize: fontSizes.base,
     fontFamily: 'Poppins-SemiBold',
     letterSpacing: 0.6,
   },
 
   forgotPassword: {
     alignSelf: 'flex-end',
-    marginVertical: p(20),
+    marginVertical: p(16),
   },
   linkText: {
     color: '#019a34',
     fontFamily: 'Poppins-Medium',
-    fontSize: fontSizes.sm,
+    fontSize: fontSizes.xs,
   },
   signupContainer: {
     flexDirection: 'row',
@@ -426,13 +426,13 @@ const styles = StyleSheet.create({
   },
   signupText: {
     color: '#666',
-    fontSize: fontSizes.sm,
+    fontSize: fontSizes.xs,
     fontFamily: 'Poppins-Regular',
   },
   signupLink: {
     color: '#019a34',
     fontFamily: 'Poppins-SemiBold',
-    fontSize: fontSizes.sm,
+    fontSize: fontSizes.xs,
   },
 });
 

@@ -103,7 +103,7 @@ const CategoryItem = ({
 const styles = StyleSheet.create({
   categoryItem: {
     alignItems: 'center',
-    paddingVertical: p(10),
+    paddingVertical: p(8),
   },
   selectedCategory: {
     transform: [{ scale: 1.1 }],
@@ -111,15 +111,15 @@ const styles = StyleSheet.create({
   categoryIcon: {
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: p(10),
+    marginBottom: p(8),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowRadius: 6,
+    elevation: 2,
   },
   categoryName: {
-    color: '#333',
+    color: '#1a1a1a',
     textAlign: 'center',
     fontFamily: 'Poppins-SemiBold',
   },
