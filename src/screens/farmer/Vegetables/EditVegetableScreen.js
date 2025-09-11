@@ -167,28 +167,178 @@ const EditVegetableScreen = ({ navigation, route }) => {
     });
   };
 
-  const openImageLibrary = () => {
-    const options = {
-      mediaType: 'photo',
-      quality: 0.8,
-      maxWidth: 1000,
-      maxHeight: 1000,
-      selectionLimit: 5 - existingImages.length - selectedImages.length,
-    };
+  const requestStoragePermission = async () => {
+    if (Platform.OS === 'android') {
+      try {
+        console.log('Requesting storage permission...');
+        
+        // For Android 13+ (API level 33+), we need READ_MEDIA_IMAGES instead of READ_EXTERNAL_STORAGE
+        const androidVersion = Platform.Version;
+        let permission;
+        
+        if (androidVersion >= 33) {
+          permission = PermissionsAndroid.PERMISSIONS.READ_MEDIA_IMAGES;
+        } else {
+          permission = PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE;
+        }
+        
+        const granted = await PermissionsAndroid.request(
+          permission,
+          {
+            title: 'Storage Permission',
+            message: 'This app needs access to your photos to select images.',
+            buttonNeutral: 'Ask Me Later',
+            buttonNegative: 'Cancel',
+            buttonPositive: 'OK',
+          },
+        );
+        console.log('Storage permission result:', granted);
+        return granted === PermissionsAndroid.RESULTS.GRANTED;
+      } catch (err) {
+        console.error('Storage permission error:', err);
+        return false;
+      }
+    }
+    return true;
+  };
 
-    launchImageLibrary(options, (response) => {
-      if (response.didCancel || response.error) {
+  const openImageLibrary = async () => {
+    console.log('Opening gallery...');
+
+    try {
+      // Check permissions first
+      if (Platform.OS === 'android') {
+        const hasStoragePermission = await requestStoragePermission();
+        if (!hasStoragePermission) {
+          Alert.alert('Permission Denied', 'Photo access permission is required to select images from your gallery.');
+          return;
+        }
+      }
+
+      // Try with basic options first
+      const options = {
+        mediaType: 'photo',
+        quality: 0.8,
+        includeBase64: false,
+        selectionLimit: 5 - existingImages.length - selectedImages.length,
+        maxWidth: 1000,
+        maxHeight: 1000,
+        presentationStyle: 'fullScreen',
+        includeExtra: false,
+      };
+
+      console.log('Launching gallery with options:', options);
+      const response = await launchImageLibrary(options);
+      console.log('Gallery response:', response);
+
+      if (response.didCancel) {
+        console.log('User cancelled gallery');
         return;
       }
-      if (response.assets) {
+
+      if (response.errorCode) {
+        console.log('Gallery error:', response.errorMessage);
+        
+        // If it's the intent error, try with different options
+        if (response.errorMessage?.includes('No Activity found to handle Intent')) {
+          console.log('Trying alternative gallery options...');
+          await tryAlternativeGallery();
+          return;
+        }
+        
+        let errorMsg = 'Failed to access gallery. ';
+        
+        if (response.errorMessage?.includes('permission')) {
+          errorMsg += 'Please grant photo access permission in your device settings.';
+        } else {
+          errorMsg += response.errorMessage || 'Please try again.';
+        }
+        
+        Alert.alert('Gallery Error', errorMsg);
+        return;
+      }
+
+      if (response.assets && response.assets.length > 0) {
         const newImages = response.assets.map(asset => ({
           uri: asset.uri,
           type: asset.type,
           name: asset.fileName || 'image.jpg',
         }));
         setSelectedImages(prev => [...prev, ...newImages]);
+      } else {
+        console.error('No assets in gallery response');
+        Alert.alert('Error', 'No image selected. Please try again.');
       }
-    });
+    } catch (error) {
+      console.error('Gallery error:', error);
+      
+      // If it's the intent error, try alternative method
+      if (error.message?.includes('No Activity found to handle Intent')) {
+        console.log('Trying alternative gallery method...');
+        await tryAlternativeGallery();
+        return;
+      }
+      
+      let errorMsg = 'Failed to access gallery. ';
+      
+      if (error.message?.includes('permission')) {
+        errorMsg += 'Please grant photo access permission in your device settings.';
+      } else {
+        errorMsg += error.message || 'Please try again.';
+      }
+      
+      Alert.alert('Gallery Error', errorMsg);
+    }
+  };
+
+  const tryAlternativeGallery = async () => {
+    try {
+      console.log('Trying alternative gallery method...');
+      
+      const alternativeOptions = {
+        mediaType: 'photo',
+        quality: 0.7,
+        includeBase64: false,
+        selectionLimit: 5 - existingImages.length - selectedImages.length,
+        maxWidth: 600,
+        maxHeight: 600,
+        presentationStyle: 'pageSheet',
+        includeExtra: false,
+        storageOptions: {
+          skipBackup: true,
+          path: 'images',
+        },
+      };
+
+      const response = await launchImageLibrary(alternativeOptions);
+      console.log('Alternative gallery response:', response);
+
+      if (response.didCancel) {
+        console.log('User cancelled alternative gallery');
+        return;
+      }
+
+      if (response.errorCode) {
+        console.log('Alternative gallery error:', response.errorMessage);
+        Alert.alert('Gallery Error', 'No gallery app found on your device. Please install a gallery app or use the camera instead.');
+        return;
+      }
+
+      if (response.assets && response.assets.length > 0) {
+        const newImages = response.assets.map(asset => ({
+          uri: asset.uri,
+          type: asset.type,
+          name: asset.fileName || 'image.jpg',
+        }));
+        setSelectedImages(prev => [...prev, ...newImages]);
+      } else {
+        console.error('No assets in alternative gallery response');
+        Alert.alert('Error', 'No image selected. Please try again.');
+      }
+    } catch (error) {
+      console.error('Alternative gallery error:', error);
+      Alert.alert('Gallery Error', 'No gallery app found on your device. Please install a gallery app or use the camera instead.');
+    }
   };
 
   const removeSelectedImage = (index) => {
@@ -262,14 +412,18 @@ const EditVegetableScreen = ({ navigation, route }) => {
     submitData.append('harvest_date', formData.harvest_date);
     submitData.append('grade', formData.grade);
 
-    // Add new images
+    // Add new images - use lowercase 'images[]' like AddVegetableScreen
     selectedImages.forEach((image, index) => {
-      submitData.append('Images[]', {
+      submitData.append('images[]', {
         uri: image.uri,
         type: image.type,
         name: image.name,
       });
     });
+    
+    // Debug: Log FormData structure
+    console.log('EditVegetableScreen - FormData _parts after adding images:', submitData._parts);
+    console.log('EditVegetableScreen - Number of new images added:', selectedImages.length);
 
     dispatch(updateVegetable({ vegetableId, vegetableData: submitData }));
   };

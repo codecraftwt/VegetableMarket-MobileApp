@@ -22,14 +22,18 @@ const ConfirmationModal = ({
     if (onConfirm) {
       onConfirm();
     }
-    onClose();
+    if (onClose) {
+      onClose();
+    }
   };
 
   const handleCancel = () => {
     if (onCancel) {
       onCancel();
     }
-    onClose();
+    if (onClose) {
+      onClose();
+    }
   };
 
   const getIconColor = () => {
@@ -64,12 +68,12 @@ const ConfirmationModal = ({
       visible={visible}
       transparent={true}
       animationType="fade"
-      onRequestClose={onClose}
+      onRequestClose={onClose || (() => {})}
     >
       <TouchableOpacity 
         style={styles.overlay} 
         activeOpacity={1} 
-        onPress={onClose}
+        onPress={onClose || (() => {})}
       >
         <TouchableOpacity 
           style={styles.modalContainer} 

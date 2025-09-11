@@ -107,19 +107,32 @@ const AddVegetableScreen = ({ navigation }) => {
   const requestStoragePermission = async () => {
     if (Platform.OS === 'android') {
       try {
+        console.log('Requesting storage permission...');
+        
+        // For Android 13+ (API level 33+), we need READ_MEDIA_IMAGES instead of READ_EXTERNAL_STORAGE
+        const androidVersion = Platform.Version;
+        let permission;
+        
+        if (androidVersion >= 33) {
+          permission = PermissionsAndroid.PERMISSIONS.READ_MEDIA_IMAGES;
+        } else {
+          permission = PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE;
+        }
+        
         const granted = await PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
+          permission,
           {
             title: 'Storage Permission',
-            message: 'App needs storage permission to access photos',
+            message: 'This app needs access to your photos to select images.',
             buttonNeutral: 'Ask Me Later',
             buttonNegative: 'Cancel',
             buttonPositive: 'OK',
           },
         );
+        console.log('Storage permission result:', granted);
         return granted === PermissionsAndroid.RESULTS.GRANTED;
       } catch (err) {
-        console.warn(err);
+        console.error('Storage permission error:', err);
         return false;
       }
     }
@@ -169,28 +182,132 @@ const AddVegetableScreen = ({ navigation }) => {
   };
 
   const openImageLibrary = async () => {
-    const hasPermission = await requestStoragePermission();
-    if (!hasPermission) {
-      Alert.alert('Permission denied', 'Storage permission is required to access photos');
-      return;
-    }
+    console.log('Opening gallery...');
 
-    const options = {
-      mediaType: 'photo',
-      quality: 0.8,
-      maxWidth: 1000,
-      maxHeight: 1000,
-      selectionLimit: 5 - selectedImages.length, // Allow up to 5 images total
-    };
+    try {
+      // Check permissions first
+      if (Platform.OS === 'android') {
+        const hasStoragePermission = await requestStoragePermission();
+        if (!hasStoragePermission) {
+          Alert.alert('Permission Denied', 'Photo access permission is required to select images from your gallery.');
+          return;
+        }
+      }
 
-    launchImageLibrary(options, (response) => {
-      if (response.didCancel || response.error) {
+      // Try with basic options first
+      const options = {
+        mediaType: 'photo',
+        quality: 0.8,
+        includeBase64: false,
+        selectionLimit: 5 - selectedImages.length, // Allow up to 5 images total
+        maxWidth: 1000,
+        maxHeight: 1000,
+        presentationStyle: 'fullScreen',
+        includeExtra: false,
+      };
+
+      console.log('Launching gallery with options:', options);
+      const response = await launchImageLibrary(options);
+      console.log('Gallery response:', response);
+
+      if (response.didCancel) {
+        console.log('User cancelled gallery');
         return;
       }
-      if (response.assets) {
-        setSelectedImages(prev => [...prev, ...response.assets]);
+
+      if (response.errorCode) {
+        console.log('Gallery error:', response.errorMessage);
+        
+        // If it's the intent error, try with different options
+        if (response.errorMessage?.includes('No Activity found to handle Intent')) {
+          console.log('Trying alternative gallery options...');
+          await tryAlternativeGallery();
+          return;
+        }
+        
+        let errorMsg = 'Failed to access gallery. ';
+        
+        if (response.errorMessage?.includes('permission')) {
+          errorMsg += 'Please grant photo access permission in your device settings.';
+        } else {
+          errorMsg += response.errorMessage || 'Please try again.';
+        }
+        
+        Alert.alert('Gallery Error', errorMsg);
+        return;
       }
-    });
+
+      if (response.assets && response.assets.length > 0) {
+        setSelectedImages(prev => [...prev, ...response.assets]);
+      } else {
+        console.error('No assets in gallery response');
+        Alert.alert('Error', 'No image selected. Please try again.');
+      }
+    } catch (error) {
+      console.error('Gallery error:', error);
+      
+      // If it's the intent error, try alternative method
+      if (error.message?.includes('No Activity found to handle Intent')) {
+        console.log('Trying alternative gallery method...');
+        await tryAlternativeGallery();
+        return;
+      }
+      
+      let errorMsg = 'Failed to access gallery. ';
+      
+      if (error.message?.includes('permission')) {
+        errorMsg += 'Please grant photo access permission in your device settings.';
+      } else {
+        errorMsg += error.message || 'Please try again.';
+      }
+      
+      Alert.alert('Gallery Error', errorMsg);
+    }
+  };
+
+  const tryAlternativeGallery = async () => {
+    try {
+      console.log('Trying alternative gallery method...');
+      
+      const alternativeOptions = {
+        mediaType: 'photo',
+        quality: 0.7,
+        includeBase64: false,
+        selectionLimit: 5 - selectedImages.length,
+        maxWidth: 600,
+        maxHeight: 600,
+        presentationStyle: 'pageSheet',
+        includeExtra: false,
+        storageOptions: {
+          skipBackup: true,
+          path: 'images',
+        },
+      };
+
+      const response = await launchImageLibrary(alternativeOptions);
+      console.log('Alternative gallery response:', response);
+
+      if (response.didCancel) {
+        console.log('User cancelled alternative gallery');
+        return;
+      }
+
+      if (response.errorCode) {
+        console.log('Alternative gallery error:', response.errorMessage);
+        Alert.alert('Gallery Error', 'No gallery app found on your device. Please install a gallery app or use the camera instead.');
+        return;
+      }
+
+      if (response.assets && response.assets.length > 0) {
+        setSelectedImages(prev => [...prev, ...response.assets]);
+      } else {
+        console.error('No assets in alternative gallery response');
+        Alert.alert('Error', 'No image selected. Please try again.');
+      }
+    } catch (error) {
+      console.error('Alternative gallery error:', error);
+      Alert.alert('Gallery Error', 'No gallery app found on your device. Please install a gallery app or use the camera instead.');
+    }
   };
 
   const removeImage = (index) => {
@@ -278,14 +395,18 @@ const AddVegetableScreen = ({ navigation }) => {
       submitData.append('grade', formData.grade);
     }
 
-    // Add images
+    // Add images - use lowercase 'images[]' like other screens
     selectedImages.forEach((image, index) => {
-      submitData.append('Images[]', {
+      submitData.append('images[]', {
         uri: image.uri,
         type: image.type,
         name: image.fileName || `vegetable_image_${index}.jpg`,
       });
     });
+    
+    // Debug: Log FormData structure
+    console.log('FormData _parts after adding images:', submitData._parts);
+    console.log('Number of images added:', selectedImages.length);
 
     dispatch(addVegetable(submitData));
   };

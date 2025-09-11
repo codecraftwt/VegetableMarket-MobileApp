@@ -209,7 +209,7 @@ const farmsSlice = createSlice({
           state.farms.push(action.payload.data);
         }
         state.success = action.payload.success;
-        state.message = action.payload.message || 'Farm added successfully';
+        state.message = action.payload.message || 'Farm added successfully!';
         state.error = null;
       })
       .addCase(addFarm.rejected, (state, action) => {

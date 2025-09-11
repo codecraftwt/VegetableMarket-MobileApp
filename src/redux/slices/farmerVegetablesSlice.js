@@ -36,11 +36,14 @@ export const addVegetable = createAsyncThunk(
   'farmerVegetables/addVegetable',
   async (vegetableData, { rejectWithValue }) => {
     try {
+      console.log('Vegetable data ------------------->', vegetableData);
       const response = await api.post('/farmer/vegetables', vegetableData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
+      console.log('Raw API response:', response);
+      console.log('API response data:', response.data);
       return response.data;
     } catch (error) {
       return rejectWithValue(
@@ -55,13 +58,19 @@ export const updateVegetable = createAsyncThunk(
   'farmerVegetables/updateVegetable',
   async ({ vegetableId, vegetableData }, { rejectWithValue }) => {
     try {
+      console.log('Update vegetable data ------------------->', vegetableData);
+      console.log('Update vegetable ID:', vegetableId);
       const response = await api.post(`/farmer/vegetables/${vegetableId}`, vegetableData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
+      console.log('Update vegetable raw API response:', response);
+      console.log('Update vegetable API response data:', response.data);
       return response.data;
     } catch (error) {
+      console.error('Update vegetable API error:', error);
+      console.error('Update vegetable error response:', error.response?.data);
       return rejectWithValue(
         error.response?.data?.message || 'Failed to update vegetable'
       );
@@ -168,8 +177,16 @@ const farmerVegetablesSlice = createSlice({
       })
       .addCase(addVegetable.fulfilled, (state, action) => {
         state.loading = false;
-        state.vegetables.unshift(action.payload.data);
-        state.success = action.payload.success;
+        // Handle different response structures
+        const vegetableData = action.payload.vegetable || action.payload.data;
+        console.log('Add vegetable response structure:', action.payload);
+        console.log('Vegetable data:', vegetableData);
+        console.log('Vegetable images:', vegetableData?.images);
+        
+        if (vegetableData) {
+          state.vegetables.unshift(vegetableData);
+        }
+        state.success = true; // Since we got a successful response
         state.message = action.payload.message;
         state.error = null;
       })
@@ -185,14 +202,21 @@ const farmerVegetablesSlice = createSlice({
       })
       .addCase(updateVegetable.fulfilled, (state, action) => {
         state.loading = false;
-        const updatedVegetable = action.payload.data;
-        state.vegetables = state.vegetables.map(vegetable =>
-          vegetable.id === updatedVegetable.id ? updatedVegetable : vegetable
-        );
-        if (state.selectedVegetable && state.selectedVegetable.id === updatedVegetable.id) {
-          state.selectedVegetable = updatedVegetable;
+        // Handle different response structures
+        const updatedVegetable = action.payload.vegetable || action.payload.data;
+        console.log('Update vegetable response structure:', action.payload);
+        console.log('Updated vegetable data:', updatedVegetable);
+        console.log('Updated vegetable images:', updatedVegetable?.images);
+        
+        if (updatedVegetable) {
+          state.vegetables = state.vegetables.map(vegetable =>
+            vegetable.id === updatedVegetable.id ? updatedVegetable : vegetable
+          );
+          if (state.selectedVegetable && state.selectedVegetable.id === updatedVegetable.id) {
+            state.selectedVegetable = updatedVegetable;
+          }
         }
-        state.success = action.payload.success;
+        state.success = true; // Since we got a successful response
         state.message = action.payload.message;
         state.error = null;
       })

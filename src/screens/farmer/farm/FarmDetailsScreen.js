@@ -349,6 +349,7 @@ const FarmDetailsScreen = ({ navigation, route }) => {
         cancelText="Cancel"
         onConfirm={confirmDeleteFarm}
         onCancel={() => setShowDeleteModal(false)}
+        onClose={() => setShowDeleteModal(false)}
         confirmButtonStyle="destructive"
         icon="delete-alert"
       />

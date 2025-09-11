@@ -19,7 +19,10 @@ import ProductCard from '../../../components/ProductCard';
 import CategoryItem from '../../../components/CategoryItem';
 import PromoBanner from '../../../components/PromoBanner';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchVegetables, fetchVegetableCategories } from '../../../redux/slices/vegetablesSlice';
+import {
+  fetchVegetables,
+  fetchVegetableCategories,
+} from '../../../redux/slices/vegetablesSlice';
 import { addToCart } from '../../../redux/slices/cartSlice';
 import SuccessModal from '../../../components/SuccessModal';
 import ErrorModal from '../../../components/ErrorModal';
@@ -46,104 +49,135 @@ const SearchBar = memo(({ searchQuery, onSearchChange, onSearch }) => (
 ));
 
 // Memoized Categories Component
-const Categories = memo(({ categories, categoriesLoading, onCategoryPress }) => {
-  if (categoriesLoading) {
+const Categories = memo(
+  ({ categories, categoriesLoading, onCategoryPress }) => {
+    if (categoriesLoading) {
+      return (
+        <View style={styles.categoriesContainer}>
+          <Text style={styles.sectionTitle}>Categories</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            {[1, 2, 3, 4, 5].map(item => (
+              <View key={item} style={styles.skeletonCategoryWrapper}>
+                <SkeletonLoader type="category" width={p(60)} height={p(60)} />
+                <SkeletonLoader
+                  type="text"
+                  width={p(50)}
+                  height={p(12)}
+                  style={styles.skeletonText}
+                />
+              </View>
+            ))}
+          </ScrollView>
+        </View>
+      );
+    }
+
     return (
       <View style={styles.categoriesContainer}>
         <Text style={styles.sectionTitle}>Categories</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {[1, 2, 3, 4, 5].map((item) => (
-            <View key={item} style={styles.skeletonCategoryWrapper}>
-              <SkeletonLoader type="category" width={p(60)} height={p(60)} />
-              <SkeletonLoader type="text" width={p(50)} height={p(12)} style={styles.skeletonText} />
-            </View>
-          ))}
-        </ScrollView>
-      </View>
-    );
-  }
-
-  return (
-    <View style={styles.categoriesContainer}>
-      <Text style={styles.sectionTitle}>Categories</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-        <CategoryItem
-          category={{ id: 'all', name: 'All' }}
-          onPress={onCategoryPress}
-          size="medium"
-        />
-        {categories.map((category) => (
           <CategoryItem
-            key={category.id}
-            category={category}
+            category={{ id: 'all', name: 'All' }}
             onPress={onCategoryPress}
             size="medium"
           />
-        ))}
-      </ScrollView>
-    </View>
-  );
-});
-
-// Memoized Popular Items Component
-const PopularItems = memo(({ loading, popularItems, onProductPress, onAddToCart, navigation }) => {
-  if (loading) {
-    return (
-      <View style={styles.popularContainer}>
-        <Text style={styles.sectionTitle}>Popular</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {[1, 2, 3, 4].map((item) => (
-            <View key={item} style={styles.skeletonProductWrapper}>
-              <View style={styles.skeletonCard}>
-                <SkeletonLoader type="card" width={p(160)} height={p(120)} style={styles.skeletonImage} />
-                <SkeletonLoader type="text" width={p(120)} height={p(16)} style={styles.skeletonTitle} />
-                <SkeletonLoader type="text" width={p(80)} height={p(12)} style={styles.skeletonRating} />
-                <SkeletonLoader type="text" width={p(100)} height={p(16)} style={styles.skeletonPrice} />
-              </View>
-            </View>
+          {categories.map(category => (
+            <CategoryItem
+              key={category.id}
+              category={category}
+              onPress={onCategoryPress}
+              size="medium"
+            />
           ))}
         </ScrollView>
       </View>
     );
-  }
+  },
+);
 
-  return (
-    <View style={styles.popularContainer}>
-      <Text style={styles.sectionTitle}>Popular</Text>
-      {popularItems.length > 0 ? (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {popularItems.map((item) => (
-            <ProductCard
-              key={item.id}
-              item={item}
-              onPress={() => onProductPress(item)}
-              onAddToCart={onAddToCart}
-              size="medium"
-              navigation={navigation}
-            />
-          ))}
-        </ScrollView>
-      ) : (
-        <View style={styles.emptyState}>
-          <Icon name="shopping-bag" size={50} color="#ccc" />
-          <Text style={styles.emptyStateText}>No products available</Text>
+// Memoized Popular Items Component
+const PopularItems = memo(
+  ({ loading, popularItems, onProductPress, onAddToCart, navigation }) => {
+    if (loading) {
+      return (
+        <View style={styles.popularContainer}>
+          <Text style={styles.sectionTitle}>Popular</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            {[1, 2, 3, 4].map(item => (
+              <View key={item} style={styles.skeletonProductWrapper}>
+                <View style={styles.skeletonCard}>
+                  <SkeletonLoader
+                    type="card"
+                    width={p(160)}
+                    height={p(120)}
+                    style={styles.skeletonImage}
+                  />
+                  <SkeletonLoader
+                    type="text"
+                    width={p(120)}
+                    height={p(16)}
+                    style={styles.skeletonTitle}
+                  />
+                  <SkeletonLoader
+                    type="text"
+                    width={p(80)}
+                    height={p(12)}
+                    style={styles.skeletonRating}
+                  />
+                  <SkeletonLoader
+                    type="text"
+                    width={p(100)}
+                    height={p(16)}
+                    style={styles.skeletonPrice}
+                  />
+                </View>
+              </View>
+            ))}
+          </ScrollView>
         </View>
-      )}
-    </View>
-  );
-});
+      );
+    }
+
+    return (
+      <View style={styles.popularContainer}>
+        <Text style={styles.sectionTitle}>Popular</Text>
+        {popularItems.length > 0 ? (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            {popularItems.map(item => (
+              <ProductCard
+                key={item.id}
+                item={item}
+                onPress={() => onProductPress(item)}
+                onAddToCart={onAddToCart}
+                size="medium"
+                navigation={navigation}
+              />
+            ))}
+          </ScrollView>
+        ) : (
+          <View style={styles.emptyState}>
+            <Icon name="shopping-bag" size={50} color="#ccc" />
+            <Text style={styles.emptyStateText}>No products available</Text>
+          </View>
+        )}
+      </View>
+    );
+  },
+);
 
 const DashboardScreen = ({ navigation }) => {
   const dispatch = useDispatch();
-  const { vegetables, categories, loading, categoriesLoading } = useSelector(state => state.vegetables);
+  const { vegetables, categories, loading, categoriesLoading } = useSelector(
+    state => state.vegetables,
+  );
   const { addError } = useSelector(state => state.cart);
-  
+
   // Modal states
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
-  
+
   // Search state
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -156,7 +190,9 @@ const DashboardScreen = ({ navigation }) => {
   // Monitor cart errors and show error modal automatically
   useEffect(() => {
     if (addError) {
-      setErrorMessage(addError.message || addError.error || 'Failed to add item to cart');
+      setErrorMessage(
+        addError.message || addError.error || 'Failed to add item to cart',
+      );
       setShowErrorModal(true);
     }
   }, [addError]);
@@ -165,7 +201,7 @@ const DashboardScreen = ({ navigation }) => {
   useFocusEffect(
     useCallback(() => {
       setSearchQuery('');
-    }, [])
+    }, []),
   );
 
   // Get popular items (first 4 items from all vegetables)
@@ -175,52 +211,66 @@ const DashboardScreen = ({ navigation }) => {
   const handleSearch = useCallback(() => {
     if (searchQuery.trim()) {
       // Navigate to BucketScreen with search query
-      navigation.navigate('App', { 
+      navigation.navigate('App', {
         screen: 'BucketTab',
-        params: { 
+        params: {
           searchQuery: searchQuery.trim(),
-          selectedCategory: 'all'
-        }
+          selectedCategory: 'all',
+        },
       });
     }
   }, [searchQuery, navigation]);
 
   // Handle search input change
-  const handleSearchChange = useCallback((text) => {
+  const handleSearchChange = useCallback(text => {
     setSearchQuery(text);
   }, []);
 
   // Handle category press
-  const handleCategoryPress = useCallback((category) => {
-    console.log('Category pressed:', category.name);
-    navigation.navigate('CategoryProducts', { category });
-  }, [navigation]);
+  const handleCategoryPress = useCallback(
+    category => {
+      console.log('Category pressed:', category.name);
+      navigation.navigate('CategoryProducts', { category });
+    },
+    [navigation],
+  );
 
   // Handle product press
-  const handleProductPress = useCallback((item) => {
-    navigation.navigate('ProductDetail', { product: item });
-  }, [navigation]);
+  const handleProductPress = useCallback(
+    item => {
+      navigation.navigate('ProductDetail', { product: item });
+    },
+    [navigation],
+  );
 
   // Handle add to cart
-  const handleAddToCart = useCallback(async (item) => {
-    try {
-      console.log('Adding to cart:', item.name);
-      await dispatch(addToCart({ 
-        vegetable_id: item.id, 
-        quantity: 1 
-      })).unwrap();
-      
-      // Show success modal
-      setSuccessMessage(`${item.name} added to cart successfully!`);
-      setShowSuccessModal(true);
-    } catch (error) {
-      console.error('Add to cart error:', error);
-      // Show error modal
-      const errorMsg = error.message || error.error || 'Failed to add item to cart. Please try again.';
-      setErrorMessage(errorMsg);
-      setShowErrorModal(true);
-    }
-  }, [dispatch]);
+  const handleAddToCart = useCallback(
+    async item => {
+      try {
+        console.log('Adding to cart:', item.name);
+        await dispatch(
+          addToCart({
+            vegetable_id: item.id,
+            quantity: 1,
+          }),
+        ).unwrap();
+
+        // Show success modal
+        setSuccessMessage(`${item.name} added to cart successfully!`);
+        setShowSuccessModal(true);
+      } catch (error) {
+        console.error('Add to cart error:', error);
+        // Show error modal
+        const errorMsg =
+          error.message ||
+          error.error ||
+          'Failed to add item to cart. Please try again.';
+        setErrorMessage(errorMsg);
+        setShowErrorModal(true);
+      }
+    },
+    [dispatch],
+  );
 
   const handleNotificationPress = useCallback(() => {
     // Handle notification press
@@ -235,33 +285,32 @@ const DashboardScreen = ({ navigation }) => {
     setShowErrorModal(false);
   }, []);
 
-
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar backgroundColor="#019a34" barStyle="light-content" />
-      
-      <CommonHeader 
+
+      <CommonHeader
         screenName="Walstar VeggieMart"
         showBackButton={false}
         showNotification={true}
         onNotificationPress={handleNotificationPress}
         navigation={navigation}
       />
-      
-      <SearchBar 
+
+      <SearchBar
         searchQuery={searchQuery}
         onSearchChange={handleSearchChange}
         onSearch={handleSearch}
       />
-      
+
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <PromoBanner navigation={navigation} />
-        <Categories 
+        <Categories
           categories={categories}
           categoriesLoading={categoriesLoading}
           onCategoryPress={handleCategoryPress}
         />
-        <PopularItems 
+        <PopularItems
           loading={loading}
           popularItems={popularItems}
           onProductPress={handleProductPress}

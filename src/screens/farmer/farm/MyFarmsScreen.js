@@ -16,7 +16,7 @@ import Icon from 'react-native-vector-icons/FontAwesome';
 import { p } from '../../../utils/Responsive';
 import { fontSizes } from '../../../utils/fonts';
 import { useDispatch, useSelector } from 'react-redux';
-import SuccessModal from '../../../components/SuccessModal';
+// import SuccessModal from '../../../components/SuccessModal'; // Removed to prevent double modals
 import ErrorModal from '../../../components/ErrorModal';
 import ConfirmationModal from '../../../components/ConfirmationModal';
 import { fetchFarms, deleteFarm, clearFarmsError, clearFarmsSuccess } from '../../../redux/slices/farmsSlice';
@@ -27,7 +27,7 @@ const MyFarmsScreen = ({ navigation }) => {
   const { user } = useSelector(state => state.auth);
   const { farms, loading, error, success, message } = useSelector(state => state.farms);
   
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  // const [showSuccessModal, setShowSuccessModal] = useState(false); // Removed to prevent double modals
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [farmToDelete, setFarmToDelete] = useState(null);
@@ -45,18 +45,20 @@ const MyFarmsScreen = ({ navigation }) => {
     const unsubscribe = navigation.addListener('focus', () => {
       // Refresh farms data when screen comes into focus
       dispatch(fetchFarms());
+      // Clear any success state when coming back to this screen
+      dispatch(clearFarmsSuccess());
     });
 
     return unsubscribe;
   }, [navigation, dispatch]);
 
-  // Handle success and error states
-  useEffect(() => {
-    if (success && message) {
-      setShowSuccessModal(true);
-      dispatch(clearFarmsSuccess());
-    }
-  }, [success, message, dispatch]);
+  // Handle success and error states - removed success modal to prevent double modals
+  // useEffect(() => {
+  //   if (success && message) {
+  //     setShowSuccessModal(true);
+  //     dispatch(clearFarmsSuccess());
+  //   }
+  // }, [success, message, dispatch]);
 
   useEffect(() => {
     if (error) {
@@ -259,15 +261,15 @@ const MyFarmsScreen = ({ navigation }) => {
         </ScrollView>
       )}
 
-      {/* Success Modal */}
-      <SuccessModal
+      {/* Success Modal - Removed to prevent double modals */}
+      {/* <SuccessModal
         visible={showSuccessModal}
         message={message}
         onClose={() => {
           setShowSuccessModal(false);
           dispatch(clearFarmsSuccess());
         }}
-      />
+      /> */}
 
       {/* Error Modal */}
       <ErrorModal
@@ -286,6 +288,10 @@ const MyFarmsScreen = ({ navigation }) => {
         message={`Are you sure you want to delete ${farmToDelete?.name}? This action cannot be undone.`}
         onConfirm={confirmDeleteFarm}
         onCancel={() => {
+          setShowDeleteModal(false);
+          setFarmToDelete(null);
+        }}
+        onClose={() => {
           setShowDeleteModal(false);
           setFarmToDelete(null);
         }}
