@@ -60,7 +60,8 @@ const ProfileScreen = ({ navigation }) => {
   };
 
   const handleFavoritesPress = () => {
-    navigation.navigate('Cart');
+    // Navigate to App (BottomTabNavigator) and then to CartTab
+    navigation.navigate('App', { screen: 'CartTab' });
   };
 
   const handleLogout = () => {
@@ -99,11 +100,22 @@ const ProfileScreen = ({ navigation }) => {
   const requestStoragePermissionAndroid = async () => {
     try {
       console.log('Requesting storage permission...');
+      
+      // For Android 13+ (API level 33+), we need READ_MEDIA_IMAGES instead of READ_EXTERNAL_STORAGE
+      const androidVersion = Platform.Version;
+      let permission;
+      
+      if (androidVersion >= 33) {
+        permission = PermissionsAndroid.PERMISSIONS.READ_MEDIA_IMAGES;
+      } else {
+        permission = PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE;
+      }
+      
       const granted = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
+        permission,
         {
           title: 'Storage Permission',
-          message: 'This app needs access to your storage to select photos.',
+          message: 'This app needs access to your photos to select images.',
           buttonNeutral: 'Ask Me Later',
           buttonNegative: 'Cancel',
           buttonPositive: 'OK',
@@ -115,7 +127,7 @@ const ProfileScreen = ({ navigation }) => {
       console.error('Storage permission error:', err);
       return false;
     }
-    };
+  };
 
   const handleCameraPress = () => {
     console.log('Camera button pressed!');
@@ -282,12 +294,13 @@ const ProfileScreen = ({ navigation }) => {
       if (Platform.OS === 'android') {
         const hasStoragePermission = await requestStoragePermissionAndroid();
         if (!hasStoragePermission) {
-          setErrorMessage('Storage permission is required to select photos.');
+          setErrorMessage('Photo access permission is required to select images from your gallery.');
           setShowErrorModal(true);
           return;
         }
       }
 
+      // Try with basic options first
       const options = {
         mediaType: 'photo',
         quality: 0.8,
@@ -310,7 +323,23 @@ const ProfileScreen = ({ navigation }) => {
 
       if (response.errorCode) {
         console.log('Gallery error:', response.errorMessage);
-        setErrorMessage(`Gallery error: ${response.errorMessage}`);
+        
+        // If it's the intent error, try with different options
+        if (response.errorMessage?.includes('No Activity found to handle Intent')) {
+          console.log('Trying alternative gallery options...');
+          await tryAlternativeGallery();
+          return;
+        }
+        
+        let errorMsg = 'Failed to access gallery. ';
+        
+        if (response.errorMessage?.includes('permission')) {
+          errorMsg += 'Please grant photo access permission in your device settings.';
+        } else {
+          errorMsg += response.errorMessage || 'Please try again.';
+        }
+        
+        setErrorMessage(errorMsg);
         setShowErrorModal(true);
         return;
       }
@@ -334,7 +363,81 @@ const ProfileScreen = ({ navigation }) => {
       }
     } catch (error) {
       console.error('Gallery error:', error);
-      setErrorMessage(`Gallery error: ${error.message || 'Unknown error'}`);
+      
+      // If it's the intent error, try alternative method
+      if (error.message?.includes('No Activity found to handle Intent')) {
+        console.log('Trying alternative gallery method...');
+        await tryAlternativeGallery();
+        return;
+      }
+      
+      let errorMsg = 'Failed to access gallery. ';
+      
+      if (error.message?.includes('permission')) {
+        errorMsg += 'Please grant photo access permission in your device settings.';
+      } else {
+        errorMsg += error.message || 'Please try again.';
+      }
+      
+      setErrorMessage(errorMsg);
+      setShowErrorModal(true);
+    }
+  };
+
+  const tryAlternativeGallery = async () => {
+    try {
+      console.log('Trying alternative gallery method...');
+      
+      const alternativeOptions = {
+        mediaType: 'photo',
+        quality: 0.7,
+        includeBase64: false,
+        selectionLimit: 1,
+        maxWidth: 600,
+        maxHeight: 600,
+        presentationStyle: 'pageSheet',
+        includeExtra: false,
+        storageOptions: {
+          skipBackup: true,
+          path: 'images',
+        },
+      };
+
+      const response = await launchImageLibrary(alternativeOptions);
+      console.log('Alternative gallery response:', response);
+
+      if (response.didCancel) {
+        console.log('User cancelled alternative gallery');
+        return;
+      }
+
+      if (response.errorCode) {
+        console.log('Alternative gallery error:', response.errorMessage);
+        setErrorMessage('No gallery app found on your device. Please install a gallery app or use the camera instead.');
+        setShowErrorModal(true);
+        return;
+      }
+
+      if (response.assets && response.assets.length > 0) {
+        const asset = response.assets[0];
+        console.log('Alternative gallery asset:', asset);
+        
+        if (asset.uri) {
+          console.log('Processing alternative image URI:', asset.uri);
+          await uploadProfilePicture(asset.uri);
+        } else {
+          console.error('No URI in alternative gallery response');
+          setErrorMessage('Failed to select image. Please try again.');
+          setShowErrorModal(true);
+        }
+      } else {
+        console.error('No assets in alternative gallery response');
+        setErrorMessage('No image selected. Please try again.');
+        setShowErrorModal(true);
+      }
+    } catch (error) {
+      console.error('Alternative gallery error:', error);
+      setErrorMessage('No gallery app found on your device. Please install a gallery app or use the camera instead.');
       setShowErrorModal(true);
     }
   };

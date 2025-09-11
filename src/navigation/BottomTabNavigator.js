@@ -15,13 +15,13 @@ const BottomTabNavigator = () => {
         tabBarIcon: ({ focused, color, size }) => {
           let iconName;
           
-          if (route.name === 'Home') {
+          if (route.name === 'HomeTab') {
             iconName = focused ? 'home' : 'home-outline';
-          } else if (route.name === 'Bucket') {
+          } else if (route.name === 'BucketTab') {
             iconName = focused ? 'heart' : 'heart-outline';
-          } else if (route.name === 'Cart') {
+          } else if (route.name === 'CartTab') {
             iconName = focused ? 'cart' : 'cart-outline';
-          } else if (route.name === 'Profile') {
+          } else if (route.name === 'ProfileTab') {
             iconName = focused ? 'person' : 'person-outline';
           }
           
@@ -46,28 +46,28 @@ const BottomTabNavigator = () => {
       })}
     >
       <Tab.Screen 
-        name="Home" 
+        name="HomeTab" 
         component={DashboardScreen}
         options={{
           tabBarLabel: 'Home',
         }}
       />
       <Tab.Screen 
-        name="Bucket" 
+        name="BucketTab" 
         component={BucketScreen}
         options={{
           tabBarLabel: 'Bucket',
         }}
       />
       <Tab.Screen 
-        name="Cart" 
+        name="CartTab" 
         component={CartScreen}
         options={{
           tabBarLabel: 'Cart',
         }}
       />
       <Tab.Screen 
-        name="Profile" 
+        name="ProfileTab" 
         component={ProfileScreen}
         options={{
           tabBarLabel: 'Profile',

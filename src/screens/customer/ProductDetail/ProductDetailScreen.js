@@ -92,7 +92,8 @@ const ProductDetailScreen = ({ navigation, route }) => {
 
   const handleViewCart = () => {
     setShowSuccessModal(false);
-    navigation.navigate('Cart');
+    // Navigate to App (BottomTabNavigator) and then to CartTab
+    navigation.navigate('App', { screen: 'CartTab' });
   };
 
   const StarRating = ({ rating }) => {

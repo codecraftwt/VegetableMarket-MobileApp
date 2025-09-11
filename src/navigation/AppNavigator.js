@@ -13,7 +13,6 @@ import ChangePasswordScreen from '../screens/customer/Profile/ChangePasswordScre
 import MyOrdersScreen from '../screens/customer/Profile/MyOrdersScreen';
 import ProductDetailScreen from '../screens/customer/ProductDetail/ProductDetailScreen';
 import CheckoutScreen from '../screens/customer/Checkout/CheckoutScreen';
-import CartScreen from '../screens/customer/Cart/CartScreen';
 import NotificationScreen from '../screens/Notification/NotificationScreen';
 import CategoryProductsScreen from '../screens/customer/Category/CategoryProductsScreen';
 import OrderDetailsScreen from '../screens/customer/Profile/OrderDetailsScreen';
@@ -96,7 +95,6 @@ const AppNavigator = () => {
     { name: 'MyOrders', component: MyOrdersScreen, transition: slideFromRight },
     { name: 'ProductDetail', component: ProductDetailScreen, transition: slideFromRight },
     { name: 'Checkout', component: CheckoutScreen, transition: slideFromRight },
-    { name: 'Cart', component: CartScreen, transition: slideFromRight },
     { name: 'Notification', component: NotificationScreen, transition: slideFromRight },
     { name: 'CategoryProducts', component: CategoryProductsScreen, transition: slideFromRight },
     { name: 'OrderDetails', component: OrderDetailsScreen, transition: slideFromRight },

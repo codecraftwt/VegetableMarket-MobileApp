@@ -16,7 +16,8 @@ const SuccessModal = ({
   showSecondaryButton = false,
   secondaryButtonText = 'Cancel',
   onSecondaryButtonPress,
-  buttonStyle
+  buttonStyle,
+  closeOnBackdropPress = true
 }) => {
   const handleButtonPress = () => {
     // Always call onClose first to ensure modal closes
@@ -39,13 +40,13 @@ const SuccessModal = ({
       visible={visible}
       transparent={true}
       animationType="fade"
-      onRequestClose={onClose}
+      onRequestClose={closeOnBackdropPress ? onClose : undefined}
     >
       <View style={styles.overlay}>
         <TouchableOpacity 
           style={styles.overlayTouchable} 
           activeOpacity={1} 
-          onPress={onClose}
+          onPress={closeOnBackdropPress ? onClose : undefined}
         />
         <View style={styles.modalContainer}>
           {/* Success Icon */}

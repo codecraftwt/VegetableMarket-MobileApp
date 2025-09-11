@@ -23,6 +23,7 @@ const ProductCard = ({
   showAddToCart = true,
   size = 'medium', // 'small', 'medium', 'large'
   navigation, // Add navigation prop for cart navigation
+  isHighlighted = false, // Add highlighting prop
 }) => {
   const dispatch = useDispatch();
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -112,7 +113,8 @@ const ProductCard = ({
     setShowSuccessModal(false);
     if (navigation) {
       console.log('ProductCard: Navigating to Cart screen');
-      navigation.navigate('Cart');
+      // Navigate to App (BottomTabNavigator) and then to CartTab
+      navigation.navigate('App', { screen: 'CartTab' });
     } else {
       console.log('ProductCard: No navigation prop available');
     }
@@ -185,7 +187,11 @@ const ProductCard = ({
   return (
     <>
       <TouchableOpacity
-        style={[styles.productCard, cardStyles]}
+        style={[
+          styles.productCard, 
+          cardStyles,
+          isHighlighted && styles.highlightedCard
+        ]}
         onPress={onPress}
         activeOpacity={0.8}
       >
@@ -268,6 +274,16 @@ const styles = StyleSheet.create({
     borderColor: '#f0f0f0',
     position: 'relative',
     marginBottom: p(4),
+  },
+  highlightedCard: {
+    borderColor: '#019a34',
+    borderWidth: 2,
+    shadowColor: '#019a34',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+    backgroundColor: '#f0fff0',
   },
   imageContainer: {
     width: '100%',

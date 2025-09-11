@@ -8,6 +8,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
+  TextInput,
 } from 'react-native';
 import SkeletonLoader from '../../../components/SkeletonLoader';
 import CommonHeader from '../../../components/CommonHeader';
@@ -23,8 +24,9 @@ import SuccessModal from '../../../components/SuccessModal';
 import ErrorModal from '../../../components/ErrorModal';
 import { useFocusEffect } from '@react-navigation/native';
 
-const BucketScreen = ({ navigation }) => {
+const BucketScreen = ({ navigation, route }) => {
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
@@ -39,38 +41,90 @@ const BucketScreen = ({ navigation }) => {
     dispatch(fetchVegetableCategories());
   }, [dispatch]);
 
-  // Reset selected category to 'all' when screen comes into focus
+  // Handle route parameters for search
+  useEffect(() => {
+    console.log('BucketScreen: Route params changed:', route?.params);
+    if (route?.params) {
+      if (route.params.searchQuery) {
+        console.log('BucketScreen: Setting search query:', route.params.searchQuery);
+        // Use setTimeout to ensure this runs after useFocusEffect
+        setTimeout(() => {
+          setSearchQuery(route.params.searchQuery);
+        }, 50);
+      }
+      if (route.params.selectedCategory) {
+        console.log('BucketScreen: Setting selected category:', route.params.selectedCategory);
+        setTimeout(() => {
+          setSelectedCategory(route.params.selectedCategory);
+        }, 50);
+      }
+    }
+  }, [route?.params]);
+
+  // Reset selected category to 'all' when screen comes into focus (but preserve search query)
   useFocusEffect(
     React.useCallback(() => {
-      // Reset to show all products when returning to BucketScreen
+      // Always clear search state when screen comes into focus
+      // The route params useEffect will set it again if there's a search query
+      console.log('BucketScreen: useFocusEffect triggered, clearing search state');
       setSelectedCategory('all');
+      setSearchQuery('');
     }, [])
   );
+
+  // Cleanup effect when component unmounts
+  useEffect(() => {
+    return () => {
+      setSearchQuery('');
+      setSelectedCategory('all');
+    };
+  }, []);
 
   const handleNotificationPress = () => {
     console.log('Bucket notification pressed');
   };
+
 
   const handleCategoryPress = category => {
     setSelectedCategory(category.id);
     navigation.navigate('CategoryProducts', { category });
   };
 
-  // Filter vegetables by selected category
-  const filteredVegetables =
-    selectedCategory === 'all'
-      ? vegetables
-      : vegetables.filter(item => 
-          item.category?.id === selectedCategory || 
-          item.category?.name?.toLowerCase() === categories.find(c => c.id === selectedCategory)?.name?.toLowerCase()
-        );
+  // Filter vegetables by selected category and search query
+  const filteredVegetables = vegetables.filter(item => {
+    // If there's a search query, show all products that match the search
+    if (searchQuery) {
+      const matches = item.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.category?.name?.toLowerCase().includes(searchQuery.toLowerCase());
+      if (matches) {
+        console.log('BucketScreen: Product matches search:', item.name, 'for query:', searchQuery);
+      }
+      return matches;
+    }
+    
+    // If no search query, filter by category
+    const categoryMatch = selectedCategory === 'all' || 
+      item.category?.id === selectedCategory || 
+      item.category?.name?.toLowerCase() === categories.find(c => c.id === selectedCategory)?.name?.toLowerCase();
+    
+    return categoryMatch;
+  });
+
+  // Debug logs
+  console.log('BucketScreen: Current search query:', searchQuery);
+  console.log('BucketScreen: Filtered vegetables count:', filteredVegetables.length);
 
   const CategoriesSection = () => {
     if (categoriesLoading) {
       return (
         <View style={styles.categoriesContainer}>
           <Text style={styles.sectionTitle}>Categories</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.categoriesScrollContent}
+          >
             {/* Skeleton loaders for categories */}
             {[1, 2, 3, 4, 5].map((item) => (
               <View key={item} style={styles.skeletonCategoryWrapper}>
@@ -86,7 +140,11 @@ const BucketScreen = ({ navigation }) => {
     return (
       <View style={styles.categoriesContainer}>
         <Text style={styles.sectionTitle}>Categories</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.categoriesScrollContent}
+        >
           {/* Add "All" category */}
           <CategoryItem
             category={{ id: 'all', name: 'All' }}
@@ -159,9 +217,11 @@ const BucketScreen = ({ navigation }) => {
     return (
       <View style={styles.vegetablesContainer}>
         <Text style={styles.sectionTitle}>
-          {selectedCategory === 'all'
-            ? 'All Products'
-            : `${categories.find(c => c.id === selectedCategory)?.name} Products`}
+          {searchQuery 
+            ? `Search Results for "${searchQuery}" (${filteredVegetables.length})`
+            : selectedCategory === 'all'
+              ? 'All Products'
+              : `${categories.find(c => c.id === selectedCategory)?.name} Products`}
         </Text>
         {filteredVegetables.length > 0 ? (
           <ScrollView 
@@ -178,6 +238,11 @@ const BucketScreen = ({ navigation }) => {
                     onAddToCart={handleAddToCart}
                     size="medium"
                     navigation={navigation}
+                    isHighlighted={searchQuery && (
+                      item.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                      item.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                      item.category?.name?.toLowerCase().includes(searchQuery.toLowerCase())
+                    )}
                   />
                 </View>
               ))}
@@ -186,9 +251,14 @@ const BucketScreen = ({ navigation }) => {
         ) : (
           <View style={styles.emptyState}>
             <Icon name="shopping-bag" size={80} color="#ccc" />
-            <Text style={styles.emptyStateTitle}>No Products Found</Text>
+            <Text style={styles.emptyStateTitle}>
+              {searchQuery ? 'Product Not Available' : 'No Products Found'}
+            </Text>
             <Text style={styles.emptyStateSubtitle}>
-              No products available in this category at the moment
+              {searchQuery 
+                ? `"${searchQuery}" is not available. Try searching for a different product.`
+                : 'No products available in this category at the moment'
+              }
             </Text>
           </View>
         )}
@@ -209,7 +279,8 @@ const BucketScreen = ({ navigation }) => {
     console.log('BucketScreen: navigation prop:', navigation);
     setShowSuccessModal(false);
     console.log('BucketScreen: Navigating to Cart screen');
-    navigation.navigate('Cart');
+    // Navigate to App (BottomTabNavigator) and then to CartTab
+    navigation.navigate('App', { screen: 'CartTab' });
   };
 
   return (
@@ -225,7 +296,7 @@ const BucketScreen = ({ navigation }) => {
       />
 
       <View style={styles.content}>
-        <CategoriesSection />
+        {!searchQuery && <CategoriesSection />}
         <VegetablesSection />
       </View>
 
@@ -271,6 +342,10 @@ const styles = StyleSheet.create({
   categoriesContainer: {
     marginTop: p(12),
   },
+  categoriesScrollContent: {
+    paddingLeft: p(5),
+    // paddingRight: p(5),
+  },
   sectionTitle: {
     fontSize: fontSizes.base,
     color: '#1a1a1a',
@@ -313,7 +388,7 @@ const styles = StyleSheet.create({
   // Vegetables Styles
   vegetablesContainer: {
     marginVertical: p(16),
-    paddingBottom: p(220),
+    paddingBottom: p(150),
   },
   vegetablesGrid: {
     flexDirection: 'row',

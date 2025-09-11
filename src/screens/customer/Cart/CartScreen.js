@@ -397,7 +397,7 @@ const CartScreen = ({ navigation }) => {
         Add some items to your cart to get started
       </Text>
       
-      <TouchableOpacity style={styles.shopNowButton} onPress={() => navigation.navigate('Bucket')}>
+      <TouchableOpacity style={styles.shopNowButton} onPress={() => navigation.navigate('App', { screen: 'BucketTab' })}>
         <Text style={styles.shopNowText}>Start Shopping</Text>
       </TouchableOpacity>
     </View>

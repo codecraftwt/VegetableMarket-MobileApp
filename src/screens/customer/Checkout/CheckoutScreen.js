@@ -19,6 +19,7 @@ import { fetchProfile, setPrimaryAddress } from '../../../redux/slices/profileSl
 import { placeOrder, verifyRazorpayPayment, clearOrderData } from '../../../redux/slices/ordersSlice';
 import { SuccessModal, ErrorModal, ConfirmationModal } from '../../../components';
 import RazorpayCheckout from 'react-native-razorpay';
+import { useFocusEffect } from '@react-navigation/native';
 
 const CheckoutScreen = ({ navigation }) => {
   const dispatch = useDispatch();
@@ -72,6 +73,37 @@ const CheckoutScreen = ({ navigation }) => {
       dispatch(clearOrderData());
     };
   }, [dispatch, clearOrderData]);
+
+  // Reset state when screen comes into focus (e.g., when navigating back from MyOrdersScreen)
+  useFocusEffect(
+    useCallback(() => {
+      // Clear all modal states
+      setShowSuccessModal(false);
+      setShowErrorModal(false);
+      setShowSetPrimaryModal(false);
+      setShowConfirmPaymentModal(false);
+      setShowAddAddressModal(false);
+      setShowAddPaymentModal(false);
+      
+      // Clear messages
+      setSuccessMessage('');
+      setErrorMessage('');
+      
+      // Clear order data from Redux
+      dispatch(clearOrderData());
+      
+      // Reset address and payment selections to defaults
+      if (addresses && addresses.length > 0) {
+        setSelectedAddress(addresses[0]); // Select first address by default
+      }
+      if (paymentSettings && paymentSettings.length > 0) {
+        const activePaymentMethod = paymentSettings.find(payment => payment.status === 'active');
+        if (activePaymentMethod) {
+          setSelectedPaymentMethod(activePaymentMethod);
+        }
+      }
+    }, [addresses, paymentSettings, dispatch])
+  );
 
   // Set default selections when data loads
   useEffect(() => {
@@ -364,11 +396,11 @@ console.log('razorpayKey', razorpayKey);
   };
 
   const handleAddNewAddress = () => {
-    navigation.navigate('ProfileEdit', { activeTab: 'address' });
+    navigation.navigate('ProfileEdit', { activeTab: 'address', fromCheckout: true });
   };
 
   const handleEditAddress = (address) => {
-    navigation.navigate('ProfileEdit', { activeTab: 'address', editAddress: address });
+    navigation.navigate('ProfileEdit', { activeTab: 'address', editAddress: address, fromCheckout: true });
   };
 
   const handleLongPressAddress = (address) => {
@@ -403,8 +435,8 @@ console.log('razorpayKey', razorpayKey);
     setShowSuccessModal(false);
     // Clear order data after closing modal
     dispatch(clearOrderData());
-    // Navigate to MyOrdersScreen after successful payment/order placement
-    navigation.navigate('MyOrders');
+    // Navigate to App (BottomTabNavigator) and then to BucketTab
+    navigation.navigate('App', { screen: 'BucketTab' });
   };
 
   const handleErrorModalClose = () => {
@@ -770,12 +802,20 @@ console.log('razorpayKey', razorpayKey);
       {/* Success Modal */}
       <SuccessModal
         visible={showSuccessModal}
-        onClose={handleSuccessModalClose}
+        onClose={() => {}} // Prevent closing on outside click
         title="Order Confirmed!"
         message={successMessage}
-        buttonText="View My Orders"
+        buttonText="Continue"
         onButtonPress={handleSuccessModalClose}
+        showSecondaryButton={true}
+        secondaryButtonText="View Orders"
+        onSecondaryButtonPress={() => {
+          setShowSuccessModal(false);
+          dispatch(clearOrderData());
+          navigation.replace('MyOrders');
+        }}
         buttonStyle={styles.successModalButton}
+        closeOnBackdropPress={false}
       />
 
       {/* Error Modal */}

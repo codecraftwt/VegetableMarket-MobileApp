@@ -40,6 +40,7 @@ const PromoBanner = ({ navigation }) => {
   ];
 
   const slideWidth = screenWidth - p(40);
+  const slideSpacing = p(12);
 
   useEffect(() => {
     // Start automatic sliding
@@ -66,7 +67,7 @@ const PromoBanner = ({ navigation }) => {
         // Scroll to next slide with smoother animation
         if (scrollViewRef.current) {
           scrollViewRef.current.scrollTo({
-            x: nextSlide * slideWidth,
+            x: nextSlide * (slideWidth + slideSpacing),
             animated: true,
             duration: 800, // Add duration for smoother animation
           });
@@ -79,7 +80,7 @@ const PromoBanner = ({ navigation }) => {
 
   const handleScroll = (event) => {
     const contentOffsetX = event.nativeEvent.contentOffset.x;
-    const slideIndex = Math.round(contentOffsetX / slideWidth);
+    const slideIndex = Math.round(contentOffsetX / (slideWidth + slideSpacing));
     
     if (slideIndex !== currentSlide) {
       setCurrentSlide(slideIndex);
@@ -104,7 +105,7 @@ const PromoBanner = ({ navigation }) => {
     setCurrentSlide(index);
     if (scrollViewRef.current) {
       scrollViewRef.current.scrollTo({
-        x: index * slideWidth,
+        x: index * (slideWidth + slideSpacing),
         animated: true,
         duration: 600, // Add duration for smoother manual navigation
       });
@@ -119,7 +120,8 @@ const PromoBanner = ({ navigation }) => {
   const handleShopNowPress = () => {
     // Navigate to bucket screen
     if (navigation) {
-      navigation.navigate('Bucket');
+      // Navigate to App (BottomTabNavigator) and then to BucketTab
+      navigation.navigate('App', { screen: 'BucketTab' });
     }
   };
 
@@ -136,14 +138,14 @@ const PromoBanner = ({ navigation }) => {
           onMomentumScrollEnd={handleScrollEnd}
           scrollEventThrottle={8} // Reduced from 16 for smoother scrolling
           decelerationRate="normal" // Changed from "fast" to "normal" for smoother deceleration
-          snapToInterval={slideWidth}
+          snapToInterval={slideWidth + slideSpacing}
           snapToAlignment="center" // Changed from "start" to "center" for better centering
           style={styles.scrollView}
           bounces={false} // Disable bouncing for cleaner sliding
           alwaysBounceHorizontal={false} // Ensure no horizontal bounce
         >
           {banners.map((banner, index) => (
-            <View key={banner.id} style={[styles.slide, { width: slideWidth }]}>
+            <View key={banner.id} style={[styles.slide, { width: slideWidth, marginRight: index < banners.length - 1 ? slideSpacing : 0 }]}>
               <View style={styles.bannerContent}>
                 <View style={styles.textContainer}>
                   <Text style={styles.bannerHeader}>{banner.header}</Text>

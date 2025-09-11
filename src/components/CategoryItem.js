@@ -46,13 +46,14 @@ const CategoryItem = ({
           iconFontSize: 32,
           textFontSize: fontSizes.base,
           marginRight: p(25),
+         
         };
       default: // medium
         return {
-          iconSize: p(60),
+          iconSize: p(55),
           iconFontSize: 24,
           textFontSize: fontSizes.sm,
-          marginRight: p(20),
+          marginRight: p(25),
         };
     }
   };
@@ -103,7 +104,7 @@ const CategoryItem = ({
 const styles = StyleSheet.create({
   categoryItem: {
     alignItems: 'center',
-    paddingVertical: p(8),
+    paddingVertical: p(5),
   },
   selectedCategory: {
     transform: [{ scale: 1.1 }],

@@ -215,11 +215,15 @@ const ProfileEditScreen = ({ navigation, route }) => {
   // Modal handlers
   const handleSuccessModalClose = useCallback(() => {
     setShowSuccessModal(false);
-    // Only go back if we're not in add new address mode
-    if (!isAddingNewAddress) {
+    // Check if we came from CheckoutScreen (when adding address)
+    if (route.params?.fromCheckout) {
+      // Navigate back to CheckoutScreen
+      navigation.navigate('Checkout');
+    } else if (!isAddingNewAddress) {
+      // Default behavior - go back
       navigation.goBack();
     }
-  }, [navigation, isAddingNewAddress]);
+  }, [navigation, isAddingNewAddress, route.params?.fromCheckout]);
 
   const handleConfirmProfileSave = useCallback(() => {
     setShowConfirmProfileModal(false);
@@ -302,7 +306,7 @@ const ProfileEditScreen = ({ navigation, route }) => {
     setFormData(prev => ({...prev, bio: text}));
   }, []);
 
-  const ProfileTab = () => (
+  const ProfileTab = useMemo(() => (
     <View style={styles.tabContent}>
       <Text style={styles.sectionTitle}>Personal Information</Text>
       
@@ -373,7 +377,7 @@ const ProfileEditScreen = ({ navigation, route }) => {
         )}
       </TouchableOpacity>
     </View>
-  );
+  ), [formData, handleNameChange, handleEmailChange, handlePhoneChange, handleBioChange, updateLoading]);
 
   // Optimized address handlers
   const handleAddressLabelChange = useCallback((text) => {
@@ -408,7 +412,7 @@ const ProfileEditScreen = ({ navigation, route }) => {
     setAddressData(prev => ({...prev, pincode: text}));
   }, []);
 
-  const AddressTab = () => (
+  const AddressTab = useMemo(() => (
     <View style={styles.tabContent}>
       <View style={styles.addressHeader}>
         <Text style={styles.sectionTitle}>
@@ -570,7 +574,23 @@ const ProfileEditScreen = ({ navigation, route }) => {
         </View>
       )}
     </View>
-  );
+  ), [
+    isAddingNewAddress, 
+    handleCancelAddAddress, 
+    addressData, 
+    handleAddressLabelChange, 
+    handleAddressLineChange, 
+    handleCityChange, 
+    handleTalukaChange, 
+    handleDistrictChange, 
+    handleStateChange, 
+    handleCountryChange, 
+    handlePincodeChange, 
+    addAddressLoading, 
+    updateLoading, 
+    isCustomer, 
+    handleAddNewAddress
+  ]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -617,7 +637,7 @@ const ProfileEditScreen = ({ navigation, route }) => {
               bounces={false}
               removeClippedSubviews={false}
             >
-              {activeTab === 'profile' ? <ProfileTab /> : <AddressTab />}
+              {activeTab === 'profile' ? ProfileTab : AddressTab}
             </ScrollView>
           </KeyboardAvoidingView>
         </>

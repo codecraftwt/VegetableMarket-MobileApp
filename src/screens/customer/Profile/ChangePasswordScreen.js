@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, StatusBar, ScrollView, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
+import Icon from 'react-native-vector-icons/FontAwesome';
 import CommonHeader from '../../../components/CommonHeader';
 import { SuccessModal, ErrorModal } from '../../../components';
 import { p } from '../../../utils/Responsive';
@@ -14,6 +15,13 @@ const ChangePasswordScreen = ({ navigation }) => {
     currentPassword: '',
     newPassword: '',
     confirmPassword: '',
+  });
+
+  // Password visibility states
+  const [showPasswords, setShowPasswords] = useState({
+    currentPassword: false,
+    newPassword: false,
+    confirmPassword: false,
   });
 
   // Modal states
@@ -39,6 +47,11 @@ const ChangePasswordScreen = ({ navigation }) => {
       currentPassword: '',
       newPassword: '',
       confirmPassword: '',
+    });
+    setShowPasswords({
+      currentPassword: false,
+      newPassword: false,
+      confirmPassword: false,
     });
     navigation.goBack();
   };
@@ -100,6 +113,13 @@ const ChangePasswordScreen = ({ navigation }) => {
     }));
   };
 
+  const togglePasswordVisibility = (field) => {
+    setShowPasswords(prev => ({
+      ...prev,
+      [field]: !prev[field]
+    }));
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar backgroundColor="#019a34" barStyle="light-content" />
@@ -126,38 +146,77 @@ const ChangePasswordScreen = ({ navigation }) => {
             
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>Current Password *</Text>
-              <TextInput
-                style={styles.textInput}
-                value={passwords.currentPassword}
-                onChangeText={(text) => updatePassword('currentPassword', text)}
-                placeholder="Enter your current password"
-                secureTextEntry={true}
-                autoCapitalize="none"
-              />
+              <View style={styles.passwordInputWrapper}>
+                <TextInput
+                  style={styles.textInput}
+                  value={passwords.currentPassword}
+                  onChangeText={(text) => updatePassword('currentPassword', text)}
+                  placeholder="Enter your current password"
+                  secureTextEntry={!showPasswords.currentPassword}
+                  autoCapitalize="none"
+                />
+                <TouchableOpacity
+                  style={styles.eyeIcon}
+                  onPress={() => togglePasswordVisibility('currentPassword')}
+                  activeOpacity={0.7}
+                >
+                  <Icon
+                    name={showPasswords.currentPassword ? 'eye-slash' : 'eye'}
+                    size={18}
+                    color="#666"
+                  />
+                </TouchableOpacity>
+              </View>
             </View>
 
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>New Password *</Text>
-              <TextInput
-                style={styles.textInput}
-                value={passwords.newPassword}
-                onChangeText={(text) => updatePassword('newPassword', text)}
-                placeholder="Enter your new password"
-                secureTextEntry={true}
-                autoCapitalize="none"
-              />
+              <View style={styles.passwordInputWrapper}>
+                <TextInput
+                  style={styles.textInput}
+                  value={passwords.newPassword}
+                  onChangeText={(text) => updatePassword('newPassword', text)}
+                  placeholder="Enter your new password"
+                  secureTextEntry={!showPasswords.newPassword}
+                  autoCapitalize="none"
+                />
+                <TouchableOpacity
+                  style={styles.eyeIcon}
+                  onPress={() => togglePasswordVisibility('newPassword')}
+                  activeOpacity={0.7}
+                >
+                  <Icon
+                    name={showPasswords.newPassword ? 'eye-slash' : 'eye'}
+                    size={18}
+                    color="#666"
+                  />
+                </TouchableOpacity>
+              </View>
             </View>
 
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>Confirm New Password *</Text>
-              <TextInput
-                style={styles.textInput}
-                value={passwords.confirmPassword}
-                onChangeText={(text) => updatePassword('confirmPassword', text)}
-                placeholder="Re-enter your new password"
-                secureTextEntry={true}
-                autoCapitalize="none"
-              />
+              <View style={styles.passwordInputWrapper}>
+                <TextInput
+                  style={styles.textInput}
+                  value={passwords.confirmPassword}
+                  onChangeText={(text) => updatePassword('confirmPassword', text)}
+                  placeholder="Re-enter your new password"
+                  secureTextEntry={!showPasswords.confirmPassword}
+                  autoCapitalize="none"
+                />
+                <TouchableOpacity
+                  style={styles.eyeIcon}
+                  onPress={() => togglePasswordVisibility('confirmPassword')}
+                  activeOpacity={0.7}
+                >
+                  <Icon
+                    name={showPasswords.confirmPassword ? 'eye-slash' : 'eye'}
+                    size={18}
+                    color="#666"
+                  />
+                </TouchableOpacity>
+              </View>
             </View>
 
             <TouchableOpacity 
@@ -245,16 +304,30 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-SemiBold',
   },
   
+  passwordInputWrapper: {
+    position: 'relative',
+  },
+  
   textInput: {
     fontSize: fontSizes.sm,
     color: '#333',
     paddingVertical: p(12),
     paddingHorizontal: p(16),
+    paddingRight: p(48), // Make space for the eye icon
     backgroundColor: '#f8f9fa',
     borderRadius: p(8),
     borderWidth: 1,
     borderColor: '#e9ecef',
     fontFamily: 'Poppins-Regular',
+  },
+  
+  eyeIcon: {
+    position: 'absolute',
+    right: p(16),
+    top: '50%',
+    transform: [{ translateY: -p(9) }], // Center vertically
+    padding: p(4),
+    zIndex: 1,
   },
   
   changePasswordButton: {
