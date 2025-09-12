@@ -72,8 +72,8 @@ const ProductDetailScreen = ({ navigation, route }) => {
         quantity: quantity 
       })).unwrap();
       
-      // Show success modal
-      setSuccessMessage(`${product.name} added to cart successfully!`);
+      // Show success modal with total price
+      setSuccessMessage(`${quantity} ${getProductUnit()} of ${product.name} (${getTotalPrice()}) added to cart successfully!`);
       setShowSuccessModal(true);
     } catch (error) {
       // Show error modal
@@ -187,6 +187,13 @@ const ProductDetailScreen = ({ navigation, route }) => {
       return `₹${parseFloat(product.price_per_kg).toFixed(2)}`;
     }
     return product?.price || '₹0.00';
+  };
+
+  // Helper function to get total price (price × quantity)
+  const getTotalPrice = () => {
+    const basePrice = product.price_per_kg ? parseFloat(product.price_per_kg) : parseFloat(product?.price?.replace('₹', '') || '0');
+    const totalPrice = basePrice * quantity;
+    return `₹${totalPrice.toFixed(2)}`;
   };
 
   // Helper function to get product unit
@@ -376,7 +383,7 @@ const ProductDetailScreen = ({ navigation, route }) => {
       <View style={styles.bottomBar}>
         <View style={styles.totalSection}>
           <Text style={styles.totalLabel}>Total Price</Text>
-          <Text style={styles.totalPrice}>{getPriceDisplay()}</Text>
+          <Text style={styles.totalPrice}>{getTotalPrice()}</Text>
         </View>
         <TouchableOpacity style={styles.addToCartButton} onPress={handleAddToCart} disabled={addLoading}>
           {addLoading ? (

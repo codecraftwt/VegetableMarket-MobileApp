@@ -16,30 +16,25 @@ import { SkeletonLoader } from '../../../components';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { p } from '../../../utils/Responsive';
 import { fontSizes } from '../../../utils/fonts';
-import { fetchTodaysTasks, updateTaskStatus, updateOrderStatus, updateAssignmentStatus, updatePaymentStatus } from '../../../redux/slices/todaysTaskSlice';
+import { fetchTodaysTasks, fetchTodaysTaskSummary, updateTaskStatus, updateOrderStatus, updateAssignmentStatus, updatePaymentStatus } from '../../../redux/slices/todaysTaskSlice';
 
 const TodaysTaskScreen = ({ navigation }) => {
   const dispatch = useDispatch();
-  const { tasks, loading, error, loading: updatePaymentStatusLoading } = useSelector(state => state.todaysTask);
+  const { tasks, summary, loading, summaryLoading, error, loading: updatePaymentStatusLoading } = useSelector(state => state.todaysTask);
   
-  const [completedTasks, setCompletedTasks] = useState(0);
-
   useFocusEffect(
     React.useCallback(() => {
       loadTodaysTasks();
     }, [])
   );
 
-  useEffect(() => {
-    if (tasks && tasks.length > 0) {
-      const completed = tasks.filter(task => task.delivery_status === 'delivered').length;
-      setCompletedTasks(completed);
-    }
-  }, [tasks]);
-
   const loadTodaysTasks = async () => {
     try {
-      await dispatch(fetchTodaysTasks());
+      // Fetch both tasks and summary data
+      await Promise.all([
+        dispatch(fetchTodaysTasks()),
+        dispatch(fetchTodaysTaskSummary())
+      ]);
     } catch (error) {
       console.log('Error loading today\'s tasks:', error);
     }
@@ -273,8 +268,11 @@ const TodaysTaskScreen = ({ navigation }) => {
     );
   };
 
-  const totalTasks = tasks ? tasks.length : 0;
-  const completionPercentage = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
+  // Use API data for progress calculation
+  const totalTasks = summary.total || 0;
+  const completedTasksFromAPI = summary.completed || 0;
+  const pendingTasks = summary.pending || 0;
+  const completionPercentage = summary.progress || 0;
 
   const renderSkeletonLoader = () => (
     <View style={styles.loadingContainer}>
@@ -299,7 +297,7 @@ const TodaysTaskScreen = ({ navigation }) => {
         navigation={navigation}
       />
 
-      {loading ? (
+      {loading || summaryLoading ? (
         renderSkeletonLoader()
       ) : (
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -320,12 +318,12 @@ const TodaysTaskScreen = ({ navigation }) => {
               </View>
               <View style={styles.progressStats}>
                 <View style={styles.statItem}>
-                  <Text style={styles.statValue}>{completedTasks}</Text>
+                  <Text style={styles.statValue}>{completedTasksFromAPI}</Text>
                   <Text style={styles.statLabel}>Completed</Text>
                 </View>
                 <View style={styles.statItem}>
-                  <Text style={styles.statValue}>{totalTasks - completedTasks}</Text>
-                  <Text style={styles.statLabel}>Remaining</Text>
+                  <Text style={styles.statValue}>{pendingTasks}</Text>
+                  <Text style={styles.statLabel}>Pending</Text>
                 </View>
                 <View style={styles.statItem}>
                   <Text style={styles.statValue}>{totalTasks}</Text>

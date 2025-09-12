@@ -16,6 +16,21 @@ export const fetchTodaysTasks = createAsyncThunk(
   }
 );
 
+// Async thunk to fetch today's task summary
+export const fetchTodaysTaskSummary = createAsyncThunk(
+  'todaysTask/fetchTodaysTaskSummary',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await api.get('/delivery/todays-task-summary');
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to fetch today\'s task summary'
+      );
+    }
+  }
+);
+
 // Async thunk to update order status
 export const updateOrderStatus = createAsyncThunk(
   'todaysTask/updateOrderStatus',
@@ -89,7 +104,14 @@ const todaysTaskSlice = createSlice({
   name: 'todaysTask',
   initialState: {
     tasks: [],
+    summary: {
+      total: 0,
+      completed: 0,
+      pending: 0,
+      progress: 0,
+    },
     loading: false,
+    summaryLoading: false,
     error: null,
     success: false,
     message: '',
@@ -132,6 +154,26 @@ const todaysTaskSlice = createSlice({
       })
       .addCase(fetchTodaysTasks.rejected, (state, action) => {
         state.loading = false;
+        state.error = action.payload;
+        state.success = false;
+      })
+      .addCase(fetchTodaysTaskSummary.pending, (state) => {
+        state.summaryLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchTodaysTaskSummary.fulfilled, (state, action) => {
+        state.summaryLoading = false;
+        state.summary = action.payload.data || {
+          total: 0,
+          completed: 0,
+          pending: 0,
+          progress: 0,
+        };
+        state.success = action.payload.success;
+        state.error = null;
+      })
+      .addCase(fetchTodaysTaskSummary.rejected, (state, action) => {
+        state.summaryLoading = false;
         state.error = action.payload;
         state.success = false;
       })
