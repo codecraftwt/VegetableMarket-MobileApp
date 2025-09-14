@@ -144,7 +144,7 @@ const NotificationScreen = ({ navigation }) => {
         ]}>
           <Icon 
             name={notification.icon} 
-            size={20} 
+            size={16} 
             color={notification.iconColor} 
           />
         </View>
@@ -198,7 +198,7 @@ const NotificationScreen = ({ navigation }) => {
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {notifications.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <Icon name="bell-slash" size={80} color="#ccc" />
+            <Icon name="bell-slash" size={60} color="#ccc" />
             <Text style={styles.emptyTitle}>No Notifications</Text>
             <Text style={styles.emptySubtitle}>
               You're all caught up! Check back later for new updates.
@@ -223,7 +223,7 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingHorizontal: p(20),
+    paddingHorizontal: p(16),
   },
 
   // Header Actions
@@ -231,8 +231,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: p(20),
-    paddingVertical: p(15),
+    paddingHorizontal: p(16),
+    paddingVertical: p(10),
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#e9ecef',
@@ -246,10 +246,10 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-Regular',
   },
   markAllReadButton: {
-    paddingHorizontal: p(15),
-    paddingVertical: p(8),
+    paddingHorizontal: p(12),
+    paddingVertical: p(6),
     backgroundColor: '#019a34',
-    borderRadius: p(20),
+    borderRadius: p(15),
   },
   markAllReadText: {
     color: '#fff',
@@ -261,45 +261,45 @@ const styles = StyleSheet.create({
   emptyContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: p(80),
+    paddingVertical: p(60),
   },
   emptyTitle: {
-    fontSize: fontSizes.xl,
+    fontSize: fontSizes.lg,
     color: '#333',
-    marginTop: p(20),
-    marginBottom: p(10),
+    marginTop: p(15),
+    marginBottom: p(8),
     fontFamily: 'Montserrat-Bold',
   },
   emptySubtitle: {
-    fontSize: fontSizes.base,
+    fontSize: fontSizes.sm,
     color: '#666',
     textAlign: 'center',
-    lineHeight: p(22),
+    lineHeight: p(18),
     fontFamily: 'Poppins-Regular',
   },
 
   // Notifications List
   notificationsList: {
-    paddingTop: p(10),
+    paddingTop: p(8),
   },
 
   // Notification Item
   notificationItem: {
     backgroundColor: '#fff',
-    borderRadius: p(15),
-    padding: p(20),
-    marginBottom: p(15),
+    borderRadius: p(12),
+    padding: p(14),
+    marginBottom: p(10),
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+    elevation: 2,
   },
   unreadNotification: {
-    borderLeftWidth: 4,
+    borderLeftWidth: 3,
     borderLeftColor: '#019a34',
     backgroundColor: '#f8fffe',
   },
@@ -309,31 +309,31 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   iconContainer: {
-    width: p(50),
-    height: p(50),
-    borderRadius: p(25),
+    width: p(40),
+    height: p(40),
+    borderRadius: p(20),
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: p(15),
+    marginRight: p(12),
   },
   notificationContent: {
     flex: 1,
   },
   notificationTitle: {
-    fontSize: fontSizes.base,
+    fontSize: fontSizes.sm,
     color: '#333',
     fontFamily: 'Poppins-Bold',
-    marginBottom: p(5),
+    marginBottom: p(3),
   },
   unreadTitle: {
     color: '#019a34',
   },
   notificationMessage: {
-    fontSize: fontSizes.sm,
+    fontSize: fontSizes.xs,
     color: '#666',
     fontFamily: 'Poppins-Regular',
-    lineHeight: p(18),
-    marginBottom: p(8),
+    lineHeight: p(16),
+    marginBottom: p(5),
   },
   notificationTime: {
     fontSize: fontSizes.xs,
@@ -341,9 +341,9 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-Regular',
   },
   unreadDot: {
-    width: p(12),
-    height: p(12),
-    borderRadius: p(6),
+    width: p(8),
+    height: p(8),
+    borderRadius: p(4),
     backgroundColor: '#019a34',
   },
 });

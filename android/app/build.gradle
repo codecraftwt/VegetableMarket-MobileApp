@@ -143,6 +143,6 @@ project.ext.vectoricons = [
         "Feather.ttf",
         "SimpleLineIcons.ttf",
         "Octicons.ttf",
-        "Fontisto.ttf"
+        "Fontisto.ttf",
     ] // List of icon font files to copy
 ]

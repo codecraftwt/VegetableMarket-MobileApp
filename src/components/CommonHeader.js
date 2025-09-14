@@ -38,7 +38,7 @@ const CommonHeader = ({
     <View style={[styles.header, { backgroundColor }]}>
       {showBackButton ? (
         <TouchableOpacity style={styles.backButton} onPress={handleBackPress}>
-          <Icon name="chevron-left" size={18} color="#fff" />
+          <Icon name="chevron-left" size={16} color="#fff" />
         </TouchableOpacity>
       ) : (
         <View style={styles.placeholder} />
@@ -51,7 +51,7 @@ const CommonHeader = ({
       <View style={styles.rightContainer}>
         {showEditButton ? (
           <TouchableOpacity style={styles.editButton} onPress={onEditPress}>
-            <Icon name="edit" size={18} color="#fff" />
+            <Icon name="edit" size={16} color="#fff" />
           </TouchableOpacity>
         ) : showNotification ? (
           <TouchableOpacity
@@ -67,7 +67,7 @@ const CommonHeader = ({
               }
             }}
           >
-            <Icon name="bell-o" size={18} color="#fff" />
+            <Icon name="bell-o" size={16} color="#fff" />
           </TouchableOpacity>
         ) : (
           <View style={styles.placeholder} />
@@ -82,30 +82,25 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    // height: p(105),
-    // marginTop: p(-80),
-
-    paddingHorizontal: p(20),
-    // paddingTop: p(60),
-    // paddingBottom: p(20),
-    paddingVertical: Platform.OS === 'ios' ? p(7) : p(10),
+    paddingHorizontal: p(16),
+    paddingVertical: Platform.OS === 'ios' ? p(5) : p(8),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+    elevation: 2,
   },
   backButton: {
-    padding: p(10),
-    width: p(38),
-    height: p(38),
+    padding: p(8),
+    width: p(32),
+    height: p(32),
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: p(22),
+    borderRadius: p(16),
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
   },
   placeholder: {
-    width: p(44),
+    width: p(32),
   },
   titleContainer: {
     flex: 1,
@@ -114,33 +109,34 @@ const styles = StyleSheet.create({
   },
   screenTitle: {
     color: '#fff',
-    fontSize: fontSizes.xl,
-    letterSpacing: 0.5,
+    fontSize: fontSizes.lg,
+    letterSpacing: 0.3,
     fontFamily: 'Montserrat-Bold',
   },
   rightContainer: {
-    width: p(44),
+    width: p(32),
     alignItems: 'center',
     justifyContent: 'center',
   },
-  //   editButton: {
-  //     padding: p(10),
-  //     width: p(38),
-  //     height: p(38),
-  //     alignItems: 'center',
-  //     justifyContent: 'center',
-  //     borderRadius: p(22),
-  //     backgroundColor: 'rgba(255, 255, 255, 0.2)',
-  //   },
-  notificationButton: {
-    padding: p(10),
-    width: p(38),
-    height: p(38),
+  editButton: {
+    padding: p(8),
+    width: p(32),
+    height: p(32),
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: p(22),
+    borderRadius: p(16),
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  notificationButton: {
+    padding: p(8),
+    width: p(32),
+    height: p(32),
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: p(16),
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
   },
 });
 
 export default CommonHeader;
+

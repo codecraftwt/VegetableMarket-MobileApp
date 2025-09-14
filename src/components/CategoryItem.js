@@ -1,6 +1,9 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
+import Icon1 from 'react-native-vector-icons/FontAwesome5';
+
+
 import { p } from '../utils/Responsive';
 import { fontSizes } from '../utils/fonts';
 import SkeletonLoader from './SkeletonLoader';
@@ -23,7 +26,7 @@ const CategoryItem = ({
       case 'meat':
         return { icon: 'cutlery', color: '#F44336' };
       case 'dairy':
-        return { icon: 'glass', color: '#2196F3' };
+        return { icon: 'cheese', color: '#2196F3', useIcon1: true };
       case 'all':
         return { icon: 'th-large', color: '#019a34' };
       default:
@@ -82,11 +85,19 @@ const CategoryItem = ({
           },
         ]}
       >
-        <Icon
-          name={categoryConfig.icon}
-          size={sizeStyles.iconFontSize}
-          color="#fff"
-        />
+        {categoryConfig.useIcon1 ? (
+          <Icon1
+            name={categoryConfig.icon}
+            size={sizeStyles.iconFontSize}
+            color="#fff"
+          />
+        ) : (
+          <Icon
+            name={categoryConfig.icon}
+            size={sizeStyles.iconFontSize}
+            color="#fff"
+          />
+        )}
       </View>
       <Text
         style={[

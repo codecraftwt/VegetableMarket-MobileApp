@@ -48,7 +48,6 @@ const CartScreen = ({ navigation }) => {
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [itemToRemove, setItemToRemove] = useState(null);
-  const [updatingItems, setUpdatingItems] = useState(new Set()); // Track which items are being updated
   const [removingItems, setRemovingItems] = useState(new Set()); // Track which items are being removed
   const [isRefreshing, setIsRefreshing] = useState(false); // Track if cart is refreshing
 
@@ -62,7 +61,6 @@ const CartScreen = ({ navigation }) => {
       // Reset local state to ensure fresh data
       setLocalCartItems([]);
       setLocalTotalAmount(0);
-      setUpdatingItems(new Set());
       setRemovingItems(new Set()); // Reset removing items state
       setForceUpdate(0);
       setIsInitialized(false); // Reset initialization flag
@@ -127,12 +125,6 @@ const CartScreen = ({ navigation }) => {
   };
 
   const handleQuantityChange = async (itemId, change) => {
-    // Prevent multiple simultaneous updates for the same item
-    if (updatingItems.has(itemId)) {
-      console.log('CartScreen: Item already being updated, skipping:', itemId);
-      return;
-    }
-    
     const currentItem = localCartItems.find(item => item.id === itemId);
     if (!currentItem) return;
 
@@ -153,9 +145,6 @@ const CartScreen = ({ navigation }) => {
       setShowErrorModal(true);
       return;
     }
-    
-    // Mark this item as being updated
-    setUpdatingItems(prev => new Set(prev).add(itemId));
     
     // Store original values for rollback on error
     const originalQuantity = currentQuantity;
@@ -195,11 +184,7 @@ const CartScreen = ({ navigation }) => {
         // This ensures the UI shows the correct quantity from Redux
       }, 50);
       
-      // Show success modal after API call succeeds
-      if (!showSuccessModal) {
-        setSuccessMessage('Quantity updated successfully!');
-        setShowSuccessModal(true);
-      }
+      // Quantity updated successfully - no modal needed for better UX
       
     } catch (error) {
       console.error('CartScreen: Quantity update error:', error);
@@ -219,13 +204,6 @@ const CartScreen = ({ navigation }) => {
       setLocalCartItems([...revertedLocalCartItems]); // Create new array reference
       setLocalTotalAmount(originalTotal);
       setForceUpdate(prev => prev + 1); // Force re-render
-    } finally {
-      // Remove this item from updating set
-      setUpdatingItems(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(itemId);
-        return newSet;
-      });
     }
   };
 
@@ -323,7 +301,6 @@ const CartScreen = ({ navigation }) => {
       return require('../../../assets/vegebg.png');
     };
 
-    const isItemUpdating = updatingItems.has(item.id);
     const isItemRemoving = removingItems.has(item.id);
 
     return (
@@ -343,15 +320,11 @@ const CartScreen = ({ navigation }) => {
         <View style={styles.itemRight}>
           <View style={styles.quantitySelector}>
             <TouchableOpacity 
-              style={[styles.quantityButton, isItemUpdating && styles.disabledButton]} 
+              style={styles.quantityButton} 
               onPress={() => handleQuantityChange(item.id, -1)}
-              disabled={isItemUpdating || (item.quantity_kg || item.quantity || 0) <= 1}
+              disabled={(item.quantity_kg || item.quantity || 0) <= 1}
             >
-              {isItemUpdating ? (
-                <SkeletonLoader type="category" width={14} height={14} borderRadius={7} />
-              ) : (
-                <Icon name="minus" size={16} color={(item.quantity_kg || item.quantity || 0) <= 1 ? "#ccc" : "#666"} />
-              )}
+              <Icon name="minus" size={16} color={(item.quantity_kg || item.quantity || 0) <= 1 ? "#ccc" : "#666"} />
             </TouchableOpacity>
             <Text style={[
               styles.quantityText, 
@@ -360,15 +333,11 @@ const CartScreen = ({ navigation }) => {
               {item.quantity_kg || item.quantity || 0} {item.unit_type || 'kg'}
             </Text>
             <TouchableOpacity 
-              style={[styles.quantityButton, isItemUpdating && styles.disabledButton]} 
+              style={styles.quantityButton} 
               onPress={() => handleQuantityChange(item.id, 1)}
-              disabled={isItemUpdating || (item.quantity_kg || item.quantity || 0) >= 99}
+              disabled={(item.quantity_kg || item.quantity || 0) >= 99}
             >
-              {isItemUpdating ? (
-                <SkeletonLoader type="category" width={14} height={14} borderRadius={7} />
-              ) : (
-                <Icon name="plus" size={16} color={(item.quantity_kg || item.quantity || 0) >= 99 ? "#ccc" : "#019a34"} />
-              )}
+              <Icon name="plus" size={16} color={(item.quantity_kg || item.quantity || 0) >= 99 ? "#ccc" : "#019a34"} />
             </TouchableOpacity>
           </View>
           

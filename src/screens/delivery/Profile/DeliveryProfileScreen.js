@@ -53,6 +53,10 @@ const DeliveryProfileScreen = ({ navigation }) => {
     console.log('Profile notification pressed');
   };
 
+  const handleHelpCenterPress = () => {
+    navigation.navigate('HelpCenter');
+  };
+
   const handleLogout = () => {
     setShowLogoutModal(true);
   };
@@ -396,6 +400,20 @@ const DeliveryProfileScreen = ({ navigation }) => {
         <View style={styles.actionContent}>
           <Text style={styles.actionTitle}>Delivery History</Text>
           <Text style={styles.actionSubtitle}>View your delivery history</Text>
+        </View>
+        <Icon name="chevron-right" size={16} color="#999" />
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.actionItem}
+        onPress={handleHelpCenterPress}
+      >
+        <View style={styles.actionIcon}>
+          <Icon name="life-ring" size={20} color="#019a34" />
+        </View>
+        <View style={styles.actionContent}>
+          <Text style={styles.actionTitle}>Help Center</Text>
+          <Text style={styles.actionSubtitle}>Get support and help</Text>
         </View>
         <Icon name="chevron-right" size={16} color="#999" />
       </TouchableOpacity>

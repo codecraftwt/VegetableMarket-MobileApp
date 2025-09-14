@@ -17,6 +17,7 @@ import NotificationScreen from '../screens/Notification/NotificationScreen';
 import CategoryProductsScreen from '../screens/customer/Category/CategoryProductsScreen';
 import OrderDetailsScreen from '../screens/customer/Profile/OrderDetailsScreen';
 import FarmerProfileScreen from '../screens/customer/Profile/FarmerProfileScreen';
+import HelpCenterScreen from '../screens/customer/Profile/HelpCenterScreen';
 import MyFarmsScreen from '../screens/farmer/farm/MyFarmsScreen';
 import SalesReportScreen from '../screens/farmer/Sales/SalesReportScreen';
 import { Easing, StatusBar } from 'react-native';
@@ -99,6 +100,7 @@ const AppNavigator = () => {
     { name: 'CategoryProducts', component: CategoryProductsScreen, transition: slideFromRight },
     { name: 'OrderDetails', component: OrderDetailsScreen, transition: slideFromRight },
     { name: 'FarmerProfile', component: FarmerProfileScreen, transition: slideFromRight },
+    { name: 'HelpCenter', component: HelpCenterScreen, transition: slideFromRight },
     { name: 'MyFarms', component: MyFarmsScreen, transition: slideFromRight },
     { name: 'SalesReport', component: SalesReportScreen, transition: slideFromRight },
     { name: 'AddFarm', component: AddFarmScreen, transition: slideFromRight },
