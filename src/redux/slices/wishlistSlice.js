@@ -1,0 +1,217 @@
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import api from '../../api/axiosInstance';
+
+// Async thunk for fetching wishlist items
+export const fetchWishlist = createAsyncThunk(
+  'wishlist/fetchWishlist',
+  async (_, { rejectWithValue, getState }) => {
+    try {
+      console.log('Fetching wishlist items...');
+      
+      // Get the current state to access the token
+      const state = getState();
+      const token = state.auth.token;
+      
+      // For GET requests, we can include the token as a query parameter
+      // or the Bearer token in headers should be sufficient
+      const response = await api.get('/wishlist');
+      console.log('Wishlist API response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Fetch wishlist error:', error);
+      return rejectWithValue(error.response?.data || 'Failed to fetch wishlist');
+    }
+  }
+);
+
+// Async thunk for fetching popular items
+export const fetchPopularItems = createAsyncThunk(
+  'wishlist/fetchPopularItems',
+  async (_, { rejectWithValue, getState }) => {
+    try {
+      console.log('Fetching popular items...');
+      
+      // Get the current state to access the token
+      const state = getState();
+      const token = state.auth.token;
+      
+      const response = await api.get('/popular-items');
+      console.log('Popular items API response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Fetch popular items error:', error);
+      return rejectWithValue(error.response?.data || 'Failed to fetch popular items');
+    }
+  }
+);
+
+// Async thunk for toggling wishlist item (add/remove)
+export const toggleWishlistItem = createAsyncThunk(
+  'wishlist/toggleWishlistItem',
+  async (vegetableId, { rejectWithValue, getState }) => {
+    try {
+      console.log('Toggling wishlist item for vegetable ID:', vegetableId);
+      
+      // Get the current state to access the token
+      const state = getState();
+      const token = state.auth.token;
+      
+      // Prepare the payload with both vegetable_id and _token
+      const payload = {
+        vegetable_id: vegetableId,
+        _token: token
+      };
+      
+      console.log('Toggle wishlist payload:', payload);
+      
+      const response = await api.post('/wishlist/toggle', payload);
+      console.log('Toggle wishlist API response:', response.data);
+      return { ...response.data, vegetableId };
+    } catch (error) {
+      console.error('Toggle wishlist error:', error);
+      return rejectWithValue(error.response?.data || 'Failed to toggle wishlist item');
+    }
+  }
+);
+
+// Async thunk for removing wishlist item
+export const removeWishlistItem = createAsyncThunk(
+  'wishlist/removeWishlistItem',
+  async (vegetableId, { rejectWithValue, getState }) => {
+    try {
+      console.log('Removing wishlist item for vegetable ID:', vegetableId);
+      
+      // Get the current state to access the token
+      const state = getState();
+      const token = state.auth.token;
+      
+      // For DELETE requests, we'll use the Bearer token in headers
+      // and include the _token in the request body if needed
+      const response = await api.delete(`/wishlist/${vegetableId}`, {
+        data: {
+          _token: token
+        }
+      });
+      console.log('Remove wishlist API response:', response.data);
+      return { ...response.data, vegetableId };
+    } catch (error) {
+      console.error('Remove wishlist error:', error);
+      return rejectWithValue(error.response?.data || 'Failed to remove wishlist item');
+    }
+  }
+);
+
+const initialState = {
+  items: [],
+  popularItems: [],
+  loading: false,
+  error: null,
+  popularLoading: false,
+  popularError: null,
+  toggleLoading: false,
+  toggleError: null,
+  removeLoading: false,
+  removeError: null,
+};
+
+const wishlistSlice = createSlice({
+  name: 'wishlist',
+  initialState,
+  reducers: {
+    clearWishlist: (state) => {
+      state.items = [];
+      state.error = null;
+      state.toggleError = null;
+      state.removeError = null;
+    },
+    updateWishlistStatus: (state, action) => {
+      const { vegetableId, isWishlisted } = action.payload;
+      // This is used to update the wishlist status in other components
+      // without making API calls
+      state.items = state.items.map(item => 
+        item.id === vegetableId 
+          ? { ...item, isWishlisted }
+          : item
+      );
+    },
+  },
+  extraReducers: (builder) => {
+    // Fetch Wishlist
+    builder
+      .addCase(fetchWishlist.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchWishlist.fulfilled, (state, action) => {
+        state.loading = false;
+        state.items = action.payload.data || [];
+        state.error = null;
+      })
+      .addCase(fetchWishlist.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      });
+
+    // Fetch Popular Items
+    builder
+      .addCase(fetchPopularItems.pending, (state) => {
+        state.popularLoading = true;
+        state.popularError = null;
+      })
+      .addCase(fetchPopularItems.fulfilled, (state, action) => {
+        state.popularLoading = false;
+        state.popularItems = action.payload.data || [];
+        state.popularError = null;
+      })
+      .addCase(fetchPopularItems.rejected, (state, action) => {
+        state.popularLoading = false;
+        state.popularError = action.payload;
+      });
+
+    // Toggle Wishlist Item
+    builder
+      .addCase(toggleWishlistItem.pending, (state) => {
+        state.toggleLoading = true;
+        state.toggleError = null;
+      })
+      .addCase(toggleWishlistItem.fulfilled, (state, action) => {
+        state.toggleLoading = false;
+        const { vegetableId, wishlisted } = action.payload;
+        
+        if (wishlisted) {
+          // Item was added to wishlist - we need to add it to our state
+          // Note: The actual item data would need to be fetched separately
+          // or passed from the component
+        } else {
+          // Item was removed from wishlist - remove it from our state
+          state.items = state.items.filter(item => item.id !== vegetableId);
+        }
+        
+        state.toggleError = null;
+      })
+      .addCase(toggleWishlistItem.rejected, (state, action) => {
+        state.toggleLoading = false;
+        state.toggleError = action.payload;
+      });
+
+    // Remove Wishlist Item
+    builder
+      .addCase(removeWishlistItem.pending, (state) => {
+        state.removeLoading = true;
+        state.removeError = null;
+      })
+      .addCase(removeWishlistItem.fulfilled, (state, action) => {
+        state.removeLoading = false;
+        const { vegetableId } = action.payload;
+        state.items = state.items.filter(item => item.id !== vegetableId);
+        state.removeError = null;
+      })
+      .addCase(removeWishlistItem.rejected, (state, action) => {
+        state.removeLoading = false;
+        state.removeError = action.payload;
+      });
+  },
+});
+
+export const { clearWishlist, updateWishlistStatus } = wishlistSlice.actions;
+export default wishlistSlice.reducer;

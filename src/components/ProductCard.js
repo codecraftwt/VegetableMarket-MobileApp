@@ -5,6 +5,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   Image,
+  ActivityIndicator,
 } from 'react-native';
 import SkeletonLoader from './SkeletonLoader';
 import Icon from 'react-native-vector-icons/FontAwesome';
@@ -13,6 +14,7 @@ import { p } from '../utils/Responsive';
 import { fontSizes } from '../utils/fonts';
 import { useDispatch, useSelector } from 'react-redux';
 import { addToCart } from '../redux/slices/cartSlice';
+import { toggleWishlistItem } from '../redux/slices/wishlistSlice';
 import SuccessModal from './SuccessModal';
 import ErrorModal from './ErrorModal';
 
@@ -21,16 +23,22 @@ const ProductCard = ({
   onPress,
   onAddToCart,
   showAddToCart = true,
+  showWishlist = true, // Add wishlist prop
+  showDeleteButton = false, // Add delete button prop
+  onDelete, // Add delete handler prop
+  isDeleteLoading = false, // Add delete loading state prop
   size = 'medium', // 'small', 'medium', 'large'
   navigation, // Add navigation prop for cart navigation
   isHighlighted = false, // Add highlighting prop
 }) => {
   const dispatch = useDispatch();
+  const wishlistState = useSelector(state => state.wishlist);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [isAddingToCart, setIsAddingToCart] = useState(false); // Individual loading state
+  const [isTogglingWishlist, setIsTogglingWishlist] = useState(false); // Individual wishlist loading state
 
   // Helper function to get product image
   const getProductImage = () => {
@@ -55,6 +63,40 @@ const ProductCard = ({
   // Helper function to get product unit
   const getProductUnit = () => {
     return item?.unit_type || item?.unit || 'kg';
+  };
+
+  // Check if item is in wishlist
+  const isInWishlist = () => {
+    return wishlistState.items.some(wishlistItem => wishlistItem.id === item.id);
+  };
+
+  // Get wishlist loading state for this specific item
+  const isWishlistLoading = () => {
+    return isTogglingWishlist;
+  };
+
+  // Handle wishlist toggle
+  const handleWishlistToggle = async (e) => {
+    e.stopPropagation();
+    try {
+      setIsTogglingWishlist(true);
+      const result = await dispatch(toggleWishlistItem(item.id)).unwrap();
+      
+      if (result.wishlisted) {
+        setSuccessMessage(`${item.name} added to wishlist!`);
+        setShowSuccessModal(true);
+      } else {
+        setSuccessMessage(`${item.name} removed from wishlist!`);
+        setShowSuccessModal(true);
+      }
+    } catch (error) {
+      setErrorMessage(
+        error.message || 'Failed to update wishlist. Please try again.'
+      );
+      setShowErrorModal(true);
+    } finally {
+      setIsTogglingWishlist(false);
+    }
   };
 
   const handleAddToCart = async e => {
@@ -107,14 +149,13 @@ const ProductCard = ({
     setShowErrorModal(false);
   };
 
-  const handleViewCart = () => {
-    console.log('ProductCard: handleViewCart called');
+  const handleViewWishlist = () => {
+    console.log('ProductCard: handleViewWishlist called');
     console.log('ProductCard: navigation prop:', navigation);
     setShowSuccessModal(false);
     if (navigation) {
-      console.log('ProductCard: Navigating to Cart screen');
-      // Navigate to App (BottomTabNavigator) and then to CartTab
-      navigation.navigate('App', { screen: 'CartTab' });
+      console.log('ProductCard: Navigating to Wishlist screen');
+      navigation.navigate('Wishlist');
     } else {
       console.log('ProductCard: No navigation prop available');
     }
@@ -202,13 +243,50 @@ const ProductCard = ({
             style={styles.productImage}
             defaultSource={require('../assets/vegebg.png')}
           />
+          
+          {/* Wishlist Heart Icon */}
+          {showWishlist && (
+            <TouchableOpacity
+              style={[styles.wishlistButton, isTogglingWishlist && styles.wishlistButtonDisabled]}
+              onPress={handleWishlistToggle}
+              disabled={isTogglingWishlist}
+            >
+              {isTogglingWishlist ? (
+                <SkeletonLoader type="category" width={16} height={16} borderRadius={8} />
+              ) : (
+                <Icon 
+                  name={isInWishlist() ? "heart" : "heart-o"} 
+                  size={16} 
+                  color={isInWishlist() ? "#dc3545" : "#666"} 
+                />
+              )}
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Product Info */}
         <View style={styles.productInfo}>
-          <Text style={styles.productName} numberOfLines={2}>
-            {item?.name || 'Unknown Product'}
-          </Text>
+          <View style={styles.productNameContainer}>
+            <Text style={styles.productName} numberOfLines={2}>
+              {item?.name || 'Unknown Product'}
+            </Text>
+            {showDeleteButton && (
+              <TouchableOpacity
+                style={[styles.deleteButton, isDeleteLoading && styles.deleteButtonDisabled]}
+                onPress={(e) => {
+                  e.stopPropagation();
+                  onDelete && onDelete(item);
+                }}
+                disabled={isDeleteLoading}
+              >
+                {isDeleteLoading ? (
+                  <ActivityIndicator size={14} color="#dc3545" />
+                ) : (
+                  <Icon name="trash" size={14} color="#dc3545" />
+                )}
+              </TouchableOpacity>
+            )}
+          </View>
           <StarRating rating={item?.rating || 0} />
           <Text style={styles.productPrice}>
             {getPriceDisplay()}/{getProductUnit()}
@@ -235,13 +313,13 @@ const ProductCard = ({
       <SuccessModal
         visible={showSuccessModal}
         onClose={handleSuccessModalClose}
-        title="Added to Cart!"
+        title="Wishlist Updated!"
         message={successMessage}
         buttonText="OK"
         onButtonPress={handleSuccessModalClose}
         showSecondaryButton={true}
-        secondaryButtonText="View Cart"
-        onSecondaryButtonPress={handleViewCart}
+        secondaryButtonText="View Wishlist"
+        onSecondaryButtonPress={handleViewWishlist}
       />
 
       {/* Error Modal */}
@@ -291,6 +369,7 @@ const styles = StyleSheet.create({
     marginBottom: p(12),
     overflow: 'hidden',
     backgroundColor: '#f0f8f0',
+    position: 'relative',
   },
   productImage: {
     width: '100%',
@@ -300,12 +379,25 @@ const styles = StyleSheet.create({
   productInfo: {
     marginBottom: p(8),
   },
+  productNameContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: p(2),
+  },
+  deleteButton: {
+    marginLeft: p(8),
+    padding: p(4),
+  },
+  deleteButtonDisabled: {
+    opacity: 0.6,
+  },
   productName: {
     fontSize: fontSizes.sm,
     color: '#1a1a1a',
-    marginBottom: p(2),
     textAlign: 'left',
     fontFamily: 'Poppins-Bold',
+    flex: 1,
   },
   starRating: {
     flexDirection: 'row',
@@ -335,6 +427,25 @@ const styles = StyleSheet.create({
     elevation: 2,
     borderTopLeftRadius: p(8),
     borderBottomRightRadius: p(8),
+  },
+  wishlistButton: {
+    position: 'absolute',
+    top: p(8),
+    right: p(8),
+    backgroundColor: '#fff',
+    borderRadius: p(16),
+    width: p(32),
+    height: p(32),
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  wishlistButtonDisabled: {
+    opacity: 0.6,
   },
 });
 

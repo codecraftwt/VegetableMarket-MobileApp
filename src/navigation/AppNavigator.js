@@ -9,6 +9,9 @@ import DashboardScreen from '../screens/customer/Dashboard/DashboardScreen';
 import LoginScreen from '../screens/auth/LoginScreen';
 import RegisterScreen from '../screens/auth/RegisterScreen';
 import ProfileEditScreen from '../screens/customer/Profile/ProfileEditScreen';
+import AllAddressesScreen from '../screens/customer/Profile/AllAddressesScreen';
+import WishlistScreen from '../screens/customer/Wishlist/WishlistScreen';
+import FilterScreen from '../screens/customer/Filter/FilterScreen';
 import ChangePasswordScreen from '../screens/customer/Profile/ChangePasswordScreen';
 import MyOrdersScreen from '../screens/customer/Profile/MyOrdersScreen';
 import ProductDetailScreen from '../screens/customer/ProductDetail/ProductDetailScreen';
@@ -92,6 +95,9 @@ const AppNavigator = () => {
       transition: slideFromRight,
     },
     { name: 'ProfileEdit', component: ProfileEditScreen, transition: slideFromRight },
+    { name: 'AllAddresses', component: AllAddressesScreen, transition: slideFromRight },
+    { name: 'Wishlist', component: WishlistScreen, transition: slideFromRight },
+    { name: 'Filter', component: FilterScreen, transition: slideFromRight },
     { name: 'ChangePassword', component: ChangePasswordScreen, transition: slideFromRight },
     { name: 'MyOrders', component: MyOrdersScreen, transition: slideFromRight },
     { name: 'ProductDetail', component: ProductDetailScreen, transition: slideFromRight },

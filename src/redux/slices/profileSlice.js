@@ -192,6 +192,19 @@ export const addAddress = createAsyncThunk(
   }
 );
 
+// Async thunk for fetching all addresses
+export const fetchAllAddresses = createAsyncThunk(
+  'profile/fetchAllAddresses',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await api.get('/addresses');
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || 'Failed to fetch addresses');
+    }
+  }
+);
+
 // Async thunk for changing password
 export const changePassword = createAsyncThunk(
   'profile/changePassword',
@@ -222,6 +235,8 @@ const initialState = {
   changePasswordError: null,
   addAddressLoading: false,
   addAddressError: null,
+  fetchAddressesLoading: false,
+  fetchAddressesError: null,
 };
 
 const profileSlice = createSlice({
@@ -336,6 +351,22 @@ const profileSlice = createSlice({
       .addCase(changePassword.rejected, (state, action) => {
         state.changePasswordLoading = false;
         state.changePasswordError = action.payload;
+      });
+
+    // Fetch All Addresses
+    builder
+      .addCase(fetchAllAddresses.pending, (state) => {
+        state.fetchAddressesLoading = true;
+        state.fetchAddressesError = null;
+      })
+      .addCase(fetchAllAddresses.fulfilled, (state, action) => {
+        state.fetchAddressesLoading = false;
+        state.addresses = action.payload.data || [];
+        state.fetchAddressesError = null;
+      })
+      .addCase(fetchAllAddresses.rejected, (state, action) => {
+        state.fetchAddressesLoading = false;
+        state.fetchAddressesError = action.payload;
       });
   },
 });

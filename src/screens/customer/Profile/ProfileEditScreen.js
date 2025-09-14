@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, StatusBar, ScrollView, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import CommonHeader from '../../../components/CommonHeader';
 import { SuccessModal, ErrorModal, ConfirmationModal } from '../../../components';
@@ -6,17 +6,23 @@ import Icon from 'react-native-vector-icons/FontAwesome';
 import { p } from '../../../utils/Responsive';
 import { fontSizes } from '../../../utils/fonts';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchProfile, updateProfile, addAddress } from '../../../redux/slices/profileSlice';
+import { fetchProfile, updateProfile } from '../../../redux/slices/profileSlice';
+import { addAddress, updateAddress } from '../../../redux/slices/addressesSlice';
 import { ROLES } from '../../../redux/slices/authSlice';
 
 const ProfileEditScreen = ({ navigation, route }) => {
   const dispatch = useDispatch();
   const profileState = useSelector(state => state.profile);
+  const addressesState = useSelector(state => state.addresses);
   const authState = useSelector(state => state.auth);
-  const { user, address, profile, loading, updateLoading, updateError, addAddressLoading, addAddressError } = profileState;
+  const { user, address, profile, loading, updateLoading, updateError } = profileState;
+  const { addLoading: addAddressLoading, addError: addAddressError, updateLoading: updateAddressLoading, updateError: updateAddressError } = addressesState;
   const { user: authUser } = authState;
   const [activeTab, setActiveTab] = useState('profile'); // 'profile' or 'address'
   const [isAddingNewAddress, setIsAddingNewAddress] = useState(false);
+  const [editingAddressId, setEditingAddressId] = useState(null);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const editDataLoadedRef = useRef(false);
   
   // Check if user is a customer
   const isCustomer = useMemo(() => {
@@ -25,10 +31,67 @@ const ProfileEditScreen = ({ navigation, route }) => {
   
   // Check if we should start with address tab (e.g., from checkout)
   useEffect(() => {
+    console.log('Route params changed:', route.params);
+    
     if (route.params?.activeTab) {
       setActiveTab(route.params.activeTab);
     }
   }, [route.params]);
+
+  // Handle editing specific address from AllAddressesScreen - separate useEffect
+  useEffect(() => {
+    if (route.params?.editAddress) {
+      const address = route.params.editAddress;
+      console.log('=== LOADING EDIT ADDRESS DATA ===');
+      console.log('Edit address received:', address);
+      console.log('Setting editingAddressId to:', address.id);
+      
+      // Set all flags immediately
+      setEditingAddressId(address.id);
+      setIsEditMode(true);
+      editDataLoadedRef.current = true; // Mark that edit data has been loaded
+      
+      const newAddressData = {
+        addressLabel: address.address_label || '',
+        addressLine: address.address_line || '',
+        city: address.city || '',
+        taluka: address.taluka || '',
+        district: address.district || '',
+        state: address.state || '',
+        country: address.country || '',
+        pincode: address.pincode || '',
+      };
+      console.log('Setting addressData to:', newAddressData);
+      setAddressData(newAddressData);
+      
+      // Force a re-render to ensure the data is set
+      setTimeout(() => {
+        console.log('=== CONFIRMING EDIT DATA SET ===');
+        console.log('Current addressData after timeout:', addressData);
+      }, 100);
+    }
+  }, [route.params?.editAddress]);
+
+  // Handle adding new address from AllAddressesScreen - separate useEffect
+  useEffect(() => {
+    if (route.params?.addNewAddress) {
+      console.log('=== ADDING NEW ADDRESS ===');
+      setIsAddingNewAddress(true);
+      setEditingAddressId(null); // Clear editing address ID when adding new
+      setIsEditMode(false); // Clear edit mode flag
+      editDataLoadedRef.current = false; // Reset edit data loaded flag
+      setAddressData({
+        addressLabel: '',
+        addressLine: '',
+        city: '',
+        taluka: '',
+        district: '',
+        state: '',
+        country: '',
+        pincode: '',
+      });
+    }
+  }, [route.params?.addNewAddress]);
 
   // Local state for form data
   const [formData, setFormData] = useState({
@@ -71,8 +134,19 @@ const ProfileEditScreen = ({ navigation, route }) => {
   }, [user, profile]);
 
   useEffect(() => {
-    if (address && !isAddingNewAddress) {
-      setAddressData({
+    console.log('=== PROFILE ADDRESS USEEFFECT ===');
+    console.log('address:', address);
+    console.log('isAddingNewAddress:', isAddingNewAddress);
+    console.log('editingAddressId:', editingAddressId);
+    console.log('isEditMode:', isEditMode);
+    console.log('editDataLoadedRef.current:', editDataLoadedRef.current);
+    console.log('Should load profile address?', address && !isAddingNewAddress && !editingAddressId && !isEditMode && !editDataLoadedRef.current);
+    
+    // Only load profile address data if we're not editing a specific address and not in edit mode and edit data hasn't been loaded
+    if (address && !isAddingNewAddress && !editingAddressId && !isEditMode && !editDataLoadedRef.current) {
+      console.log('=== LOADING PROFILE ADDRESS DATA ===');
+      console.log('Profile address:', address);
+      const newAddressData = {
         addressLabel: address.address_label || '',
         addressLine: address.address_line || '',
         city: address.city || '',
@@ -81,12 +155,48 @@ const ProfileEditScreen = ({ navigation, route }) => {
         state: address.state || '',
         country: address.country || '',
         pincode: address.pincode || '',
-      });
+      };
+      console.log('Setting profile addressData to:', newAddressData);
+      setAddressData(newAddressData);
+    } else {
+      console.log('BLOCKING profile address loading - edit data loaded or other conditions');
+      console.log('Reasons: isAddingNewAddress=', isAddingNewAddress, 'editingAddressId=', editingAddressId, 'isEditMode=', isEditMode, 'editDataLoaded=', editDataLoadedRef.current);
     }
-  }, [address, isAddingNewAddress]);
+  }, [address, isAddingNewAddress, editingAddressId, isEditMode]);
+
+  // Handle update address error
+  useEffect(() => {
+    if (updateAddressError) {
+      setErrorMessage(updateAddressError);
+      setShowErrorModal(true);
+    }
+  }, [updateAddressError]);
+
+  // Debug editing address ID changes
+  useEffect(() => {
+    console.log('editingAddressId changed to:', editingAddressId);
+  }, [editingAddressId]);
+
+  // Debug addressData changes
+  useEffect(() => {
+    console.log('=== ADDRESS DATA CHANGED ===');
+    console.log('New addressData:', addressData);
+    console.log('Current editingAddressId:', editingAddressId);
+    console.log('Current isAddingNewAddress:', isAddingNewAddress);
+    console.log('Current isEditMode:', isEditMode);
+  }, [addressData]);
+
+  // Debug edit mode changes
+  useEffect(() => {
+    console.log('isEditMode changed to:', isEditMode);
+  }, [isEditMode]);
 
   // Fetch profile data when component mounts
   useEffect(() => {
+    console.log('=== COMPONENT MOUNTED ===');
+    console.log('Initial route.params:', route.params);
+    console.log('Initial editingAddressId:', editingAddressId);
+    console.log('Initial addressData:', addressData);
     dispatch(fetchProfile());
   }, [dispatch]);
 
@@ -134,41 +244,63 @@ const ProfileEditScreen = ({ navigation, route }) => {
 
   const handleSaveAddress = useCallback(async () => {
     try {
-      // Map the address data to match the API specification for profile update
-      const updateData = {
-        // Profile fields - keep existing values
-        name: formData.name,
-        phone: formData.phone,
-        bio: formData.bio,
+      // If editing an existing address, use the addresses API
+      if (editingAddressId) {
+        const updateData = {
+          address_label: addressData.addressLabel,
+          address_line: addressData.addressLine,
+          city: addressData.city,
+          taluka: addressData.taluka,
+          district: addressData.district,
+          state: addressData.state,
+          country: addressData.country,
+          pincode: addressData.pincode,
+        };
         
-        // Address fields - map to the correct API field names
-        address_label: addressData.addressLabel,
-        address_line: addressData.addressLine,
-        city: addressData.city,
-        taluka: addressData.taluka,
-        district: addressData.district,
-        state: addressData.state,
-        country: addressData.country,
-        pincode: addressData.pincode,
-      };
-      
-      console.log('Sending address update data through profile API:', updateData);
-      
-      await dispatch(updateProfile(updateData)).unwrap();
-      
-      // Refresh profile data after successful update
-      dispatch(fetchProfile());
-      
-      // Show success modal
-      setSuccessMessage('Address updated successfully!');
-      setShowSuccessModal(true);
+        console.log('Updating address via addresses API:', updateData);
+        
+        await dispatch(updateAddress({ addressId: editingAddressId, addressData: updateData })).unwrap();
+        
+        // Show success modal
+        setSuccessMessage('Address updated successfully!');
+        setShowSuccessModal(true);
+      } else {
+        // If updating profile address, use the profile API
+        const updateData = {
+          // Profile fields - keep existing values
+          name: formData.name,
+          phone: formData.phone,
+          bio: formData.bio,
+          
+          // Address fields - map to the correct API field names
+          address_label: addressData.addressLabel,
+          address_line: addressData.addressLine,
+          city: addressData.city,
+          taluka: addressData.taluka,
+          district: addressData.district,
+          state: addressData.state,
+          country: addressData.country,
+          pincode: addressData.pincode,
+        };
+        
+        console.log('Sending address update data through profile API:', updateData);
+        
+        await dispatch(updateProfile(updateData)).unwrap();
+        
+        // Refresh profile data after successful update
+        dispatch(fetchProfile());
+        
+        // Show success modal
+        setSuccessMessage('Address updated successfully!');
+        setShowSuccessModal(true);
+      }
     } catch (error) {
       console.error('Address update error:', error);
       // Show error modal
       setErrorMessage(error.message || 'Failed to update address');
       setShowErrorModal(true);
     }
-  }, [formData, addressData, dispatch]);
+  }, [formData, addressData, dispatch, editingAddressId]);
 
   const handleAddAddress = useCallback(async () => {
     // Only allow adding addresses for customers
@@ -219,11 +351,14 @@ const ProfileEditScreen = ({ navigation, route }) => {
     if (route.params?.fromCheckout) {
       // Navigate back to CheckoutScreen
       navigation.navigate('Checkout');
+    } else if (route.params?.editAddress || route.params?.addNewAddress) {
+      // If editing or adding address from AllAddressesScreen, go back to AllAddressesScreen
+      navigation.navigate('AllAddresses');
     } else if (!isAddingNewAddress) {
       // Default behavior - go back
       navigation.goBack();
     }
-  }, [navigation, isAddingNewAddress, route.params?.fromCheckout]);
+  }, [navigation, isAddingNewAddress, route.params?.fromCheckout, route.params?.editAddress, route.params?.addNewAddress]);
 
   const handleConfirmProfileSave = useCallback(() => {
     setShowConfirmProfileModal(false);
@@ -249,6 +384,9 @@ const ProfileEditScreen = ({ navigation, route }) => {
     }
     
     setIsAddingNewAddress(true);
+    setEditingAddressId(null); // Clear editing address ID when adding new
+    setIsEditMode(false); // Clear edit mode flag
+    editDataLoadedRef.current = false; // Reset edit data loaded flag
     setAddressData({
       addressLabel: '',
       addressLine: '',
@@ -263,6 +401,8 @@ const ProfileEditScreen = ({ navigation, route }) => {
 
   const handleCancelAddAddress = useCallback(() => {
     setIsAddingNewAddress(false);
+    setIsEditMode(false); // Clear edit mode flag
+    editDataLoadedRef.current = false; // Reset edit data loaded flag
     if (address) {
       setAddressData({
         addressLabel: address.address_label || '',
@@ -412,12 +552,28 @@ const ProfileEditScreen = ({ navigation, route }) => {
     setAddressData(prev => ({...prev, pincode: text}));
   }, []);
 
-  const AddressTab = useMemo(() => (
-    <View style={styles.tabContent}>
-      <View style={styles.addressHeader}>
-        <Text style={styles.sectionTitle}>
-          {isAddingNewAddress ? 'Add New Address' : 'Delivery Address'}
-        </Text>
+  const AddressTab = useMemo(() => {
+    console.log('AddressTab rendering with addressData:', addressData);
+    console.log('editingAddressId:', editingAddressId);
+    console.log('isAddingNewAddress:', isAddingNewAddress);
+    
+    return (
+      <View style={styles.tabContent}>
+        <View style={styles.addressHeader}>
+          <View style={styles.addressTitleContainer}>
+            <Text style={styles.sectionTitle}>
+              {isAddingNewAddress ? 'Add New Address' : editingAddressId ? 'Edit Address' : 'Delivery Address'}
+            </Text>
+          {!isAddingNewAddress && isCustomer && (
+            <TouchableOpacity 
+              style={styles.seeAllButton}
+              onPress={() => navigation.navigate('AllAddresses')}
+            >
+              <Text style={styles.seeAllButtonText}>See all addresses</Text>
+              <Icon name="chevron-right" size={12} color="#007bff" />
+            </TouchableOpacity>
+          )}
+        </View>
         {isAddingNewAddress && (
           <TouchableOpacity 
             style={styles.cancelButton}
@@ -550,17 +706,17 @@ const ProfileEditScreen = ({ navigation, route }) => {
         </TouchableOpacity>
       ) : (
         <View style={styles.buttonContainer}>
-          <TouchableOpacity 
-            style={[styles.saveButton, updateLoading && styles.saveButtonDisabled]} 
-            onPress={() => setShowConfirmAddressModal(true)}
-            disabled={updateLoading}
-          >
-            {updateLoading ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <Text style={styles.saveButtonText}>Save Address</Text>
-            )}
-          </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.saveButton, (updateLoading || updateAddressLoading) && styles.saveButtonDisabled]} 
+          onPress={() => setShowConfirmAddressModal(true)}
+          disabled={updateLoading || updateAddressLoading}
+        >
+          {(updateLoading || updateAddressLoading) ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <Text style={styles.saveButtonText}>Save Address</Text>
+          )}
+        </TouchableOpacity>
 
           {isCustomer && (
             <TouchableOpacity 
@@ -574,7 +730,8 @@ const ProfileEditScreen = ({ navigation, route }) => {
         </View>
       )}
     </View>
-  ), [
+    );
+  }, [
     isAddingNewAddress, 
     handleCancelAddAddress, 
     addressData, 
@@ -589,7 +746,8 @@ const ProfileEditScreen = ({ navigation, route }) => {
     addAddressLoading, 
     updateLoading, 
     isCustomer, 
-    handleAddNewAddress
+    handleAddNewAddress,
+    editingAddressId
   ]);
 
   return (
@@ -839,6 +997,28 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: p(20),
+  },
+  addressTitleContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  seeAllButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: p(4),
+    paddingHorizontal: p(8),
+    borderRadius: p(6),
+    backgroundColor: '#f8f9fa',
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+  },
+  seeAllButtonText: {
+    color: '#007bff',
+    fontSize: fontSizes.xs,
+    fontFamily: 'Poppins-SemiBold',
+    marginRight: p(4),
   },
   cancelButton: {
     flexDirection: 'row',

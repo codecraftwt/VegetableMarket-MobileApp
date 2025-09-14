@@ -144,12 +144,20 @@ const CategoryProductsScreen = ({ navigation, route }) => {
 
         {/* Products Grid */}
         <View style={styles.productsSection}>
-          <Text style={styles.sectionTitle}>
-            {searchQuery.trim() 
-              ? `Search Results (${filteredProducts.length})` 
-              : (category.id === 'all' ? 'All Products' : `${category.name} Products`)
-            }
-          </Text>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>
+              {searchQuery.trim() 
+                ? `Search Results (${filteredProducts.length})` 
+                : (category.id === 'all' ? 'All Products' : `${category.name} Products`)
+              }
+            </Text>
+            <TouchableOpacity 
+              style={styles.filterButton}
+              onPress={() => navigation.navigate('Filter')}
+            >
+              <Icon name="filter" size={20} color="#019a34" />
+            </TouchableOpacity>
+          </View>
           
           {loading ? (
             <View style={styles.skeletonContainer}>
@@ -276,11 +284,23 @@ const styles = StyleSheet.create({
   productsSection: {
     marginBottom: p(16),
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: p(12),
+  },
   sectionTitle: {
     fontSize: fontSizes.base,
     color: '#1a1a1a',
-    marginBottom: p(12),
     fontFamily: 'Poppins-Bold',
+    flex: 1,
+  },
+  filterButton: {
+    padding: p(8),
+    backgroundColor: '#f0f8f0',
+    borderRadius: p(8),
+    marginLeft: p(12),
   },
   productsGrid: {
     flexDirection: 'row',

@@ -216,13 +216,21 @@ const BucketScreen = ({ navigation, route }) => {
 
     return (
       <View style={styles.vegetablesContainer}>
-        <Text style={styles.sectionTitle}>
-          {searchQuery 
-            ? `Search Results for "${searchQuery}" (${filteredVegetables.length})`
-            : selectedCategory === 'all'
-              ? 'All Products'
-              : `${categories.find(c => c.id === selectedCategory)?.name} Products`}
-        </Text>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>
+            {searchQuery 
+              ? `Search Results for "${searchQuery}" (${filteredVegetables.length})`
+              : selectedCategory === 'all'
+                ? 'All Products'
+                : `${categories.find(c => c.id === selectedCategory)?.name} Products`}
+          </Text>
+          <TouchableOpacity 
+            style={styles.filterButton}
+            onPress={() => navigation.navigate('Filter')}
+          >
+            <Icon name="filter" size={20} color="#019a34" />
+          </TouchableOpacity>
+        </View>
         {filteredVegetables.length > 0 ? (
           <ScrollView 
             style={styles.productsScrollView}
@@ -346,11 +354,23 @@ const styles = StyleSheet.create({
     paddingLeft: p(5),
     // paddingRight: p(5),
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: p(12),
+  },
   sectionTitle: {
     fontSize: fontSizes.base,
     color: '#1a1a1a',
-    marginBottom: p(12),
     fontFamily: 'Poppins-Bold',
+    flex: 1,
+  },
+  filterButton: {
+    padding: p(8),
+    backgroundColor: '#f0f8f0',
+    borderRadius: p(8),
+    marginLeft: p(12),
   },
   // Skeleton Loader Styles
   skeletonCategoryWrapper: {

@@ -3,6 +3,9 @@ import { persistStore, persistReducer } from 'redux-persist';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import authReducer from './slices/authSlice';
 import profileReducer from './slices/profileSlice';
+import addressesReducer from './slices/addressesSlice';
+import wishlistReducer from './slices/wishlistSlice';
+import filterReducer from './slices/filterSlice';
 import vegetablesReducer from './slices/vegetablesSlice';
 import cartReducer from './slices/cartSlice';
 import ordersReducer from './slices/ordersSlice';
@@ -19,6 +22,9 @@ import deliveryHistoryReducer from './slices/deliveryHistorySlice';
 const rootReducer = combineReducers({
   auth: authReducer,
   profile: profileReducer,
+  addresses: addressesReducer,
+  wishlist: wishlistReducer,
+  filter: filterReducer,
   vegetables: vegetablesReducer,
   cart: cartReducer,
   orders: ordersReducer,

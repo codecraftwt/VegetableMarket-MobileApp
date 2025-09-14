@@ -60,8 +60,8 @@ const ProfileScreen = ({ navigation }) => {
   };
 
   const handleFavoritesPress = () => {
-    // Navigate to App (BottomTabNavigator) and then to CartTab
-    navigation.navigate('App', { screen: 'CartTab' });
+    // Navigate to Wishlist screen
+    navigation.navigate('Wishlist');
   };
 
   const handleHelpCenterPress = () => {

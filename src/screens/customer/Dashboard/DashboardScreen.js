@@ -23,6 +23,7 @@ import {
   fetchVegetables,
   fetchVegetableCategories,
 } from '../../../redux/slices/vegetablesSlice';
+import { fetchPopularItems } from '../../../redux/slices/wishlistSlice';
 import { addToCart } from '../../../redux/slices/cartSlice';
 import SuccessModal from '../../../components/SuccessModal';
 import ErrorModal from '../../../components/ErrorModal';
@@ -170,6 +171,9 @@ const DashboardScreen = ({ navigation }) => {
   const { vegetables, categories, loading, categoriesLoading } = useSelector(
     state => state.vegetables,
   );
+  const { popularItems, popularLoading, popularError } = useSelector(
+    state => state.wishlist,
+  );
   const { addError } = useSelector(state => state.cart);
 
   // Modal states
@@ -185,6 +189,7 @@ const DashboardScreen = ({ navigation }) => {
   useEffect(() => {
     dispatch(fetchVegetables());
     dispatch(fetchVegetableCategories());
+    dispatch(fetchPopularItems());
   }, [dispatch]);
 
   // Monitor cart errors and show error modal automatically
@@ -204,8 +209,11 @@ const DashboardScreen = ({ navigation }) => {
     }, []),
   );
 
-  // Get popular items (first 4 items from all vegetables)
-  const popularItems = vegetables.slice(0, 4);
+  // Transform popular items data to match ProductCard format
+  const transformedPopularItems = popularItems.map(item => ({
+    ...item.vegetable,
+    // Add any additional fields if needed
+  }));
 
   // Handle search functionality
   const handleSearch = useCallback(() => {
@@ -311,8 +319,8 @@ const DashboardScreen = ({ navigation }) => {
           onCategoryPress={handleCategoryPress}
         />
         <PopularItems
-          loading={loading}
-          popularItems={popularItems}
+          loading={popularLoading}
+          popularItems={transformedPopularItems}
           onProductPress={handleProductPress}
           onAddToCart={handleAddToCart}
           navigation={navigation}
