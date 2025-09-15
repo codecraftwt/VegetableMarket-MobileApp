@@ -20,6 +20,7 @@ import ProductCard from '../../../components/ProductCard';
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchVegetables } from '../../../redux/slices/vegetablesSlice';
 import { addToCart, addItemToCart } from '../../../redux/slices/cartSlice';
+import { toggleWishlistItem, fetchWishlist } from '../../../redux/slices/wishlistSlice';
 import SuccessModal from '../../../components/SuccessModal';
 import ErrorModal from '../../../components/ErrorModal';
 
@@ -27,11 +28,14 @@ const ProductDetailScreen = ({ navigation, route }) => {
   const [quantity, setQuantity] = useState(1);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
+  const [showWishlistSuccessModal, setShowWishlistSuccessModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  const [wishlistMessage, setWishlistMessage] = useState('');
   const dispatch = useDispatch();
   const { vegetables, loading: vegetablesLoading } = useSelector(state => state.vegetables);
   const { addLoading } = useSelector(state => state.cart);
+  const { items: wishlistItems, loading: wishlistLoading } = useSelector(state => state.wishlist);
   
   // Get product data from navigation params or use default
   const product = route.params?.product || {
@@ -87,9 +91,10 @@ const ProductDetailScreen = ({ navigation, route }) => {
     };
   }, [product, vegetables]);
 
-  // Fetch vegetables when component mounts
+  // Fetch vegetables and wishlist when component mounts
   useEffect(() => {
     dispatch(fetchVegetables());
+    dispatch(fetchWishlist());
   }, [dispatch]);
 
   // Force re-render when vegetables are loaded to update completeProduct
@@ -144,8 +149,33 @@ const ProductDetailScreen = ({ navigation, route }) => {
     }
   };
 
+  // Check if product is in wishlist
+  const isInWishlist = wishlistItems?.some(item => item.id === completeProduct.id || item.vegetable_id === completeProduct.id) || false;
+
+  const handleWishlistToggle = async () => {
+    try {
+      // Use toggleWishlistItem which handles both add and remove
+      const result = await dispatch(toggleWishlistItem(completeProduct.id)).unwrap();
+      
+      if (result.wishlisted) {
+        setWishlistMessage(`${completeProduct.name} added to wishlist!`);
+      } else {
+        setWishlistMessage(`${completeProduct.name} removed from wishlist!`);
+      }
+      setShowWishlistSuccessModal(true);
+    } catch (error) {
+      console.error('Wishlist toggle error:', error);
+      setErrorMessage(error.message || 'Failed to update wishlist. Please try again.');
+      setShowErrorModal(true);
+    }
+  };
+
   const handleSuccessModalClose = () => {
     setShowSuccessModal(false);
+  };
+
+  const handleWishlistSuccessModalClose = () => {
+    setShowWishlistSuccessModal(false);
   };
 
   const handleErrorModalClose = () => {
@@ -156,6 +186,12 @@ const ProductDetailScreen = ({ navigation, route }) => {
     setShowSuccessModal(false);
     // Navigate to App (BottomTabNavigator) and then to CartTab
     navigation.navigate('App', { screen: 'CartTab' });
+  };
+
+  const handleViewWishlist = () => {
+    setShowWishlistSuccessModal(false);
+    // Navigate to Wishlist screen
+    navigation.navigate('Wishlist');
   };
 
   const StarRating = ({ rating }) => {
@@ -207,9 +243,35 @@ const ProductDetailScreen = ({ navigation, route }) => {
       navigation.navigate('ProductDetail', { product: item });
     };
 
-    const handleRelatedAddToCart = (item) => {
-      console.log('Added related product to cart:', item.name);
-      // Add to cart logic here
+    const handleRelatedAddToCart = async (item) => {
+      try {
+        console.log('Adding related product to cart:', item.name);
+        
+        // Update cart state immediately for badge
+        dispatch(addItemToCart({
+          vegetable_id: item.id,
+          quantity: 1,
+          vegetable: item
+        }));
+
+        // Show success modal immediately
+        setSuccessMessage(`${item.name} added to cart successfully!`);
+        setShowSuccessModal(true);
+
+        // Make API call in background
+        dispatch(addToCart({ 
+          vegetable_id: item.id, 
+          quantity: 1 
+        })).unwrap().then(() => {
+          console.log('Related product add to cart API successful');
+        }).catch((error) => {
+          console.error('Related product add to cart API error:', error);
+        });
+      } catch (error) {
+        console.error('Related product add to cart error:', error);
+        setErrorMessage(error.message || 'Failed to add item to cart. Please try again.');
+        setShowErrorModal(true);
+      }
     };
 
     // Always show the related products section, even if empty
@@ -228,6 +290,7 @@ const ProductDetailScreen = ({ navigation, route }) => {
                 item={item}
                 onPress={() => handleRelatedProductPress(item)}
                 onAddToCart={handleRelatedAddToCart}
+                showWishlist={true}
                 size="medium"
                 navigation={navigation}
               />
@@ -375,6 +438,18 @@ const ProductDetailScreen = ({ navigation, route }) => {
             {/* Product Image Section */}
             <View style={styles.imageSection}>
               <Image source={getProductImage()} style={styles.productImage} />
+              {/* Wishlist Heart Icon */}
+              <TouchableOpacity 
+                style={styles.wishlistButton}
+                onPress={handleWishlistToggle}
+                disabled={wishlistLoading}
+              >
+                <Icon 
+                  name={isInWishlist ? "heart" : "heart-o"} 
+                  size={18} 
+                  color={isInWishlist ? "#dc3545" : "#fff"} 
+                />
+              </TouchableOpacity>
             </View>
             
             {/* Product Information Card */}
@@ -494,6 +569,19 @@ const ProductDetailScreen = ({ navigation, route }) => {
         showRetry={true}
         onRetry={handleAddToCart}
       />
+
+      {/* Wishlist Success Modal */}
+      <SuccessModal
+        visible={showWishlistSuccessModal}
+        onClose={handleWishlistSuccessModalClose}
+        title="Wishlist Updated!"
+        message={wishlistMessage}
+        buttonText="OK"
+        onButtonPress={handleWishlistSuccessModalClose}
+        showSecondaryButton={true}
+        secondaryButtonText="View Wishlist"
+        onSecondaryButtonPress={handleViewWishlist}
+      />
     </SafeAreaView>
   );
 };
@@ -512,12 +600,29 @@ const styles = StyleSheet.create({
     backgroundColor: '#f0f8f0',
     padding: p(16),
     marginBottom: p(0),
+    position: 'relative',
   },
   productImage: {
     width: '100%',
     height: p(250),
     borderRadius: p(8),
     resizeMode: 'cover',
+  },
+  wishlistButton: {
+    position: 'absolute',
+    top: p(22),
+    right: p(25),
+    width: p(32),
+    height: p(32),
+    borderRadius: p(16),
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 3,
   },
   
   // Product Information Card

@@ -20,10 +20,18 @@ const MyOrdersScreen = ({ navigation }) => {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [cancellingOrders, setCancellingOrders] = useState(new Set()); // Track which orders are being cancelled
 
   useEffect(() => {
     dispatch(fetchMyOrders());
   }, [dispatch]);
+
+  // Cleanup cancelling orders when component unmounts
+  useEffect(() => {
+    return () => {
+      setCancellingOrders(new Set());
+    };
+  }, []);
 
   useEffect(() => {
     if (error) {
@@ -65,15 +73,36 @@ const MyOrdersScreen = ({ navigation }) => {
   };
 
   const handleConfirmCancelOrder = async () => {
+    if (!selectedOrder) return;
+    
+    const orderId = selectedOrder.order_id;
+    
     try {
-      await dispatch(cancelOrder(selectedOrder.order_id)).unwrap();
+      // Add this order to cancelling set
+      setCancellingOrders(prev => new Set(prev).add(orderId));
+      
+      await dispatch(cancelOrder(orderId)).unwrap();
       setSuccessMessage('Order cancelled successfully!');
       setShowSuccessModal(true);
       setShowCancelModal(false);
       setSelectedOrder(null);
+      
+      // Remove from cancelling set
+      setCancellingOrders(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(orderId);
+        return newSet;
+      });
+      
       // Refresh orders to get updated status
       dispatch(fetchMyOrders());
     } catch (error) {
+      // Remove from cancelling set on error
+      setCancellingOrders(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(orderId);
+        return newSet;
+      });
       // Error is already handled by the slice
     }
   };
@@ -131,6 +160,8 @@ const MyOrdersScreen = ({ navigation }) => {
   };
 
   const OrderCard = ({ order }) => {
+    const isThisOrderCancelling = cancellingOrders.has(order.order_id);
+    
     return (
       <TouchableOpacity 
         style={styles.orderCard}
@@ -173,14 +204,18 @@ const MyOrdersScreen = ({ navigation }) => {
         {order.delivery_status !== 'delivered' && !order.is_canceled && (
           <View style={styles.cancelSection}>
             <TouchableOpacity 
-              style={[styles.cancelButton, cancelOrderLoading && styles.buttonDisabled]}
+              style={[styles.cancelButton, isThisOrderCancelling && styles.buttonDisabled]}
               onPress={() => handleCancelOrder(order)}
               activeOpacity={0.8}
-              disabled={cancelOrderLoading}
+              disabled={isThisOrderCancelling}
             >
-              <Icon name="times-circle" size={14} color="#dc3545" />
+              {isThisOrderCancelling ? (
+                <ActivityIndicator size="small" color="#dc3545" />
+              ) : (
+                <Icon name="times-circle" size={14} color="#dc3545" />
+              )}
               <Text style={styles.cancelButtonText}>
-                {cancelOrderLoading ? 'Cancelling...' : 'Cancel Order'}
+                {isThisOrderCancelling ? 'Cancelling...' : 'Cancel Order'}
               </Text>
             </TouchableOpacity>
           </View>
@@ -349,7 +384,7 @@ const MyOrdersScreen = ({ navigation }) => {
         confirmText="Yes"
         cancelText="No"
         type="warning"
-        loading={cancelOrderLoading}
+        loading={selectedOrder ? cancellingOrders.has(selectedOrder.order_id) : false}
       />
 
       {/* Success Modal */}

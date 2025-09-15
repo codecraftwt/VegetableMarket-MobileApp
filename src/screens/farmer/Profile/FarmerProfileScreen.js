@@ -409,6 +409,17 @@ const FarmerProfileScreen = ({ navigation }) => {
         <Icon name="chevron-right" size={16} color="#999" />
       </TouchableOpacity>
 
+      <TouchableOpacity style={styles.actionItem} onPress={() => navigation.navigate('WithdrawalRequest')}>
+        <View style={styles.actionIcon}>
+          <Icon name="money" size={20} color="#019a34" />
+        </View>
+        <View style={styles.actionContent}>
+          <Text style={styles.actionTitle}>Request Withdrawal</Text>
+          <Text style={styles.actionSubtitle}>Withdraw your earnings</Text>
+        </View>
+        <Icon name="chevron-right" size={16} color="#999" />
+      </TouchableOpacity>
+
       <TouchableOpacity
         style={styles.actionItem}
         onPress={handleHelpCenterPress}

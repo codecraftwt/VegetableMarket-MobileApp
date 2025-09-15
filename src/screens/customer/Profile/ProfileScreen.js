@@ -59,6 +59,10 @@ const ProfileScreen = ({ navigation }) => {
     navigation.navigate('MyOrders');
   };
 
+  const handleMyRefundsPress = () => {
+    navigation.navigate('MyRefunds');
+  };
+
   const handleFavoritesPress = () => {
     // Navigate to Wishlist screen
     navigation.navigate('Wishlist');
@@ -516,6 +520,17 @@ const ProfileScreen = ({ navigation }) => {
         <View style={styles.actionContent}>
           <Text style={styles.actionTitle}>My Orders</Text>
           <Text style={styles.actionSubtitle}>View your order history</Text>
+        </View>
+        <Icon name="chevron-right" size={16} color="#999" />
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.actionItem} onPress={handleMyRefundsPress}>
+        <View style={styles.actionIcon}>
+          <Icon name="money" size={20} color="#019a34" />
+        </View>
+        <View style={styles.actionContent}>
+          <Text style={styles.actionTitle}>My Refunds</Text>
+          <Text style={styles.actionSubtitle}>Track your refund requests</Text>
         </View>
         <Icon name="chevron-right" size={16} color="#999" />
       </TouchableOpacity>

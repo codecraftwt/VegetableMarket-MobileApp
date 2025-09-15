@@ -182,14 +182,14 @@ const OrderDetailsScreen = ({ navigation, route }) => {
         <Icon name="user" size={20} color="#019a34" />
         <View style={styles.infoContent}>
           <Text style={styles.infoLabel}>Customer Name</Text>
-          <Text style={styles.infoValue}>{selectedOrder.customer.name}</Text>
+          <Text style={styles.infoValue}>{selectedOrder.customer?.name || 'Customer name not available'}</Text>
         </View>
       </View>
       <View style={styles.infoRow}>
         <Icon name="envelope" size={20} color="#019a34" />
         <View style={styles.infoContent}>
           <Text style={styles.infoLabel}>Email</Text>
-          <Text style={styles.infoValue}>{selectedOrder.customer.email}</Text>
+          <Text style={styles.infoValue}>{selectedOrder.customer?.email || 'Email not available'}</Text>
         </View>
       </View>
     </View>
@@ -202,10 +202,16 @@ const OrderDetailsScreen = ({ navigation, route }) => {
         <Icon name="map-marker" size={20} color="#019a34" />
         <View style={styles.infoContent}>
           <Text style={styles.infoLabel}>Address</Text>
-          <Text style={styles.infoValue}>{selectedOrder.delivery_address.address_line}</Text>
-          <Text style={styles.infoValue}>{selectedOrder.delivery_address.city}, {selectedOrder.delivery_address.taluka}</Text>
-          <Text style={styles.infoValue}>{selectedOrder.delivery_address.district}, {selectedOrder.delivery_address.state}</Text>
-          <Text style={styles.infoValue}>{selectedOrder.delivery_address.country} - {selectedOrder.delivery_address.pincode}</Text>
+          {selectedOrder.delivery_address ? (
+            <>
+              <Text style={styles.infoValue}>{selectedOrder.delivery_address.address_line || 'Address not available'}</Text>
+              <Text style={styles.infoValue}>{selectedOrder.delivery_address.city || 'N/A'}, {selectedOrder.delivery_address.taluka || 'N/A'}</Text>
+              <Text style={styles.infoValue}>{selectedOrder.delivery_address.district || 'N/A'}, {selectedOrder.delivery_address.state || 'N/A'}</Text>
+              <Text style={styles.infoValue}>{selectedOrder.delivery_address.country || 'N/A'} - {selectedOrder.delivery_address.pincode || 'N/A'}</Text>
+            </>
+          ) : (
+            <Text style={styles.infoValue}>Delivery address not available</Text>
+          )}
         </View>
       </View>
     </View>
@@ -238,43 +244,47 @@ const OrderDetailsScreen = ({ navigation, route }) => {
   const renderOrderItems = () => (
     <View style={styles.infoCard}>
       <Text style={styles.sectionTitle}>Order Items</Text>
-      {selectedOrder.items.map((item, index) => (
-        <View key={index} style={styles.itemCard}>
-          <View style={styles.itemHeader}>
-            <Text style={styles.itemName}>{item.vegetable_name}</Text>
-            <TouchableOpacity 
-              style={[styles.itemStatusBadge, { backgroundColor: getStatusColor(item.status) }]}
-              onPress={() => handleItemStatusPress(item)}
-              disabled={item.status !== 'pending'}
-            >
-              <Text style={styles.itemStatusText}>{item.status}</Text>
-              {item.status === 'pending' && (
-                <Icon name="chevron-down" size={10} color="#fff" style={styles.statusIcon} />
-              )}
-            </TouchableOpacity>
-          </View>
-          <View style={styles.itemDetails}>
-            <View style={styles.itemRow}>
-              <Text style={styles.itemLabel}>Quantity:</Text>
-              <Text style={styles.itemValue}>{item.quantity} {item.unit_type}</Text>
+      {selectedOrder.items && selectedOrder.items.length > 0 ? (
+        selectedOrder.items.map((item, index) => (
+          <View key={index} style={styles.itemCard}>
+            <View style={styles.itemHeader}>
+              <Text style={styles.itemName}>{item.vegetable_name || 'Unknown Item'}</Text>
+              <TouchableOpacity 
+                style={[styles.itemStatusBadge, { backgroundColor: getStatusColor(item.status) }]}
+                onPress={() => handleItemStatusPress(item)}
+                disabled={item.status !== 'pending'}
+              >
+                <Text style={styles.itemStatusText}>{item.status}</Text>
+                {item.status === 'pending' && (
+                  <Icon name="chevron-down" size={10} color="#fff" style={styles.statusIcon} />
+                )}
+              </TouchableOpacity>
             </View>
-            <View style={styles.itemRow}>
-              <Text style={styles.itemLabel}>Price per {item.unit_type}:</Text>
-              <Text style={styles.itemValue}>₹{item.price_per_kg}</Text>
-            </View>
-            <View style={styles.itemRow}>
-              <Text style={styles.itemLabel}>Subtotal:</Text>
-              <Text style={[styles.itemValue, styles.subtotalValue]}>₹{item.subtotal}</Text>
-            </View>
-            {item.rejection_reason && (
-              <View style={styles.rejectionReason}>
-                <Text style={styles.rejectionLabel}>Rejection Reason:</Text>
-                <Text style={styles.rejectionText}>{item.rejection_reason}</Text>
+            <View style={styles.itemDetails}>
+              <View style={styles.itemRow}>
+                <Text style={styles.itemLabel}>Quantity:</Text>
+                <Text style={styles.itemValue}>{item.quantity || 'N/A'} {item.unit_type || ''}</Text>
               </View>
-            )}
+              <View style={styles.itemRow}>
+                <Text style={styles.itemLabel}>Price per {item.unit_type || 'unit'}:</Text>
+                <Text style={styles.itemValue}>₹{item.price_per_kg || '0'}</Text>
+              </View>
+              <View style={styles.itemRow}>
+                <Text style={styles.itemLabel}>Subtotal:</Text>
+                <Text style={[styles.itemValue, styles.subtotalValue]}>₹{item.subtotal || '0'}</Text>
+              </View>
+              {item.rejection_reason && (
+                <View style={styles.rejectionReason}>
+                  <Text style={styles.rejectionLabel}>Rejection Reason:</Text>
+                  <Text style={styles.rejectionText}>{item.rejection_reason}</Text>
+                </View>
+              )}
+            </View>
           </View>
-        </View>
-      ))}
+        ))
+      ) : (
+        <Text style={styles.infoValue}>No items found for this order</Text>
+      )}
     </View>
   );
 

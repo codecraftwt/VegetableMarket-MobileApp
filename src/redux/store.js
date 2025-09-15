@@ -17,6 +17,7 @@ import deliveryDashboardReducer from './slices/deliveryDashboardSlice';
 import deliveryReducer from './slices/deliverySlice';
 import todaysTaskReducer from './slices/todaysTaskSlice';
 import deliveryHistoryReducer from './slices/deliveryHistorySlice';
+import walletReducer from './slices/walletSlice';
 
 // Create root reducer
 const rootReducer = combineReducers({
@@ -36,6 +37,7 @@ const rootReducer = combineReducers({
   delivery: deliveryReducer,
   todaysTask: todaysTaskReducer,
   deliveryHistory: deliveryHistoryReducer,
+  wallet: walletReducer,
 });
 
 // Configure store

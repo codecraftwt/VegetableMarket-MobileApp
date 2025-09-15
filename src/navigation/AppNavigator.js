@@ -14,6 +14,9 @@ import WishlistScreen from '../screens/customer/Wishlist/WishlistScreen';
 import FilterScreen from '../screens/customer/Filter/FilterScreen';
 import ChangePasswordScreen from '../screens/customer/Profile/ChangePasswordScreen';
 import MyOrdersScreen from '../screens/customer/Profile/MyOrdersScreen';
+import MyRefundsScreen from '../screens/customer/Profile/MyRefundsScreen';
+import WithdrawalRequestScreen from '../screens/farmer/WithdrawalRequestScreen';
+import WithdrawalFormScreen from '../screens/farmer/WithdrawalFormScreen';
 import ProductDetailScreen from '../screens/customer/ProductDetail/ProductDetailScreen';
 import CheckoutScreen from '../screens/customer/Checkout/CheckoutScreen';
 import NotificationScreen from '../screens/Notification/NotificationScreen';
@@ -100,6 +103,9 @@ const AppNavigator = () => {
     { name: 'Filter', component: FilterScreen, transition: slideFromRight },
     { name: 'ChangePassword', component: ChangePasswordScreen, transition: slideFromRight },
     { name: 'MyOrders', component: MyOrdersScreen, transition: slideFromRight },
+    { name: 'MyRefunds', component: MyRefundsScreen, transition: slideFromRight },
+        { name: 'WithdrawalRequest', component: WithdrawalRequestScreen, transition: slideFromRight },
+        { name: 'WithdrawalForm', component: WithdrawalFormScreen, transition: slideFromRight },
     { name: 'ProductDetail', component: ProductDetailScreen, transition: slideFromRight },
     { name: 'Checkout', component: CheckoutScreen, transition: slideFromRight },
     { name: 'Notification', component: NotificationScreen, transition: slideFromRight },

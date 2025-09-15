@@ -31,7 +31,7 @@ const HelpCenterScreen = ({ navigation }) => {
   };
 
   const handleCallSupport = () => {
-    const phoneNumber = '+91-9876543210'; // Replace with actual support number
+    const phoneNumber = '+919623448771'; // Updated support number
     const phoneUrl = `tel:${phoneNumber}`;
     
     Linking.canOpenURL(phoneUrl)
@@ -49,7 +49,7 @@ const HelpCenterScreen = ({ navigation }) => {
   };
 
   const handleEmailSupport = () => {
-    const email = 'support@walstarveggiemart.com'; // Replace with actual support email
+    const email = 'vegetablemarket@gmail.com'; // Updated support email
     const subject = 'Support Request - Vegetable Market App';
     const body = 'Hi,\n\nI need help with:\n\n';
     const emailUrl = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
@@ -69,7 +69,7 @@ const HelpCenterScreen = ({ navigation }) => {
   };
 
   const handleWhatsAppSupport = () => {
-    const phoneNumber = '919876543210'; // Replace with actual WhatsApp number
+    const phoneNumber = '919623448771'; // Updated WhatsApp number
     const message = 'Hi, I need help with the Vegetable Market app.';
     const whatsappUrl = `whatsapp://send?phone=${phoneNumber}&text=${encodeURIComponent(message)}`;
     
@@ -167,14 +167,14 @@ const HelpCenterScreen = ({ navigation }) => {
           <ContactMethod
             icon="phone"
             title="Call Support"
-            subtitle="+91-9876543210 (9 AM - 9 PM)"
+            subtitle="+91 9623448771 (9 AM - 9 PM)"
             onPress={handleCallSupport}
             color="#019a34"
           />
           <ContactMethod
             icon="envelope"
             title="Email Support"
-            subtitle="support@walstarveggiemart.com"
+            subtitle="vegetablemarket@gmail.com"
             onPress={handleEmailSupport}
             color="#2196F3"
           />

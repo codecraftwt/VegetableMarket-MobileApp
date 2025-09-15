@@ -52,7 +52,7 @@ const FarmerOrdersScreen = ({ navigation }) => {
       const filtered = orders.filter(order =>
         order.customer_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         order.id.toString().includes(searchQuery) ||
-        order.delivery_address.city.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (order.delivery_address?.city || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
         order.payment_status.toLowerCase().includes(searchQuery.toLowerCase()) ||
         order.delivery_status.toLowerCase().includes(searchQuery.toLowerCase())
       );
@@ -165,7 +165,7 @@ const FarmerOrdersScreen = ({ navigation }) => {
         
         <View style={styles.detailRow}>
           <Icon name="map-marker" size={14} color="#666" />
-          <Text style={styles.detailText}>{order.delivery_address.city}</Text>
+          <Text style={styles.detailText}>{order.delivery_address?.city || 'Address not available'}</Text>
         </View>
       </View>
 

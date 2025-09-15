@@ -83,6 +83,19 @@ export const submitReview = createAsyncThunk(
   }
 );
 
+// Async thunk to fetch refund details
+export const fetchMyRefunds = createAsyncThunk(
+  'orders/fetchMyRefunds',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await api.get('/my-refunds');
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to fetch refunds');
+    }
+  }
+);
+
 const initialState = {
   // New order placement and Razorpay data
   orderData: null,
@@ -96,6 +109,7 @@ const initialState = {
   
   // Existing order management data
   orders: [],
+  refunds: [],
   
   // Loading states
   loading: false, // For fetchMyOrders
@@ -104,6 +118,7 @@ const initialState = {
   acceptPartialLoading: false,
   cancelOrderLoading: false,
   submitReviewLoading: false,
+  refundsLoading: false, // For fetchMyRefunds
   
   // Error states
   error: null,
@@ -111,6 +126,7 @@ const initialState = {
   acceptPartialError: null,
   cancelOrderError: null,
   submitReviewError: null,
+  refundsError: null,
   
   // Success states
   success: false,
@@ -152,6 +168,9 @@ const ordersSlice = createSlice({
     },
     clearSubmitReviewError: (state) => {
       state.submitReviewError = null;
+    },
+    clearRefundsError: (state) => {
+      state.refundsError = null;
     },
     setPaymentVerified: (state, action) => {
       state.paymentVerified = action.payload;
@@ -295,6 +314,22 @@ const ordersSlice = createSlice({
         state.submitReviewLoading = false;
         state.submitReviewError = action.payload || 'Failed to submit review';
       });
+
+    // Fetch Refunds
+    builder
+      .addCase(fetchMyRefunds.pending, (state) => {
+        state.refundsLoading = true;
+        state.refundsError = null;
+      })
+      .addCase(fetchMyRefunds.fulfilled, (state, action) => {
+        state.refundsLoading = false;
+        state.refunds = action.payload.data || [];
+        state.refundsError = null;
+      })
+      .addCase(fetchMyRefunds.rejected, (state, action) => {
+        state.refundsLoading = false;
+        state.refundsError = action.payload || 'Failed to fetch refunds';
+      });
   },
 });
 
@@ -305,6 +340,7 @@ export const {
   clearAcceptPartialError, 
   clearCancelOrderError, 
   clearSubmitReviewError, 
+  clearRefundsError,
   setPaymentVerified 
 } = ordersSlice.actions;
 
@@ -322,6 +358,7 @@ export const selectRazorpayData = (state) => ({
 
 // Existing order management selectors
 export const selectOrders = (state) => state.orders.orders;
+export const selectRefunds = (state) => state.orders.refunds;
 
 // Loading state selectors
 export const selectOrdersLoading = (state) => state.orders.loading;
@@ -330,6 +367,7 @@ export const selectPaymentVerificationLoading = (state) => state.orders.paymentV
 export const selectAcceptPartialLoading = (state) => state.orders.acceptPartialLoading;
 export const selectCancelOrderLoading = (state) => state.orders.cancelOrderLoading;
 export const selectSubmitReviewLoading = (state) => state.orders.submitReviewLoading;
+export const selectRefundsLoading = (state) => state.orders.refundsLoading;
 
 // Error state selectors
 export const selectOrdersError = (state) => state.orders.error;
@@ -337,6 +375,7 @@ export const selectPaymentVerificationError = (state) => state.orders.paymentVer
 export const selectAcceptPartialError = (state) => state.orders.acceptPartialError;
 export const selectCancelOrderError = (state) => state.orders.cancelOrderError;
 export const selectSubmitReviewError = (state) => state.orders.submitReviewError;
+export const selectRefundsError = (state) => state.orders.refundsError;
 
 // Success state selectors
 export const selectOrderSuccess = (state) => state.orders.success;
