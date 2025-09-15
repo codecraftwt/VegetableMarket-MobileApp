@@ -104,6 +104,7 @@ export const removeWishlistItem = createAsyncThunk(
 const initialState = {
   items: [],
   popularItems: [],
+  itemStatus: {}, // Track wishlist status for items across the app
   loading: false,
   error: null,
   popularLoading: false,
@@ -134,6 +135,15 @@ const wishlistSlice = createSlice({
           : item
       );
     },
+    setWishlistItemStatus: (state, action) => {
+      const { vegetableId, isWishlisted } = action.payload;
+      // This is used to track wishlist status for items displayed in other screens
+      // It doesn't modify the items array but creates a separate tracking mechanism
+      if (!state.itemStatus) {
+        state.itemStatus = {};
+      }
+      state.itemStatus[vegetableId] = isWishlisted;
+    },
   },
   extraReducers: (builder) => {
     // Fetch Wishlist
@@ -150,10 +160,9 @@ const wishlistSlice = createSlice({
       .addCase(fetchWishlist.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
-      });
+      })
 
     // Fetch Popular Items
-    builder
       .addCase(fetchPopularItems.pending, (state) => {
         state.popularLoading = true;
         state.popularError = null;
@@ -166,10 +175,9 @@ const wishlistSlice = createSlice({
       .addCase(fetchPopularItems.rejected, (state, action) => {
         state.popularLoading = false;
         state.popularError = action.payload;
-      });
+      })
 
     // Toggle Wishlist Item
-    builder
       .addCase(toggleWishlistItem.pending, (state) => {
         state.toggleLoading = true;
         state.toggleError = null;
@@ -178,10 +186,26 @@ const wishlistSlice = createSlice({
         state.toggleLoading = false;
         const { vegetableId, wishlisted } = action.payload;
         
+        // Update the item status tracking
+        if (!state.itemStatus) {
+          state.itemStatus = {};
+        }
+        state.itemStatus[vegetableId] = wishlisted;
+        
         if (wishlisted) {
-          // Item was added to wishlist - we need to add it to our state
-          // Note: The actual item data would need to be fetched separately
-          // or passed from the component
+          // Item was added to wishlist - add it to our state
+          // Check if item already exists to avoid duplicates
+          const existingItem = state.items.find(item => item.id === vegetableId);
+          if (!existingItem) {
+            // Create a minimal item object for the wishlist
+            // The full item data will be available when the wishlist is fetched
+            state.items.push({
+              id: vegetableId,
+              isWishlisted: true,
+              // Add other minimal required fields
+              name: `Item ${vegetableId}`, // This will be updated when full data is fetched
+            });
+          }
         } else {
           // Item was removed from wishlist - remove it from our state
           state.items = state.items.filter(item => item.id !== vegetableId);
@@ -192,10 +216,9 @@ const wishlistSlice = createSlice({
       .addCase(toggleWishlistItem.rejected, (state, action) => {
         state.toggleLoading = false;
         state.toggleError = action.payload;
-      });
+      })
 
     // Remove Wishlist Item
-    builder
       .addCase(removeWishlistItem.pending, (state) => {
         state.removeLoading = true;
         state.removeError = null;
@@ -213,5 +236,5 @@ const wishlistSlice = createSlice({
   },
 });
 
-export const { clearWishlist, updateWishlistStatus } = wishlistSlice.actions;
+export const { clearWishlist, updateWishlistStatus, setWishlistItemStatus } = wishlistSlice.actions;
 export default wishlistSlice.reducer;

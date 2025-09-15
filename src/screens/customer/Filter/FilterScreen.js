@@ -23,7 +23,9 @@ import {
   resetFilters 
 } from '../../../redux/slices/filterSlice';
 import { fetchVegetableCategories } from '../../../redux/slices/vegetablesSlice';
+import { addToCart, addItemToCart } from '../../../redux/slices/cartSlice';
 import SkeletonLoader from '../../../components/SkeletonLoader';
+import ProductCard from '../../../components/ProductCard';
 
 const FilterScreen = ({ navigation }) => {
   const dispatch = useDispatch();
@@ -49,27 +51,31 @@ const FilterScreen = ({ navigation }) => {
     dispatch(fetchVegetableCategories());
   }, [dispatch]);
 
-  // Apply filters when component mounts or filters change
+  // Apply filters when component mounts or filters change (with debounce for search)
   useEffect(() => {
-    const filters = {
-      search: searchQuery,
-      price_min: priceMin ? parseFloat(priceMin) : undefined,
-      price_max: priceMax ? parseFloat(priceMax) : undefined,
-      category_id: selectedCategory || undefined,
-      location: selectedLocation || undefined,
-      organic: isOrganic ? 1 : undefined,
-      page: 1,
-      per_page: 12,
-    };
+    const timeoutId = setTimeout(() => {
+      const filters = {
+        search: searchQuery,
+        price_min: priceMin ? parseFloat(priceMin) : undefined,
+        price_max: priceMax ? parseFloat(priceMax) : undefined,
+        category_id: selectedCategory || undefined,
+        location: selectedLocation || undefined,
+        organic: isOrganic ? 1 : undefined,
+        page: 1,
+        per_page: 12,
+      };
 
-    // Remove undefined values
-    const cleanFilters = Object.fromEntries(
-      Object.entries(filters).filter(([_, value]) => value !== undefined && value !== '')
-    );
+      // Remove undefined values
+      const cleanFilters = Object.fromEntries(
+        Object.entries(filters).filter(([_, value]) => value !== undefined && value !== '')
+      );
 
-    if (Object.keys(cleanFilters).length > 0) {
-      dispatch(fetchFilteredVegetables(cleanFilters));
-    }
+      if (Object.keys(cleanFilters).length > 0) {
+        dispatch(fetchFilteredVegetables(cleanFilters));
+      }
+    }, searchQuery ? 500 : 0); // Debounce search by 500ms, immediate for other filters
+
+    return () => clearTimeout(timeoutId);
   }, [dispatch, searchQuery, priceMin, priceMax, selectedCategory, selectedLocation, isOrganic]);
 
   const handleBackPress = useCallback(() => {
@@ -114,14 +120,27 @@ const FilterScreen = ({ navigation }) => {
     setSelectedLocation(location === selectedLocation ? '' : location);
   }, [selectedLocation]);
 
+  // Memoized handlers for TextInput to prevent re-renders
+  const handleSearchChange = useCallback((text) => {
+    setSearchQuery(text);
+  }, []);
+
+  const handlePriceMinChange = useCallback((text) => {
+    setPriceMin(text);
+  }, []);
+
+  const handlePriceMaxChange = useCallback((text) => {
+    setPriceMax(text);
+  }, []);
+
   const locations = ['kolhapur', 'mumbai', 'pune', 'delhi', 'bangalore'];
 
-  const FilterSection = ({ title, children }) => (
+  const FilterSection = React.memo(({ title, children }) => (
     <View style={styles.filterSection}>
       <Text style={styles.filterSectionTitle}>{title}</Text>
       {children}
     </View>
-  );
+  ));
 
   const PriceRangeInput = () => (
     <View style={styles.priceRangeContainer}>
@@ -131,7 +150,7 @@ const FilterScreen = ({ navigation }) => {
           style={styles.priceInput}
           placeholder="0"
           value={priceMin}
-          onChangeText={setPriceMin}
+          onChangeText={handlePriceMinChange}
           keyboardType="numeric"
           placeholderTextColor="#999"
         />
@@ -142,7 +161,7 @@ const FilterScreen = ({ navigation }) => {
           style={styles.priceInput}
           placeholder="1000"
           value={priceMax}
-          onChangeText={setPriceMax}
+          onChangeText={handlePriceMaxChange}
           keyboardType="numeric"
           placeholderTextColor="#999"
         />
@@ -195,17 +214,27 @@ const FilterScreen = ({ navigation }) => {
   );
 
   const ResultsSection = () => {
+    // Debug logging for filter results
+    console.log('FilterScreen: Filter results:', {
+      vegetablesCount: vegetables.length,
+      firstVegetable: vegetables[0],
+      hasImages: vegetables[0]?.images?.length > 0,
+      imagePath: vegetables[0]?.images?.[0]?.image_path
+    });
+
     if (loading) {
       return (
         <View style={styles.resultsContainer}>
           <Text style={styles.resultsTitle}>Filtered Results</Text>
-          <View style={styles.skeletonGrid}>
+          <View style={styles.productsGrid}>
             {[1, 2, 3, 4, 5, 6].map((item) => (
-              <View key={item} style={styles.skeletonCard}>
-                <SkeletonLoader type="card" width="100%" height={p(120)} style={styles.skeletonImage} />
-                <SkeletonLoader type="text" width="80%" height={p(16)} style={styles.skeletonTitle} />
-                <SkeletonLoader type="text" width="60%" height={p(12)} style={styles.skeletonRating} />
-                <SkeletonLoader type="text" width="70%" height={p(16)} style={styles.skeletonPrice} />
+              <View key={item} style={styles.productCardWrapper}>
+                <View style={styles.skeletonCard}>
+                  <SkeletonLoader type="card" width="100%" height={p(120)} style={styles.skeletonImage} />
+                  <SkeletonLoader type="text" width="80%" height={p(16)} style={styles.skeletonTitle} />
+                  <SkeletonLoader type="text" width="60%" height={p(12)} style={styles.skeletonRating} />
+                  <SkeletonLoader type="text" width="70%" height={p(16)} style={styles.skeletonPrice} />
+                </View>
               </View>
             ))}
           </View>
@@ -227,30 +256,39 @@ const FilterScreen = ({ navigation }) => {
         {vegetables.length > 0 ? (
           <View style={styles.productsGrid}>
             {vegetables.map(item => (
-              <TouchableOpacity
-                key={item.id}
-                style={styles.productCard}
-                onPress={() => navigation.navigate('ProductDetail', { product: item })}
-              >
-                <View style={styles.productImageContainer}>
-                  {item.images && item.images.length > 0 ? (
-                    <Text style={styles.productImagePlaceholder}>📦</Text>
-                  ) : (
-                    <Text style={styles.productImagePlaceholder}>🥬</Text>
-                  )}
-                </View>
-                <Text style={styles.productName} numberOfLines={2}>
-                  {item.name}
-                </Text>
-                <Text style={styles.productPrice}>
-                  ₹{item.price_per_kg}/{item.unit_type}
-                </Text>
-                {item.is_organic === 1 && (
-                  <View style={styles.organicBadge}>
-                    <Text style={styles.organicText}>Organic</Text>
-                  </View>
-                )}
-              </TouchableOpacity>
+              <View key={item.id} style={styles.productCardWrapper}>
+                <ProductCard
+                  item={item}
+                  onPress={() => navigation.navigate('ProductDetail', { product: item })}
+                  onAddToCart={async (item) => {
+                    try {
+                      console.log('FilterScreen: Adding to cart:', item.name);
+                      
+                      // Update cart state immediately for badge
+                      dispatch(addItemToCart({
+                        vegetable_id: item.id,
+                        quantity: 1,
+                        vegetable: item
+                      }));
+
+                      // Make API call in background
+                      dispatch(addToCart({ 
+                        vegetable_id: item.id, 
+                        quantity: 1 
+                      })).unwrap().then(() => {
+                        console.log('FilterScreen: Add to cart API successful');
+                      }).catch((error) => {
+                        console.error('FilterScreen: Add to cart API error:', error);
+                      });
+                    } catch (error) {
+                      console.error('FilterScreen: Add to cart error:', error);
+                    }
+                  }}
+                  showWishlist={true}
+                  size="medium"
+                  navigation={navigation}
+                />
+              </View>
             ))}
           </View>
         ) : (
@@ -278,7 +316,11 @@ const FilterScreen = ({ navigation }) => {
         navigation={navigation}
       />
       
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.content} 
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
         {/* Search */}
         <FilterSection title="Search">
           <View style={styles.searchContainer}>
@@ -288,7 +330,7 @@ const FilterScreen = ({ navigation }) => {
               placeholder="Search products..."
               placeholderTextColor="#999"
               value={searchQuery}
-              onChangeText={setSearchQuery}
+              onChangeText={handleSearchChange}
             />
           </View>
         </FilterSection>
@@ -535,63 +577,18 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     justifyContent: 'space-between',
   },
-  productCard: {
+  productCardWrapper: {
     width: '48%',
-    backgroundColor: '#f8f9fa',
-    borderRadius: p(8),
-    padding: p(12),
-    marginBottom: p(12),
-    borderWidth: 1,
-    borderColor: '#e9ecef',
-  },
-  productImageContainer: {
-    height: p(80),
-    backgroundColor: '#e9ecef',
-    borderRadius: p(6),
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: p(8),
-  },
-  productImagePlaceholder: {
-    fontSize: p(24),
-  },
-  productName: {
-    fontSize: fontSizes.sm,
-    color: '#1a1a1a',
-    fontFamily: 'Poppins-SemiBold',
-    marginBottom: p(4),
-  },
-  productPrice: {
-    fontSize: fontSizes.sm,
-    color: '#019a34',
-    fontFamily: 'Poppins-Bold',
-    marginBottom: p(4),
-  },
-  organicBadge: {
-    backgroundColor: '#d4edda',
-    borderRadius: p(12),
-    paddingHorizontal: p(8),
-    paddingVertical: p(4),
-    alignSelf: 'flex-start',
-  },
-  organicText: {
-    fontSize: fontSizes.xs,
-    color: '#28a745',
-    fontFamily: 'Poppins-SemiBold',
+    marginBottom: p(16),
   },
 
   // Skeleton
-  skeletonGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
   skeletonCard: {
-    width: '48%',
     backgroundColor: '#f8f9fa',
     borderRadius: p(8),
     padding: p(12),
-    marginBottom: p(12),
+    borderWidth: 1,
+    borderColor: '#e9ecef',
   },
   skeletonImage: {
     marginBottom: p(8),

@@ -19,7 +19,8 @@ import ProductCard from '../../../components/ProductCard';
 import CategoryItem from '../../../components/CategoryItem';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchVegetables, fetchVegetableCategories } from '../../../redux/slices/vegetablesSlice';
-import { addToCart } from '../../../redux/slices/cartSlice';
+import { addToCart, fetchCart, addItemToCart } from '../../../redux/slices/cartSlice';
+import { fetchWishlist } from '../../../redux/slices/wishlistSlice';
 import SuccessModal from '../../../components/SuccessModal';
 import ErrorModal from '../../../components/ErrorModal';
 import { useFocusEffect } from '@react-navigation/native';
@@ -34,11 +35,13 @@ const BucketScreen = ({ navigation, route }) => {
   const dispatch = useDispatch();
   const { vegetables, categories, loading, categoriesLoading } = useSelector(state => state.vegetables);
   const { addLoading } = useSelector(state => state.cart);
+  const wishlistState = useSelector(state => state.wishlist);
 
   // Fetch data when component mounts
   useEffect(() => {
     dispatch(fetchVegetables());
     dispatch(fetchVegetableCategories());
+    dispatch(fetchCart()); // Fetch cart to show accurate badge count
   }, [dispatch]);
 
   // Handle route parameters for search
@@ -69,7 +72,13 @@ const BucketScreen = ({ navigation, route }) => {
       console.log('BucketScreen: useFocusEffect triggered, clearing search state');
       setSelectedCategory('all');
       setSearchQuery('');
-    }, [])
+      
+      // Refresh wishlist state to ensure UI is up to date
+      // Only fetch if not already loading
+      if (!wishlistState.loading) {
+        dispatch(fetchWishlist());
+      }
+    }, [dispatch]) // Remove wishlistState.loading from dependencies to prevent infinite loop
   );
 
   // Cleanup effect when component unmounts
@@ -84,6 +93,39 @@ const BucketScreen = ({ navigation, route }) => {
     console.log('Bucket notification pressed');
   };
 
+  const handleAddToCart = async (item) => {
+    try {
+      console.log('BucketScreen: Adding to cart:', item.name);
+      
+      // Update cart state immediately for badge
+      dispatch(addItemToCart({
+        vegetable_id: item.id,
+        quantity: 1,
+        vegetable: item
+      }));
+
+      // Show success modal immediately
+      setSuccessMessage(`${item.name} added to cart successfully!`);
+      setShowSuccessModal(true);
+
+      // Make API call in background
+      dispatch(addToCart({ 
+        vegetable_id: item.id, 
+        quantity: 1 
+      })).unwrap().then(() => {
+        // Refresh cart data after successful API call
+        dispatch(fetchCart());
+      }).catch((error) => {
+        console.error('BucketScreen: Add to cart API error:', error);
+        // Optionally show error modal for API failures
+      });
+    } catch (error) {
+      console.log('BucketScreen: Add to cart failed:', error.message);
+      // Show error modal
+      setErrorMessage(error.message || 'Failed to add item to cart. Please try again.');
+      setShowErrorModal(true);
+    }
+  };
 
   const handleCategoryPress = category => {
     setSelectedCategory(category.id);
@@ -114,6 +156,7 @@ const BucketScreen = ({ navigation, route }) => {
   // Debug logs
   console.log('BucketScreen: Current search query:', searchQuery);
   console.log('BucketScreen: Filtered vegetables count:', filteredVegetables.length);
+  console.log('BucketScreen: Wishlist state:', wishlistState);
 
   const CategoriesSection = () => {
     if (categoriesLoading) {
@@ -172,23 +215,6 @@ const BucketScreen = ({ navigation, route }) => {
       navigation.navigate('ProductDetail', { product: item });
     };
 
-    const handleAddToCart = async (item) => {
-      try {
-        await dispatch(addToCart({ 
-          vegetable_id: item.id, 
-          quantity: 1 
-        })).unwrap();
-        
-        // Show success modal
-        setSuccessMessage(`${item.name} added to cart successfully!`);
-        setShowSuccessModal(true);
-      } catch (error) {
-        // Show error modal
-        setErrorMessage(error.message || 'Failed to add item to cart. Please try again.');
-        setShowErrorModal(true);
-      }
-    };
-
     if (loading) {
       return (
         <View style={styles.vegetablesContainer}>
@@ -244,6 +270,7 @@ const BucketScreen = ({ navigation, route }) => {
                     item={item}
                     onPress={() => handleProductPress(item)}
                     onAddToCart={handleAddToCart}
+                    showWishlist={true}
                     size="medium"
                     navigation={navigation}
                     isHighlighted={searchQuery && (

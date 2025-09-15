@@ -123,6 +123,59 @@ const cartSlice = createSlice({
       state.cartItems = action.payload.cartItems;
       state.totalAmount = action.payload.totalAmount;
     },
+    // Add item to cart immediately for badge updates
+    addItemToCart: (state, action) => {
+      const { vegetable_id, quantity, vegetable } = action.payload;
+      const existingItem = state.cartItems.find(item => item.vegetable_id === vegetable_id);
+      
+      if (existingItem) {
+        existingItem.quantity_kg = (existingItem.quantity_kg || 0) + quantity;
+        existingItem.subtotal = parseFloat(existingItem.price_per_kg) * existingItem.quantity_kg;
+      } else {
+        const newItem = {
+          id: Date.now(), // Temporary ID
+          vegetable_id,
+          quantity_kg: quantity,
+          price_per_kg: vegetable?.price_per_kg || 0,
+          subtotal: (vegetable?.price_per_kg || 0) * quantity,
+          name: vegetable?.name || 'Unknown Item',
+          unit_type: vegetable?.unit_type || 'kg',
+          veg_images: vegetable?.veg_images || [],
+          ...vegetable
+        };
+        state.cartItems.push(newItem);
+      }
+      
+      // Recalculate total amount
+      state.totalAmount = state.cartItems.reduce((sum, item) => 
+        sum + (parseFloat(item.subtotal) || 0), 0
+      );
+    },
+    // Remove item from cart immediately for badge updates
+    removeItemFromCart: (state, action) => {
+      const itemId = action.payload;
+      state.cartItems = state.cartItems.filter(item => item.id !== itemId);
+      
+      // Recalculate total amount
+      state.totalAmount = state.cartItems.reduce((sum, item) => 
+        sum + (parseFloat(item.subtotal) || 0), 0
+      );
+    },
+    // Update item quantity immediately for badge updates
+    updateItemQuantity: (state, action) => {
+      const { itemId, quantity } = action.payload;
+      const itemIndex = state.cartItems.findIndex(item => item.id === itemId);
+      
+      if (itemIndex !== -1) {
+        state.cartItems[itemIndex].quantity_kg = quantity;
+        state.cartItems[itemIndex].subtotal = parseFloat(state.cartItems[itemIndex].price_per_kg) * quantity;
+        
+        // Recalculate total amount
+        state.totalAmount = state.cartItems.reduce((sum, item) => 
+          sum + (parseFloat(item.subtotal) || 0), 0
+        );
+      }
+    },
   },
   extraReducers: (builder) => {
     // Add to cart
@@ -244,7 +297,7 @@ const cartSlice = createSlice({
   },
 });
 
-export const { clearCartErrors, clearCart, updateLocalQuantity } = cartSlice.actions;
+export const { clearCartErrors, clearCart, updateLocalQuantity, addItemToCart, removeItemFromCart, updateItemQuantity } = cartSlice.actions;
 
 // Selectors
 export const selectCart = (state) => state.cart;

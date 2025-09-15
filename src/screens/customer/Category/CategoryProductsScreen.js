@@ -69,15 +69,18 @@ const CategoryProductsScreen = ({ navigation, route }) => {
 
   const handleAddToCart = async (item) => {
     try {
+      console.log('CategoryProductsScreen: Adding to cart:', item.name);
       await dispatch(addToCart({ 
         vegetable_id: item.id, 
         quantity: 1 
       })).unwrap();
       
+      console.log('CategoryProductsScreen: Add to cart successful, showing success modal');
       // Show success modal
       setSuccessMessage(`${item.name} added to cart successfully!`);
       setShowSuccessModal(true);
     } catch (error) {
+      console.log('CategoryProductsScreen: Add to cart failed:', error.message);
       // Show error modal
       setErrorMessage(error.message || 'Failed to add item to cart. Please try again.');
       setShowErrorModal(true);
@@ -122,6 +125,7 @@ const CategoryProductsScreen = ({ navigation, route }) => {
         style={styles.content} 
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
       >
         {/* Search Bar */}
         <View style={styles.searchContainer}>

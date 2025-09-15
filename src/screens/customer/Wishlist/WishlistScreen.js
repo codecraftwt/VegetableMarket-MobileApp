@@ -8,6 +8,7 @@ import { p } from '../../../utils/Responsive';
 import { fontSizes } from '../../../utils/fonts';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchWishlist, removeWishlistItem } from '../../../redux/slices/wishlistSlice';
+import { useFocusEffect } from '@react-navigation/native';
 
 const WishlistScreen = ({ navigation }) => {
   const dispatch = useDispatch();
@@ -26,6 +27,16 @@ const WishlistScreen = ({ navigation }) => {
   useEffect(() => {
     dispatch(fetchWishlist());
   }, [dispatch]);
+
+  // Refresh wishlist when screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      // Only fetch if not already loading
+      if (!loading) {
+        dispatch(fetchWishlist());
+      }
+    }, [dispatch]) // Remove loading from dependencies to prevent infinite loop
+  );
 
   // Handle remove error
   useEffect(() => {

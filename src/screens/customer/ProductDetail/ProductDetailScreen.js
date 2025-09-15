@@ -19,7 +19,7 @@ import { fontSizes } from '../../../utils/fonts';
 import ProductCard from '../../../components/ProductCard';
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchVegetables } from '../../../redux/slices/vegetablesSlice';
-import { addToCart } from '../../../redux/slices/cartSlice';
+import { addToCart, addItemToCart } from '../../../redux/slices/cartSlice';
 import SuccessModal from '../../../components/SuccessModal';
 import ErrorModal from '../../../components/ErrorModal';
 
@@ -42,12 +42,62 @@ const ProductDetailScreen = ({ navigation, route }) => {
     rating: 4.0,
     image: require('../../../assets/vegebg.png'),
     description: 'Orange is a vibrant and juicy citrus fruit, known for its refreshing flavor and bright color. With a tangy savory sweetness, it adds a burst of freshness to both sweet and savory dishes. The peel of an orange is often used in cooking and baking to impart a zesty',
+    category: {
+      id: 1,
+      name: 'Fruits'
+    },
+    farmer: {
+      id: 1,
+      name: 'John Smith',
+      phone: '+91 9876543210'
+    }
   };
+
+  // Debug logging to see what product data we're receiving
+  console.log('ProductDetailScreen: Received product data:', {
+    product: product,
+    hasCategory: !!product.category,
+    hasFarmer: !!product.farmer,
+    categoryName: product.category?.name,
+    farmerName: product.farmer?.name,
+    farmerData: product.farmer
+  });
+
+  // Try to find complete product data from vegetables list if current product is incomplete
+  const completeProduct = React.useMemo(() => {
+    // Always try to find the complete product from vegetables list first
+    const foundProduct = vegetables.find(item => item.id === product.id);
+    if (foundProduct) {
+      console.log('ProductDetailScreen: Found complete product data from vegetables list:', foundProduct);
+      return foundProduct;
+    }
+    
+    // If not found in vegetables list, check if current product has complete data
+    if (product.category && product.farmer) {
+      console.log('ProductDetailScreen: Using current product data (complete):', product);
+      return product;
+    }
+    
+    // If current product is incomplete, enhance it with better fallbacks
+    console.log('ProductDetailScreen: Using enhanced product data with fallbacks:', product);
+    return {
+      ...product,
+      category: product.category || { id: 1, name: 'General' },
+      farmer: product.farmer || { id: 1, name: 'Farmer Information Not Available', phone: '' }
+    };
+  }, [product, vegetables]);
 
   // Fetch vegetables when component mounts
   useEffect(() => {
     dispatch(fetchVegetables());
   }, [dispatch]);
+
+  // Force re-render when vegetables are loaded to update completeProduct
+  useEffect(() => {
+    if (vegetables.length > 0 && (!product.category || !product.farmer)) {
+      console.log('ProductDetailScreen: Vegetables loaded, checking for complete product data');
+    }
+  }, [vegetables, product]);
 
   const handleBackPress = () => {
     navigation.goBack();
@@ -67,14 +117,26 @@ const ProductDetailScreen = ({ navigation, route }) => {
 
   const handleAddToCart = async () => {
     try {
-      await dispatch(addToCart({ 
-        vegetable_id: product.id, 
-        quantity: quantity 
-      })).unwrap();
-      
-      // Show success modal with total price
-      setSuccessMessage(`${quantity} ${getProductUnit()} of ${product.name} (${getTotalPrice()}) added to cart successfully!`);
+      // Update cart state immediately for badge
+      dispatch(addItemToCart({
+        vegetable_id: completeProduct.id,
+        quantity: quantity,
+        vegetable: completeProduct
+      }));
+
+      // Show success modal immediately
+      setSuccessMessage(`${quantity} ${getProductUnit()} of ${completeProduct.name} (${getTotalPrice()}) added to cart successfully!`);
       setShowSuccessModal(true);
+
+      // Make API call in background
+      dispatch(addToCart({ 
+        vegetable_id: completeProduct.id, 
+        quantity: quantity 
+      })).unwrap().then(() => {
+        console.log('ProductDetailScreen: Add to cart API successful');
+      }).catch((error) => {
+        console.error('ProductDetailScreen: Add to cart API error:', error);
+      });
     } catch (error) {
       // Show error modal
       setErrorMessage(error.message || 'Failed to add item to cart. Please try again.');
@@ -134,9 +196,9 @@ const ProductDetailScreen = ({ navigation, route }) => {
     // Get related products from the same category (7-8 products)
     const relatedItems = vegetables
       .filter(item => 
-        item.id !== product.id && 
-        (item.category?.id === product.category?.id || 
-         item.category?.name?.toLowerCase() === product.category?.name?.toLowerCase())
+        item.id !== completeProduct.id && 
+        (item.category?.id === completeProduct.category?.id || 
+         item.category?.name?.toLowerCase() === completeProduct.category?.name?.toLowerCase())
       )
       .slice(0, 8);
 
@@ -150,65 +212,68 @@ const ProductDetailScreen = ({ navigation, route }) => {
       // Add to cart logic here
     };
 
-    if (relatedItems.length === 0) {
-      return null; // Don't show related products section if none available
-    }
-
+    // Always show the related products section, even if empty
     return (
       <View style={styles.relatedSection}>
         <Text style={styles.relatedTitle}>Related Products</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {relatedItems.map((item) => (
-            <ProductCard
-              key={item.id}
-              item={item}
-              onPress={() => handleRelatedProductPress(item)}
-              onAddToCart={handleRelatedAddToCart}
-              size="medium"
-              navigation={navigation}
-            />
-          ))}
-        </ScrollView>
+        {relatedItems.length === 0 ? (
+          <View style={styles.noRelatedProducts}>
+            <Text style={styles.noRelatedText}>No related products found</Text>
+          </View>
+        ) : (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            {relatedItems.map((item) => (
+              <ProductCard
+                key={item.id}
+                item={item}
+                onPress={() => handleRelatedProductPress(item)}
+                onAddToCart={handleRelatedAddToCart}
+                size="medium"
+                navigation={navigation}
+              />
+            ))}
+          </ScrollView>
+        )}
       </View>
     );
   };
 
   // Helper function to get product image
   const getProductImage = () => {
-    if (product?.images && product.images.length > 0) {
-      return { uri: `https://vegetables.walstarmedia.com/storage/${product.images[0].image_path}` };
+    if (completeProduct?.images && completeProduct.images.length > 0) {
+      return { uri: `https://vegetables.walstarmedia.com/storage/${completeProduct.images[0].image_path}` };
     }
-    return product.image || require('../../../assets/vegebg.png');
+    return completeProduct.image || require('../../../assets/vegebg.png');
   };
 
   // Helper function to get product price
   const getPriceDisplay = () => {
-    if (product.price_per_kg) {
-      return `₹${parseFloat(product.price_per_kg).toFixed(2)}`;
+    if (completeProduct.price_per_kg) {
+      return `₹${parseFloat(completeProduct.price_per_kg).toFixed(2)}`;
     }
-    return product?.price || '₹0.00';
+    return completeProduct?.price || '₹0.00';
   };
 
   // Helper function to get total price (price × quantity)
   const getTotalPrice = () => {
-    const basePrice = product.price_per_kg ? parseFloat(product.price_per_kg) : parseFloat(product?.price?.replace('₹', '') || '0');
+    const basePrice = completeProduct.price_per_kg ? parseFloat(completeProduct.price_per_kg) : parseFloat(completeProduct?.price?.replace('₹', '') || '0');
     const totalPrice = basePrice * quantity;
     return `₹${totalPrice.toFixed(2)}`;
   };
 
   // Helper function to get product unit
   const getProductUnit = () => {
-    return product?.unit_type || product?.unit || 'kg';
+    return completeProduct?.unit_type || completeProduct?.unit || 'kg';
   };
 
   // Helper function to get product description
   const getProductDescription = () => {
-    return product?.description || 'No description available for this product.';
+    return completeProduct?.description || 'No description available for this product.';
   };
 
   const handlePhonePress = () => {
-    if (product?.farmer?.phone) {
-      const phoneNumber = `tel:${product.farmer.phone}`;
+    if (completeProduct?.farmer?.phone) {
+      const phoneNumber = `tel:${completeProduct.farmer.phone}`;
       Linking.canOpenURL(phoneNumber)
         .then((supported) => {
           if (supported) {
@@ -315,8 +380,8 @@ const ProductDetailScreen = ({ navigation, route }) => {
             {/* Product Information Card */}
             <View style={styles.productCard}>
           {/* Product Name and Rating */}
-          <Text style={styles.productName}>{product?.name || 'Unknown Product'}</Text>
-          <StarRating rating={product?.rating || 0} />
+          <Text style={styles.productName}>{completeProduct?.name || 'Unknown Product'}</Text>
+          <StarRating rating={completeProduct?.rating || 0} />
           
           {/* Price and Quantity Selector */}
           <View style={styles.priceQuantityRow}>
@@ -347,30 +412,41 @@ const ProductDetailScreen = ({ navigation, route }) => {
           </View>
           
           {/* Farmer Information */}
-          {product?.farmer && (
-            <View style={styles.farmerSection}>
-              <Text style={styles.farmerTitle}>Farmer Information</Text>
-              <TouchableOpacity 
-                style={styles.farmerInfo}
-                onPress={() => navigation.navigate('FarmerProfile', { 
-                  farmerId: product.farmer.id, 
-                  farmerName: product.farmer.name 
-                })}
-              >
-                <Icon name="user" size={16} color="#019a34" style={styles.farmerIcon} />
-                <Text style={styles.farmerName}>{product.farmer.name}</Text>
-                <Icon name="chevron-right" size={14} color="#019a34" style={styles.farmerChevron} />
-              </TouchableOpacity>
-              {product.farmer.phone && (
-                <View style={styles.farmerInfo}>
-                  <Icon name="phone" size={16} color="#019a34" style={styles.farmerIcon} />
-                  <TouchableOpacity onPress={handlePhonePress}>
-                    <Text style={styles.farmerPhone}>{product.farmer.phone}</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-            </View>
-          )}
+          <View style={styles.farmerSection}>
+            <Text style={styles.farmerTitle}>Farmer Information</Text>
+            {completeProduct?.farmer ? (
+              <>
+                <TouchableOpacity 
+                  style={styles.farmerInfo}
+                  onPress={() => navigation.navigate('FarmerProfile', { 
+                    farmerId: completeProduct.farmer.id, 
+                    farmerName: completeProduct.farmer.name 
+                  })}
+                >
+                  <Icon name="user" size={16} color="#019a34" style={styles.farmerIcon} />
+                  <Text style={styles.farmerName}>{completeProduct.farmer.name}</Text>
+                  <Icon name="chevron-right" size={14} color="#019a34" style={styles.farmerChevron} />
+                </TouchableOpacity>
+                {completeProduct.farmer.phone && (
+                  <View style={styles.farmerInfo}>
+                    <Icon name="phone" size={16} color="#019a34" style={styles.farmerIcon} />
+                    <TouchableOpacity onPress={handlePhonePress}>
+                      <Text style={styles.farmerPhone}>{completeProduct.farmer.phone}</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </>
+            ) : (
+              <View style={styles.noFarmerInfo}>
+                <Icon name="user" size={16} color="#999" style={styles.farmerIcon} />
+                <Text style={styles.noFarmerText}>
+                  {completeProduct.farmer?.name === 'Farmer Information Not Available' 
+                    ? 'Farmer information not available' 
+                    : 'Loading farmer information...'}
+                </Text>
+              </View>
+            )}
+          </View>
           
           {/* Related Products */}
           <RelatedProducts />
@@ -564,6 +640,17 @@ const styles = StyleSheet.create({
     color: '#666',
     fontFamily: 'Poppins-Regular',
   },
+  noFarmerInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: p(6),
+  },
+  noFarmerText: {
+    fontSize: fontSizes.sm,
+    color: '#999',
+    fontFamily: 'Poppins-Regular',
+    fontStyle: 'italic',
+  },
   
   // Related Products Section
   relatedSection: {
@@ -574,6 +661,18 @@ const styles = StyleSheet.create({
     color: '#1a1a1a',
     marginBottom: p(12),
     fontFamily: 'Poppins-Bold',
+  },
+  noRelatedProducts: {
+    padding: p(20),
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
+    borderRadius: p(8),
+  },
+  noRelatedText: {
+    fontSize: fontSizes.sm,
+    color: '#666',
+    fontFamily: 'Poppins-Regular',
+    fontStyle: 'italic',
   },
   
   // Bottom Fixed Bar

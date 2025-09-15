@@ -13,7 +13,7 @@ import Icon1 from 'react-native-vector-icons/Feather';
 import { p } from '../utils/Responsive';
 import { fontSizes } from '../utils/fonts';
 import { useDispatch, useSelector } from 'react-redux';
-import { addToCart } from '../redux/slices/cartSlice';
+import { addToCart, addItemToCart } from '../redux/slices/cartSlice';
 import { toggleWishlistItem } from '../redux/slices/wishlistSlice';
 import SuccessModal from './SuccessModal';
 import ErrorModal from './ErrorModal';
@@ -36,9 +36,18 @@ const ProductCard = ({
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  const [successTitle, setSuccessTitle] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [isAddingToCart, setIsAddingToCart] = useState(false); // Individual loading state
   const [isTogglingWishlist, setIsTogglingWishlist] = useState(false); // Individual wishlist loading state
+
+  // Debug logging for modal state
+  console.log('ProductCard: Modal state:', { 
+    showSuccessModal, 
+    showErrorModal, 
+    successTitle, 
+    successMessage 
+  });
 
   // Helper function to get product image
   const getProductImage = () => {
@@ -67,7 +76,15 @@ const ProductCard = ({
 
   // Check if item is in wishlist
   const isInWishlist = () => {
-    return wishlistState.items.some(wishlistItem => wishlistItem.id === item.id);
+    // First check the itemStatus tracking (for real-time updates)
+    if (wishlistState.itemStatus && wishlistState.itemStatus.hasOwnProperty(item.id)) {
+      console.log('ProductCard: Item status from itemStatus:', item.id, wishlistState.itemStatus[item.id]);
+      return wishlistState.itemStatus[item.id];
+    }
+    // Fallback to checking the items array
+    const inItems = wishlistState.items.some(wishlistItem => wishlistItem.id === item.id);
+    console.log('ProductCard: Item status from items array:', item.id, inItems);
+    return inItems;
   };
 
   // Get wishlist loading state for this specific item
@@ -79,17 +96,24 @@ const ProductCard = ({
   const handleWishlistToggle = async (e) => {
     e.stopPropagation();
     try {
+      console.log('ProductCard: Toggling wishlist for item:', item.name);
       setIsTogglingWishlist(true);
       const result = await dispatch(toggleWishlistItem(item.id)).unwrap();
       
+      console.log('ProductCard: Wishlist toggle result:', result);
       if (result.wishlisted) {
+        console.log('ProductCard: Item added to wishlist, showing success modal');
+        setSuccessTitle('Wishlist Updated!');
         setSuccessMessage(`${item.name} added to wishlist!`);
         setShowSuccessModal(true);
       } else {
+        console.log('ProductCard: Item removed from wishlist, showing success modal');
+        setSuccessTitle('Wishlist Updated!');
         setSuccessMessage(`${item.name} removed from wishlist!`);
         setShowSuccessModal(true);
       }
     } catch (error) {
+      console.log('ProductCard: Wishlist toggle error:', error.message);
       setErrorMessage(
         error.message || 'Failed to update wishlist. Please try again.'
       );
@@ -106,6 +130,7 @@ const ProductCard = ({
       try {
         setIsAddingToCart(true); // Start individual loading
         await onAddToCart(item);
+        // The parent component will handle the success modal
       } catch (error) {
         // Handle error if onAddToCart throws
         setErrorMessage(
@@ -127,6 +152,7 @@ const ProductCard = ({
         ).unwrap();
 
         // Show success modal
+        setSuccessTitle('Added to Cart!');
         setSuccessMessage(`${item.name} added to cart successfully!`);
         setShowSuccessModal(true);
       } catch (error) {
@@ -142,10 +168,12 @@ const ProductCard = ({
   };
 
   const handleSuccessModalClose = () => {
+    console.log('ProductCard: Closing success modal');
     setShowSuccessModal(false);
   };
 
   const handleErrorModalClose = () => {
+    console.log('ProductCard: Closing error modal');
     setShowErrorModal(false);
   };
 
@@ -156,6 +184,18 @@ const ProductCard = ({
     if (navigation) {
       console.log('ProductCard: Navigating to Wishlist screen');
       navigation.navigate('Wishlist');
+    } else {
+      console.log('ProductCard: No navigation prop available');
+    }
+  };
+
+  const handleViewCart = () => {
+    console.log('ProductCard: handleViewCart called');
+    console.log('ProductCard: navigation prop:', navigation);
+    setShowSuccessModal(false);
+    if (navigation) {
+      console.log('ProductCard: Navigating to Cart screen');
+      navigation.navigate('App', { screen: 'CartTab' });
     } else {
       console.log('ProductCard: No navigation prop available');
     }
@@ -313,13 +353,13 @@ const ProductCard = ({
       <SuccessModal
         visible={showSuccessModal}
         onClose={handleSuccessModalClose}
-        title="Wishlist Updated!"
+        title={successTitle}
         message={successMessage}
         buttonText="OK"
         onButtonPress={handleSuccessModalClose}
         showSecondaryButton={true}
-        secondaryButtonText="View Wishlist"
-        onSecondaryButtonPress={handleViewWishlist}
+        secondaryButtonText={successTitle === 'Wishlist Updated!' ? 'View Wishlist' : 'View Cart'}
+        onSecondaryButtonPress={successTitle === 'Wishlist Updated!' ? handleViewWishlist : handleViewCart}
       />
 
       {/* Error Modal */}

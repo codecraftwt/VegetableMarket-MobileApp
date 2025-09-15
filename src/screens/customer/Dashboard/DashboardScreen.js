@@ -24,7 +24,7 @@ import {
   fetchVegetableCategories,
 } from '../../../redux/slices/vegetablesSlice';
 import { fetchPopularItems } from '../../../redux/slices/wishlistSlice';
-import { addToCart } from '../../../redux/slices/cartSlice';
+import { addToCart, fetchCart, addItemToCart } from '../../../redux/slices/cartSlice';
 import SuccessModal from '../../../components/SuccessModal';
 import ErrorModal from '../../../components/ErrorModal';
 import { useFocusEffect } from '@react-navigation/native';
@@ -190,6 +190,7 @@ const DashboardScreen = ({ navigation }) => {
     dispatch(fetchVegetables());
     dispatch(fetchVegetableCategories());
     dispatch(fetchPopularItems());
+    dispatch(fetchCart()); // Fetch cart to show accurate badge count
   }, [dispatch]);
 
   // Monitor cart errors and show error modal automatically
@@ -210,10 +211,29 @@ const DashboardScreen = ({ navigation }) => {
   );
 
   // Transform popular items data to match ProductCard format
-  const transformedPopularItems = popularItems.map(item => ({
-    ...item.vegetable,
-    // Add any additional fields if needed
-  }));
+  const transformedPopularItems = popularItems.map(item => {
+    const vegetable = item.vegetable || item;
+    console.log('DashboardScreen: Transforming popular item:', {
+      original: item,
+      vegetable: vegetable,
+      hasCategory: !!vegetable.category,
+      hasFarmer: !!vegetable.farmer
+    });
+    
+    // Try to find complete vegetable data from the vegetables list
+    const completeVegetable = vegetables.find(v => v.id === vegetable.id);
+    if (completeVegetable) {
+      console.log('DashboardScreen: Found complete vegetable data:', completeVegetable);
+      return completeVegetable;
+    }
+    
+    return {
+      ...vegetable,
+      // Ensure we have all necessary fields with better fallbacks
+      category: vegetable.category || { id: 1, name: 'General' },
+      farmer: vegetable.farmer || { id: 1, name: 'Farmer Information Not Available', phone: '' }
+    };
+  });
 
   // Handle search functionality
   const handleSearch = useCallback(() => {
@@ -246,6 +266,13 @@ const DashboardScreen = ({ navigation }) => {
   // Handle product press
   const handleProductPress = useCallback(
     item => {
+      console.log('DashboardScreen: Navigating to product detail with item:', {
+        item: item,
+        hasCategory: !!item.category,
+        hasFarmer: !!item.farmer,
+        categoryName: item.category?.name,
+        farmerName: item.farmer?.name
+      });
       navigation.navigate('ProductDetail', { product: item });
     },
     [navigation],
@@ -256,16 +283,31 @@ const DashboardScreen = ({ navigation }) => {
     async item => {
       try {
         console.log('Adding to cart:', item.name);
-        await dispatch(
+        
+        // Update cart state immediately for badge
+        dispatch(addItemToCart({
+          vegetable_id: item.id,
+          quantity: 1,
+          vegetable: item
+        }));
+
+        // Show success modal immediately
+        setSuccessMessage(`${item.name} added to cart successfully!`);
+        setShowSuccessModal(true);
+
+        // Make API call in background
+        dispatch(
           addToCart({
             vegetable_id: item.id,
             quantity: 1,
           }),
-        ).unwrap();
-
-        // Show success modal
-        setSuccessMessage(`${item.name} added to cart successfully!`);
-        setShowSuccessModal(true);
+        ).unwrap().then(() => {
+          // Refresh cart data after successful API call
+          dispatch(fetchCart());
+        }).catch((error) => {
+          console.error('Add to cart API error:', error);
+          // Optionally show error modal for API failures
+        });
       } catch (error) {
         console.error('Add to cart error:', error);
         // Show error modal

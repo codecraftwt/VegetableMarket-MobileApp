@@ -17,7 +17,7 @@ import { p } from '../../../utils/Responsive';
 import { fontSizes } from '../../../utils/fonts';
 import { useDispatch, useSelector } from 'react-redux';
 import { useFocusEffect } from '@react-navigation/native';
-import { fetchCart, updateCartQuantity, clearCartErrors, removeFromCart } from '../../../redux/slices/cartSlice';
+import { fetchCart, updateCartQuantity, clearCartErrors, removeFromCart, removeItemFromCart, updateItemQuantity } from '../../../redux/slices/cartSlice';
 import SuccessModal from '../../../components/SuccessModal';
 import ErrorModal from '../../../components/ErrorModal';
 import ConfirmationModal from '../../../components/ConfirmationModal';
@@ -146,9 +146,8 @@ const CartScreen = ({ navigation }) => {
       return;
     }
     
-    // Store original values for rollback on error
-    const originalQuantity = currentQuantity;
-    const originalTotal = localTotalAmount;
+    // Update Redux state immediately for badge update
+    dispatch(updateItemQuantity({ itemId, quantity: newQuantity }));
     
     // Update local state immediately for instant feedback (optimistic update)
     const updatedLocalCartItems = localCartItems.map(item => 
@@ -177,33 +176,12 @@ const CartScreen = ({ navigation }) => {
       await dispatch(updateCartQuantity({ id: itemId, quantity: newQuantity })).unwrap();
       console.log('CartScreen: API call successful, quantity updated');
       
-      // Small delay to ensure Redux state is updated, then sync with Redux
-      setTimeout(() => {
-        console.log('CartScreen: Syncing with Redux state after successful update');
-        // The useEffect will automatically sync local state with Redux state
-        // This ensures the UI shows the correct quantity from Redux
-      }, 50);
-      
-      // Quantity updated successfully - no modal needed for better UX
-      
     } catch (error) {
       console.error('CartScreen: Quantity update error:', error);
       // Show specific error message from API
       const errorMsg = error.message || error.error || 'Failed to update quantity. Please try again.';
       setErrorMessage(errorMsg);
       setShowErrorModal(true);
-      
-      console.log('CartScreen: Rolling back optimistic update due to error');
-      // Revert local state on error (rollback optimistic update)
-      const revertedLocalCartItems = localCartItems.map(item => 
-        item.id === itemId 
-          ? { ...item, quantity_kg: originalQuantity }
-          : item
-      );
-      
-      setLocalCartItems([...revertedLocalCartItems]); // Create new array reference
-      setLocalTotalAmount(originalTotal);
-      setForceUpdate(prev => prev + 1); // Force re-render
     }
   };
 
@@ -221,9 +199,8 @@ const CartScreen = ({ navigation }) => {
     // Mark this item as being removed
     setRemovingItems(prev => new Set(prev).add(itemToRemove.id));
     
-    // Store original values for rollback on error
-    const originalCartItems = [...localCartItems];
-    const originalTotal = localTotalAmount;
+    // Update Redux state immediately for badge update
+    dispatch(removeItemFromCart(itemToRemove.id));
     
     // Update local state immediately for instant feedback (optimistic update)
     const updatedLocalCartItems = localCartItems.filter(item => item.id !== itemToRemove.id);
@@ -242,30 +219,20 @@ const CartScreen = ({ navigation }) => {
     setItemToRemove(null);
     setShowConfirmationModal(false);
     
+    // Show success modal immediately
+    setSuccessMessage(`${itemToRemove.name} removed from cart successfully!`);
+    setShowSuccessModal(true);
+    
     try {
+      // Make API call in background
       await dispatch(removeFromCart(itemToRemove.id)).unwrap();
-      console.log('CartScreen: Item removed successfully');
-      
-      // Show success modal after API call succeeds
-      if (!showSuccessModal) {
-        setSuccessMessage(`${itemToRemove.name} removed from cart successfully!`);
-        setShowSuccessModal(true);
-      }
+      console.log('CartScreen: Item removed successfully from API');
       
     } catch (error) {
-      console.error('CartScreen: Remove from cart error:', error);
-      setErrorMessage(error.message || 'Failed to remove item from cart. Please try again.');
-      setShowErrorModal(true);
-      
-      console.log('CartScreen: Rolling back optimistic remove due to error');
-      // Revert local state on error (rollback optimistic update)
-      setLocalCartItems([...originalCartItems]);
-      setLocalTotalAmount(originalTotal);
-      setForceUpdate(prev => prev + 1);
-      
-      // Clear the item to remove on error
-      setItemToRemove(null);
-      setShowConfirmationModal(false);
+      console.error('CartScreen: Remove from cart API error:', error);
+      // Optionally show error modal for API failures
+      // setErrorMessage(error.message || 'Failed to remove item from cart. Please try again.');
+      // setShowErrorModal(true);
     } finally {
       // Remove this item from removing set
       setRemovingItems(prev => {
