@@ -23,9 +23,10 @@ import {
   resetFilters 
 } from '../../../redux/slices/filterSlice';
 import { fetchVegetableCategories } from '../../../redux/slices/vegetablesSlice';
-import { addToCart, addItemToCart } from '../../../redux/slices/cartSlice';
+import { addToCart, addItemToCart, clearCartErrors } from '../../../redux/slices/cartSlice';
 import SkeletonLoader from '../../../components/SkeletonLoader';
 import ProductCard from '../../../components/ProductCard';
+import { SuccessModal, ErrorModal } from '../../../components';
 
 const FilterScreen = ({ navigation }) => {
   const dispatch = useDispatch();
@@ -37,6 +38,7 @@ const FilterScreen = ({ navigation }) => {
     pagination 
   } = useSelector(state => state.filter);
   const { categories } = useSelector(state => state.vegetables);
+  const { addLoading, addError } = useSelector(state => state.cart);
 
   // Local state for form inputs
   const [searchQuery, setSearchQuery] = useState(currentFilters.search || '');
@@ -46,10 +48,25 @@ const FilterScreen = ({ navigation }) => {
   const [selectedLocation, setSelectedLocation] = useState(currentFilters.location || '');
   const [isOrganic, setIsOrganic] = useState(currentFilters.organic === 1);
 
+  // Modal states
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+
   // Fetch categories when component mounts
   useEffect(() => {
     dispatch(fetchVegetableCategories());
   }, [dispatch]);
+
+  // Handle cart add error
+  useEffect(() => {
+    if (addError) {
+      setErrorMessage(addError);
+      setShowErrorModal(true);
+      dispatch(clearCartErrors());
+    }
+  }, [addError, dispatch]);
 
   // Apply filters when component mounts or filters change (with debounce for search)
   useEffect(() => {
@@ -277,11 +294,17 @@ const FilterScreen = ({ navigation }) => {
                         quantity: 1 
                       })).unwrap().then(() => {
                         console.log('FilterScreen: Add to cart API successful');
+                        setSuccessMessage(`${item.name} added to cart!`);
+                        setShowSuccessModal(true);
                       }).catch((error) => {
                         console.error('FilterScreen: Add to cart API error:', error);
+                        setErrorMessage(error.message || 'Failed to add item to cart');
+                        setShowErrorModal(true);
                       });
                     } catch (error) {
                       console.error('FilterScreen: Add to cart error:', error);
+                      setErrorMessage(error.message || 'Failed to add item to cart');
+                      setShowErrorModal(true);
                     }
                   }}
                   showWishlist={true}
@@ -385,6 +408,22 @@ const FilterScreen = ({ navigation }) => {
         {/* Results */}
         <ResultsSection />
       </ScrollView>
+
+      {/* Success Modal */}
+      <SuccessModal
+        visible={showSuccessModal}
+        onClose={() => setShowSuccessModal(false)}
+        title="Success!"
+        message={successMessage}
+      />
+
+      {/* Error Modal */}
+      <ErrorModal
+        visible={showErrorModal}
+        onClose={() => setShowErrorModal(false)}
+        title="Error"
+        message={errorMessage}
+      />
     </SafeAreaView>
   );
 };
