@@ -11,14 +11,28 @@ import {
   Linking,
   Image,
   RefreshControl,
+  Platform,
+  PermissionsAndroid,
 } from 'react-native';
 import CommonHeader from '../../../components/CommonHeader';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { p } from '../../../utils/Responsive';
 import { fontSizes } from '../../../utils/fonts';
 import { useSelector, useDispatch } from 'react-redux';
-import { fetchMyOrders, cancelOrder, clearCancelOrderError, acceptPartialOrder, clearAcceptPartialError, submitReview, clearSubmitReviewError } from '../../../redux/slices/ordersSlice';
-import { ReviewModal, ConfirmationModal } from '../../../components';
+import { 
+  fetchMyOrders, 
+  cancelOrder, 
+  clearCancelOrderError, 
+  acceptPartialOrder, 
+  clearAcceptPartialError, 
+  submitReview, 
+  clearSubmitReviewError,
+  downloadOrderInvoice,
+  clearDownloadInvoiceError
+} from '../../../redux/slices/ordersSlice';
+import { ReviewModal, ConfirmationModal, SuccessModal, ErrorModal } from '../../../components';
+import RNFS from 'react-native-fs';
+import Share from 'react-native-share';
 
 const OrderDetailsScreen = ({ navigation, route }) => {
   const { order: initialOrder } = route.params;
@@ -32,7 +46,21 @@ const OrderDetailsScreen = ({ navigation, route }) => {
   const [showUPIModal, setShowUPIModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [upiLink, setUpiLink] = useState('');
-  const { cancelOrderLoading, cancelOrderError, acceptPartialLoading, acceptPartialError, submitReviewLoading, submitReviewError } = useSelector(state => state.orders);
+  const [showInvoiceSuccessModal, setShowInvoiceSuccessModal] = useState(false);
+  const [showInvoiceErrorModal, setShowInvoiceErrorModal] = useState(false);
+  const [invoiceSuccessMessage, setInvoiceSuccessMessage] = useState('');
+  const [invoiceErrorMessage, setInvoiceErrorMessage] = useState('');
+  const [lastGeneratedInvoice, setLastGeneratedInvoice] = useState(null);
+  const { 
+    cancelOrderLoading, 
+    cancelOrderError, 
+    acceptPartialLoading, 
+    acceptPartialError, 
+    submitReviewLoading, 
+    submitReviewError,
+    downloadInvoiceLoading,
+    downloadInvoiceError
+  } = useSelector(state => state.orders);
 
   useEffect(() => {
     if (cancelOrderError) {
@@ -54,6 +82,14 @@ const OrderDetailsScreen = ({ navigation, route }) => {
       dispatch(clearSubmitReviewError());
     }
   }, [submitReviewError, dispatch]);
+
+  useEffect(() => {
+    if (downloadInvoiceError) {
+      setInvoiceErrorMessage(downloadInvoiceError);
+      setShowInvoiceErrorModal(true);
+      dispatch(clearDownloadInvoiceError());
+    }
+  }, [downloadInvoiceError, dispatch]);
 
   const handleBackPress = () => {
     navigation.goBack();
@@ -200,6 +236,202 @@ const OrderDetailsScreen = ({ navigation, route }) => {
   const formatDeliveryAddress = () => {
     const addr = order.delivery_address;
     return `${addr.line}, ${addr.city}, ${addr.taluka}, ${addr.district}, ${addr.state}, ${addr.country}, ${addr.pincode}`;
+  };
+
+  // Check if order is eligible for invoice download
+  const isEligibleForInvoice = () => {
+    return order.delivery_status === 'delivered' || order.delivery_status === 'cancelled' || order.is_canceled;
+  };
+
+  // Request storage permissions for file operations
+  const requestStoragePermission = async () => {
+    if (Platform.OS === 'android') {
+      try {
+        const androidVersion = Platform.Version;
+        console.log('Android version:', androidVersion);
+        
+        // For Android 13+ (API 33+)
+        if (androidVersion >= 33) {
+          // Try MANAGE_EXTERNAL_STORAGE first
+          try {
+            const manageStorageGranted = await PermissionsAndroid.request(
+              PermissionsAndroid.PERMISSIONS.MANAGE_EXTERNAL_STORAGE,
+              {
+                title: 'Storage Permission',
+                message: 'This app needs access to storage to save invoice PDF files to your Downloads folder.',
+                buttonNeutral: 'Ask Me Later',
+                buttonNegative: 'Cancel',
+                buttonPositive: 'OK',
+              },
+            );
+            console.log('MANAGE_EXTERNAL_STORAGE permission result:', manageStorageGranted);
+            if (manageStorageGranted === PermissionsAndroid.RESULTS.GRANTED) {
+              return true;
+            }
+          } catch (error) {
+            console.log('MANAGE_EXTERNAL_STORAGE not available, trying other permissions');
+          }
+          
+          // Request media permissions for Android 13+
+          const mediaPermissions = [
+            PermissionsAndroid.PERMISSIONS.READ_MEDIA_IMAGES,
+            PermissionsAndroid.PERMISSIONS.READ_MEDIA_VIDEO,
+            PermissionsAndroid.PERMISSIONS.READ_MEDIA_AUDIO,
+          ];
+          
+          const mediaResults = await PermissionsAndroid.requestMultiple(mediaPermissions);
+          console.log('Media permission results:', mediaResults);
+          
+          // Check if at least one media permission is granted
+          const hasMediaPermission = Object.values(mediaResults).some(
+            result => result === PermissionsAndroid.RESULTS.GRANTED
+          );
+          
+          return hasMediaPermission;
+        } else {
+          // For Android 12 and below, request WRITE_EXTERNAL_STORAGE
+          const writeStorageGranted = await PermissionsAndroid.request(
+            PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
+            {
+              title: 'Storage Permission',
+              message: 'This app needs access to storage to save invoice PDF files to your Downloads folder.',
+              buttonNeutral: 'Ask Me Later',
+              buttonNegative: 'Cancel',
+              buttonPositive: 'OK',
+            },
+          );
+          console.log('WRITE_EXTERNAL_STORAGE permission result:', writeStorageGranted);
+          return writeStorageGranted === PermissionsAndroid.RESULTS.GRANTED;
+        }
+      } catch (err) {
+        console.error('Storage permission error:', err);
+        return false;
+      }
+    }
+    return true; // iOS doesn't need this permission
+  };
+
+  // Get the best available file path for saving files
+  const getFileSavePath = async (fileName) => {
+    if (Platform.OS === 'android') {
+      // Always try Downloads first for better user experience
+      try {
+        const downloadPath = `${RNFS.DownloadDirectoryPath}/${fileName}`;
+        console.log('Trying Downloads path:', downloadPath);
+        return downloadPath;
+      } catch (error) {
+        console.log('Downloads path failed, using Documents:', error);
+        return `${RNFS.DocumentDirectoryPath}/${fileName}`;
+      }
+    } else {
+      // iOS - use Documents directory
+      return `${RNFS.DocumentDirectoryPath}/${fileName}`;
+    }
+  };
+
+  // Ensure directory exists before saving file
+  const ensureDirectoryExists = async (filePath) => {
+    try {
+      const directory = filePath.substring(0, filePath.lastIndexOf('/'));
+      const exists = await RNFS.exists(directory);
+      if (!exists) {
+        await RNFS.mkdir(directory);
+        console.log('Created directory:', directory);
+      }
+    } catch (error) {
+      console.log('Directory creation error:', error);
+      throw new Error(`Failed to create directory: ${error.message}`);
+    }
+  };
+
+  // Share generated file
+  const shareFile = async (filePath, fileName) => {
+    try {
+      console.log('Sharing file:', filePath);
+      
+      // Check if file exists
+      const fileExists = await RNFS.exists(filePath);
+      console.log('File exists:', fileExists);
+      
+      if (!fileExists) {
+        Alert.alert('Error', 'File not found. Please try generating the invoice again.');
+        return;
+      }
+      
+      const shareOptions = {
+        title: 'Order Invoice',
+        message: `Here's the invoice for order ORD-${order.order_id}: ${fileName}`,
+        url: `file://${filePath}`,
+        type: 'application/pdf',
+      };
+      
+      console.log('Share options:', shareOptions);
+      await Share.open(shareOptions);
+    } catch (error) {
+      console.log('Share cancelled or failed:', error);
+      Alert.alert('Share Error', 'Failed to share the file. Please try again.');
+    }
+  };
+
+  // Handle invoice download
+  const handleDownloadInvoice = async () => {
+    if (!isEligibleForInvoice()) {
+      Alert.alert('Invoice Not Available', 'Invoice can only be downloaded for delivered or cancelled orders.');
+      return;
+    }
+
+    try {
+      // Request storage permission
+      const hasPermission = await requestStoragePermission();
+      if (!hasPermission) {
+        setInvoiceErrorMessage('Storage permission is required to save invoice files. Please grant permission in your device settings.\n\nGo to: Settings > Apps > VegetableMarket > Permissions > Storage');
+        setShowInvoiceErrorModal(true);
+        return;
+      }
+
+      // Download invoice from API
+      const result = await dispatch(downloadOrderInvoice(order.order_id)).unwrap();
+      console.log('Invoice download result:', result);
+
+      if (result.success && result.pdf_base64) {
+        // Save PDF file
+        const fileName = result.file_name || `invoice_order_${order.order_id}.pdf`;
+        const filePath = await getFileSavePath(fileName);
+        
+        console.log('Saving invoice to:', filePath);
+        
+        // Ensure directory exists
+        await ensureDirectoryExists(filePath);
+        
+        // Write the base64 PDF data to file
+        await RNFS.writeFile(filePath, result.pdf_base64, 'base64');
+        console.log('Invoice saved successfully to:', filePath);
+        
+        setLastGeneratedInvoice({ path: filePath, name: fileName });
+        
+        const saveLocation = filePath.includes('DownloadDirectoryPath') 
+          ? 'Downloads folder' 
+          : 'Documents folder';
+        setInvoiceSuccessMessage(`Invoice saved to ${saveLocation}: ${fileName}\n\nYou can find it in your ${saveLocation} or use the Share button to send it.`);
+        setShowInvoiceSuccessModal(true);
+      } else {
+        throw new Error('Invalid response from server');
+      }
+    } catch (error) {
+      console.error('Invoice download error:', error);
+      
+      let errorMessage = 'Failed to download invoice. ';
+      if (error.message?.includes('permission')) {
+        errorMessage += 'Please grant storage permission in your device settings and try again.';
+      } else if (error.message?.includes('ENOENT')) {
+        errorMessage += 'Unable to access storage. Please check your device storage and try again.';
+      } else {
+        errorMessage += 'Please try again or contact support if the issue persists.';
+      }
+      
+      setInvoiceErrorMessage(errorMessage);
+      setShowInvoiceErrorModal(true);
+    }
   };
 
   return (
@@ -409,10 +641,23 @@ const OrderDetailsScreen = ({ navigation, route }) => {
             <Text style={styles.actionButtonText}>Contact Support</Text>
           </TouchableOpacity>
           
-          <TouchableOpacity style={[styles.actionButton, styles.secondaryButton]}>
-            <Icon name="download" size={14} color="#019a34" />
-            <Text style={styles.secondaryButtonText}>Download Invoice</Text>
-          </TouchableOpacity>
+          {/* Download Invoice Button - Only show for delivered and cancelled orders */}
+          {isEligibleForInvoice() && (
+            <TouchableOpacity 
+              style={[styles.actionButton, styles.secondaryButton, downloadInvoiceLoading && styles.buttonDisabled]}
+              onPress={handleDownloadInvoice}
+              disabled={downloadInvoiceLoading}
+            >
+              {downloadInvoiceLoading ? (
+                <Icon name="spinner" size={14} color="#019a34" />
+              ) : (
+                <Icon name="download" size={14} color="#019a34" />
+              )}
+              <Text style={styles.secondaryButtonText}>
+                {downloadInvoiceLoading ? 'Downloading...' : 'Download Invoice'}
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Review Order Button - Only show for delivered orders that are not reviewed */}
@@ -536,6 +781,32 @@ const OrderDetailsScreen = ({ navigation, route }) => {
         confirmText="OK"
         type="success"
         showCancel={false}
+      />
+
+      {/* Invoice Success Modal */}
+      <SuccessModal
+        visible={showInvoiceSuccessModal}
+        onClose={() => setShowInvoiceSuccessModal(false)}
+        title="Invoice Downloaded!"
+        message={invoiceSuccessMessage}
+        buttonText="OK"
+        onButtonPress={() => setShowInvoiceSuccessModal(false)}
+        showSecondaryButton={!!lastGeneratedInvoice}
+        secondaryButtonText="Share"
+        onSecondaryButtonPress={lastGeneratedInvoice ? () => {
+          shareFile(lastGeneratedInvoice.path, lastGeneratedInvoice.name);
+          setShowInvoiceSuccessModal(false);
+        } : undefined}
+      />
+
+      {/* Invoice Error Modal */}
+      <ErrorModal
+        visible={showInvoiceErrorModal}
+        onClose={() => setShowInvoiceErrorModal(false)}
+        title="Download Failed"
+        message={invoiceErrorMessage}
+        buttonText="OK"
+        onButtonPress={() => setShowInvoiceErrorModal(false)}
       />
     </SafeAreaView>
   );

@@ -120,6 +120,22 @@ export const fetchMyRefunds = createAsyncThunk(
   }
 );
 
+// Async thunk to download order invoice
+export const downloadOrderInvoice = createAsyncThunk(
+  'orders/downloadOrderInvoice',
+  async (orderId, { rejectWithValue }) => {
+    try {
+      console.log('Downloading invoice for order ID:', orderId);
+      const response = await api.get(`/order/${orderId}/invoice`);
+      console.log('Invoice download response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to download invoice:', error);
+      return rejectWithValue(error.response?.data?.message || 'Failed to download invoice');
+    }
+  }
+);
+
 const initialState = {
   // New order placement and Razorpay data
   orderData: null,
@@ -148,6 +164,7 @@ const initialState = {
   cancelOrderLoading: false,
   submitReviewLoading: false,
   refundsLoading: false, // For fetchMyRefunds
+  downloadInvoiceLoading: false, // For downloadOrderInvoice
   
   // Error states
   error: null,
@@ -156,6 +173,7 @@ const initialState = {
   cancelOrderError: null,
   submitReviewError: null,
   refundsError: null,
+  downloadInvoiceError: null,
   
   // Success states
   success: false,
@@ -203,6 +221,9 @@ const ordersSlice = createSlice({
     },
     clearRefundsError: (state) => {
       state.refundsError = null;
+    },
+    clearDownloadInvoiceError: (state) => {
+      state.downloadInvoiceError = null;
     },
     setPaymentVerified: (state, action) => {
       state.paymentVerified = action.payload;
@@ -380,6 +401,23 @@ const ordersSlice = createSlice({
         state.refundsLoading = false;
         state.refundsError = action.payload || 'Failed to fetch refunds';
       });
+
+    // Download Order Invoice
+    builder
+      .addCase(downloadOrderInvoice.pending, (state) => {
+        state.downloadInvoiceLoading = true;
+        state.downloadInvoiceError = null;
+      })
+      .addCase(downloadOrderInvoice.fulfilled, (state, action) => {
+        state.downloadInvoiceLoading = false;
+        state.downloadInvoiceError = null;
+        console.log('Invoice downloaded successfully:', action.payload);
+      })
+      .addCase(downloadOrderInvoice.rejected, (state, action) => {
+        state.downloadInvoiceLoading = false;
+        state.downloadInvoiceError = action.payload || 'Failed to download invoice';
+        console.error('Invoice download failed:', action.payload);
+      });
   },
 });
 
@@ -391,6 +429,7 @@ export const {
   clearCancelOrderError, 
   clearSubmitReviewError, 
   clearRefundsError,
+  clearDownloadInvoiceError,
   setPaymentVerified 
 } = ordersSlice.actions;
 
@@ -418,6 +457,7 @@ export const selectAcceptPartialLoading = (state) => state.orders.acceptPartialL
 export const selectCancelOrderLoading = (state) => state.orders.cancelOrderLoading;
 export const selectSubmitReviewLoading = (state) => state.orders.submitReviewLoading;
 export const selectRefundsLoading = (state) => state.orders.refundsLoading;
+export const selectDownloadInvoiceLoading = (state) => state.orders.downloadInvoiceLoading;
 
 // Error state selectors
 export const selectOrdersError = (state) => state.orders.error;
@@ -426,6 +466,7 @@ export const selectAcceptPartialError = (state) => state.orders.acceptPartialErr
 export const selectCancelOrderError = (state) => state.orders.cancelOrderError;
 export const selectSubmitReviewError = (state) => state.orders.submitReviewError;
 export const selectRefundsError = (state) => state.orders.refundsError;
+export const selectDownloadInvoiceError = (state) => state.orders.downloadInvoiceError;
 
 // Success state selectors
 export const selectOrderSuccess = (state) => state.orders.success;
