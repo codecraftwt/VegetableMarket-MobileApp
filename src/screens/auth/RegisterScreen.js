@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,7 +8,6 @@ import {
   ImageBackground,
   KeyboardAvoidingView,
   Platform,
-  Alert,
   ActivityIndicator,
   ScrollView,
   StatusBar,
@@ -19,6 +18,8 @@ import { registerUser, clearError, ROLES } from '../../redux/slices/authSlice';
 import { getFontFamily, fontSizes } from '../../utils/fonts';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { p } from '../../utils/Responsive';
+import SuccessModal from '../../components/SuccessModal';
+import ErrorModal from '../../components/ErrorModal';
 
 const RegisterScreen = () => {
   const navigation = useNavigation();
@@ -45,30 +46,31 @@ const RegisterScreen = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showRoleDropdown, setShowRoleDropdown] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const hasNavigated = useRef(false);
 
   // Get roles from the auth slice
   const roles = Object.values(ROLES).map(role => role.name);
 
-  // Handle successful registration
+  // Handle registration success and errors
   useEffect(() => {
-    if (isLoggedIn) {
-      Alert.alert(
-        'Registration Successful!',
-        'Your account has been created successfully.',
-        [
-          {
-            text: 'OK',
-            onPress: () => navigation.navigate('Login'),
-          },
-        ],
-      );
+    if (isLoggedIn && !hasNavigated.current) {
+      console.log('Registration successful, showing modal...');
+      hasNavigated.current = true;
+      // Add a small delay to ensure the modal shows properly
+      setTimeout(() => {
+        setShowSuccessModal(true);
+      }, 200);
     }
-  }, [isLoggedIn, navigation]);
+  }, [isLoggedIn]);
 
   // Handle registration errors
   useEffect(() => {
     if (error) {
-      Alert.alert('Registration Failed', error);
+      setErrorMessage(error);
+      setShowErrorModal(true);
       dispatch(clearError());
     }
   }, [error, dispatch]);
@@ -117,6 +119,9 @@ const RegisterScreen = () => {
       return;
     }
 
+    // Reset navigation flag for new registration attempt
+    hasNavigated.current = false;
+    
     // Dispatch the register action
     dispatch(registerUser(formData));
   };
@@ -141,6 +146,29 @@ const RegisterScreen = () => {
     setFormData({ ...formData, role });
     setShowRoleDropdown(false);
     setErrors({ ...errors, role: null });
+  };
+
+  const handleSuccessModalClose = () => {
+    console.log('Success modal closing...');
+    setShowSuccessModal(false);
+    // Reset form data and navigate
+    setFormData({
+      name: '',
+      email: '',
+      phone: '',
+      role: '',
+      password: '',
+      confirmPassword: '',
+    });
+    // Add a small delay before navigation to ensure modal closes properly
+    setTimeout(() => {
+      navigation.navigate('Login');
+    }, 300);
+  };
+
+  const handleErrorModalClose = () => {
+    setShowErrorModal(false);
+    setErrorMessage('');
   };
 
   return (
@@ -389,6 +417,26 @@ const RegisterScreen = () => {
           </ScrollView>
         </KeyboardAvoidingView>
       </ImageBackground>
+
+      {/* Success Modal */}
+      <SuccessModal
+        visible={showSuccessModal}
+        onClose={handleSuccessModalClose}
+        title="Account Created Successfully!"
+        message="Your account has been created successfully. You can now sign in to access the fresh vegetable marketplace."
+        buttonText="Got it"
+        closeOnBackdropPress={false}
+      />
+
+      {/* Error Modal */}
+      <ErrorModal
+        visible={showErrorModal}
+        onClose={handleErrorModalClose}
+        title="Registration Failed"
+        message={errorMessage}
+        buttonText="OK"
+        onButtonPress={handleErrorModalClose}
+      />
     </>
   );
 };

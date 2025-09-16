@@ -7,12 +7,34 @@ export const placeOrder = createAsyncThunk(
   async (orderData, { rejectWithValue }) => {
     try {
       console.log('API call: /place-order with data:', orderData);
+      
+      // Validate order data before sending
+      if (!orderData.address_id) {
+        throw new Error('Address ID is required');
+      }
+      if (!orderData.payment_method) {
+        throw new Error('Payment method is required');
+      }
+      
       const response = await api.post('/place-order', orderData);
       console.log('API response:', response.data);
       return response.data;
     } catch (error) {
-      console.warn('Failed to place order:', error);
-      return rejectWithValue(error.response?.data || 'Failed to place order');
+      console.error('Failed to place order:', error);
+      console.error('Error response:', error.response?.data);
+      console.error('Error status:', error.response?.status);
+      
+      // Return more detailed error information
+      const errorMessage = error.response?.data?.message || 
+                          error.response?.data?.error || 
+                          error.message || 
+                          'Failed to place order';
+      
+      return rejectWithValue({
+        message: errorMessage,
+        details: error.response?.data,
+        status: error.response?.status
+      });
     }
   }
 );
@@ -22,7 +44,9 @@ export const verifyRazorpayPayment = createAsyncThunk(
   'orders/verifyRazorpayPayment',
   async (paymentData, { rejectWithValue }) => {
     try {
+      console.log('Verifying Razorpay payment with data:', paymentData);
       const response = await api.post('/verify-razorpay-payment', paymentData);
+      console.log('Payment verification response:', response.data);
       return response.data;
     } catch (error) {
       console.warn('Failed to verify payment:', error);
@@ -107,6 +131,11 @@ const initialState = {
   razorpayEmail: null,
   razorpayContact: null,
   
+  // Coupon data
+  couponData: null,
+  discountAmount: 0,
+  finalAmount: 0,
+  
   // Existing order management data
   orders: [],
   refunds: [],
@@ -146,6 +175,9 @@ const ordersSlice = createSlice({
       state.razorpayName = null;
       state.razorpayEmail = null;
       state.razorpayContact = null;
+      state.couponData = null;
+      state.discountAmount = 0;
+      state.finalAmount = 0;
       state.error = null;
       state.success = false;
       state.paymentVerified = false;
@@ -194,6 +226,22 @@ const ordersSlice = createSlice({
         state.razorpayName = action.payload.name;
         state.razorpayEmail = action.payload.email;
         state.razorpayContact = action.payload.contact;
+        
+        // Store coupon data if present
+        if (action.payload.coupon_id) {
+          state.couponData = {
+            coupon_id: action.payload.coupon_id,
+            discount_amount: action.payload.discount_amount,
+            final_amount: action.payload.final_amount
+          };
+          state.discountAmount = action.payload.discount_amount || 0;
+          state.finalAmount = action.payload.final_amount || action.payload.total_amount;
+        } else {
+          state.couponData = null;
+          state.discountAmount = 0;
+          state.finalAmount = action.payload.total_amount;
+        }
+        
         state.success = true;
         state.error = null;
         
@@ -201,7 +249,9 @@ const ordersSlice = createSlice({
           razorpayOrderId: state.razorpayOrderId,
           razorpayKey: state.razorpayKey ? 'Present' : 'Missing',
           razorpayAmount: state.razorpayAmount,
-          razorpayCurrency: state.razorpayCurrency
+          razorpayCurrency: state.razorpayCurrency,
+          discountAmount: state.discountAmount,
+          finalAmount: state.finalAmount
         });
       })
       .addCase(placeOrder.rejected, (state, action) => {

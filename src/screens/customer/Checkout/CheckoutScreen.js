@@ -8,6 +8,7 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
+  TextInput,
 } from 'react-native';
 import CommonHeader from '../../../components/CommonHeader';
 import Icon from 'react-native-vector-icons/FontAwesome';
@@ -39,6 +40,9 @@ const CheckoutScreen = ({ navigation }) => {
     razorpayName, 
     razorpayEmail, 
     razorpayContact,
+    couponData,
+    discountAmount,
+    finalAmount,
     placeOrderLoading, 
     error: orderError,
     success: orderSuccess,
@@ -59,6 +63,13 @@ const CheckoutScreen = ({ navigation }) => {
   const [addressToSetPrimary, setAddressToSetPrimary] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  
+  // Coupon state
+  const [couponCode, setCouponCode] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
+  const [couponError, setCouponError] = useState('');
+  const [localDiscountAmount, setLocalDiscountAmount] = useState(0);
+  const [localFinalAmount, setLocalFinalAmount] = useState(0);
 
   // Use addresses from cart instead of profile
   const addresses = cartAddresses || [];
@@ -88,6 +99,13 @@ const CheckoutScreen = ({ navigation }) => {
       // Clear messages
       setSuccessMessage('');
       setErrorMessage('');
+      
+      // Clear coupon state
+      setCouponCode('');
+      setAppliedCoupon(null);
+      setCouponError('');
+      setLocalDiscountAmount(0);
+      setLocalFinalAmount(0);
       
       // Clear order data from Redux
       dispatch(clearOrderData());
@@ -121,11 +139,16 @@ const CheckoutScreen = ({ navigation }) => {
 
   // Handle order placement and Razorpay integration
   useEffect(() => {
-    if (orderSuccess && razorpayOrderId && selectedPaymentMethod?.payment_method === 'RAZORPAY') {
+    // Normalize payment method for comparison
+    const normalizedPaymentMethod = selectedPaymentMethod?.payment_method?.trim().toUpperCase();
+    const isRazorpayMethod = normalizedPaymentMethod === 'RAZORPAY' || normalizedPaymentMethod === 'RAZORPAYX';
+    
+    if (orderSuccess && razorpayOrderId && isRazorpayMethod) {
       console.log('Initializing Razorpay payment with Order ID:', razorpayOrderId);
+      console.log('Payment method:', selectedPaymentMethod?.payment_method, '-> Normalized:', normalizedPaymentMethod);
       // Initialize Razorpay payment
       handleRazorpayPayment();
-    } else if (orderSuccess && selectedPaymentMethod?.payment_method !== 'RAZORPAY') {
+    } else if (orderSuccess && !isRazorpayMethod) {
       console.log('Non-Razorpay payment method, showing success directly');
       // For non-Razorpay methods (COD, UPI_AT_DOOR), show success directly
       const paymentMethodName = formatPaymentMethod(selectedPaymentMethod?.payment_method);
@@ -133,7 +156,13 @@ const CheckoutScreen = ({ navigation }) => {
       setShowSuccessModal(true);
       dispatch(clearOrderData());
     }
-  }, [orderSuccess, razorpayOrderId, selectedPaymentMethod, dispatch, handleRazorpayPayment, setSuccessMessage, setShowSuccessModal]);
+    
+    // Update local discount values with server response if available
+    if (orderSuccess && discountAmount > 0) {
+      setLocalDiscountAmount(discountAmount);
+      setLocalFinalAmount(finalAmount);
+    }
+  }, [orderSuccess, razorpayOrderId, selectedPaymentMethod, dispatch, handleRazorpayPayment, setSuccessMessage, setShowSuccessModal, discountAmount, finalAmount]);
 
   // Handle payment verification
   useEffect(() => {
@@ -165,7 +194,26 @@ const CheckoutScreen = ({ navigation }) => {
   // Handle order errors
   useEffect(() => {
     if (orderError) {
-      setErrorMessage(orderError.message || 'Failed to place order. Please try again.');
+      console.error('Order error details:', orderError);
+      
+      let errorMessage = 'Failed to place order. Please try again.';
+      
+      if (typeof orderError === 'object' && orderError.message) {
+        errorMessage = orderError.message;
+      } else if (typeof orderError === 'string') {
+        errorMessage = orderError;
+      }
+      
+      // Add more specific error messages based on common validation errors
+      if (errorMessage.toLowerCase().includes('validation')) {
+        errorMessage = 'Please check your order details and try again.';
+      } else if (errorMessage.toLowerCase().includes('address')) {
+        errorMessage = 'Please select a valid delivery address.';
+      } else if (errorMessage.toLowerCase().includes('payment')) {
+        errorMessage = 'Please select a valid payment method.';
+      }
+      
+      setErrorMessage(errorMessage);
       setShowErrorModal(true);
     }
   }, [orderError, setErrorMessage, setShowErrorModal]);
@@ -277,7 +325,13 @@ const CheckoutScreen = ({ navigation }) => {
           created_at: item.created_at,
           updated_at: item.updated_at,
         }
-      }))
+      })),
+      // Add coupon data if coupon is applied
+      ...(appliedCoupon && {
+        coupon_id: couponData?.coupon_id || 1, // Use server coupon_id if available, fallback to 1
+        discount_amount: localDiscountAmount || discountAmount || 0,
+        final_amount: localFinalAmount || finalAmount || totalAmount
+      })
     };
     
     console.log('Sending payment verification:', {
@@ -303,13 +357,25 @@ const CheckoutScreen = ({ navigation }) => {
   }, [razorpayOrderId, user, selectedAddress, totalAmount, cartItems, dispatch, setErrorMessage, setShowErrorModal, setSuccessMessage]);
 
   const handleRazorpayPayment = useCallback(() => {
+    console.log('=== RAZORPAY PAYMENT INITIALIZATION ===');
+    console.log('Razorpay configuration check:', { 
+      razorpayKey: razorpayKey ? 'Present' : 'Missing',
+      razorpayOrderId: razorpayOrderId ? 'Present' : 'Missing', 
+      razorpayAmount: razorpayAmount,
+      razorpayCurrency: razorpayCurrency,
+      razorpayName: razorpayName,
+      razorpayEmail: razorpayEmail,
+      razorpayContact: razorpayContact
+    });
+    
     if (!razorpayKey || !razorpayOrderId || !razorpayAmount) {
       console.log('Razorpay configuration missing:', { razorpayKey, razorpayOrderId, razorpayAmount });
       setErrorMessage('Razorpay configuration error. Please try again.');
       setShowErrorModal(true);
       return;
     }
-console.log('razorpayKey', razorpayKey);
+    
+    console.log('All Razorpay configuration present, proceeding with payment...');
     const options = {
       description: 'Vegetable Market Order',
       image: 'https://your-logo-url.com/logo.png',
@@ -360,6 +426,14 @@ console.log('razorpayKey', razorpayKey);
     };
 
     try {
+      console.log('Opening Razorpay checkout with options:', {
+        key: options.key,
+        amount: options.amount,
+        currency: options.currency,
+        order_id: options.order_id,
+        name: options.name
+      });
+      
       RazorpayCheckout.open(options)
         .then((response) => {
           console.log('Razorpay payment successful:', response);
@@ -384,14 +458,48 @@ console.log('razorpayKey', razorpayKey);
   const handleConfirmPayment = () => {
     setShowConfirmPaymentModal(false);
     
-    // Place order first
+    // Validate required data before proceeding
+    if (!selectedAddress || !selectedAddress.id) {
+      setErrorMessage('Please select a valid delivery address');
+      setShowErrorModal(true);
+      return;
+    }
+    
+    if (!selectedPaymentMethod || !selectedPaymentMethod.payment_method) {
+      setErrorMessage('Please select a valid payment method');
+      setShowErrorModal(true);
+      return;
+    }
+    
+    // Place order with coupon code if applied
+    // Normalize payment method - convert RAZORPAYX to RAZORPAY
+    let normalizedPaymentMethod = selectedPaymentMethod.payment_method.trim().toUpperCase();
+    if (normalizedPaymentMethod === 'RAZORPAYX') {
+      normalizedPaymentMethod = 'RAZORPAY';
+    }
+    
     const orderData = {
-      address_id: selectedAddress?.id,
-      payment_method: selectedPaymentMethod.payment_method
+      address_id: selectedAddress.id,
+      payment_method: normalizedPaymentMethod,
+      ...(appliedCoupon && { coupon_code: appliedCoupon.trim() })
     };
     
     console.log('Selected payment method:', selectedPaymentMethod);
+    console.log('Applied coupon:', appliedCoupon);
     console.log('Placing order with data:', orderData);
+    
+    // Additional validation logging
+    console.log('Order data validation:', {
+      address_id: orderData.address_id,
+      payment_method: orderData.payment_method,
+      original_payment_method: selectedPaymentMethod.payment_method,
+      coupon_code: orderData.coupon_code || 'Not applied',
+      address_id_type: typeof orderData.address_id,
+      payment_method_type: typeof orderData.payment_method,
+      total_amount: totalAmount,
+      minimum_order_met: totalAmount >= 100
+    });
+    
     dispatch(placeOrder(orderData));
   };
 
@@ -429,6 +537,46 @@ console.log('razorpayKey', razorpayKey);
 
   const handlePaymentSelect = (payment) => {
     setSelectedPaymentMethod(payment);
+  };
+
+  const handleApplyCoupon = () => {
+    if (!couponCode.trim()) {
+      setCouponError('Please enter a coupon code');
+      return;
+    }
+    
+    // Check minimum order amount for coupon (₹100)
+    const minimumOrderAmount = 100;
+    if (totalAmount < minimumOrderAmount) {
+      setCouponError(`Minimum order amount for this coupon is ₹${minimumOrderAmount}.00`);
+      return;
+    }
+    
+    // Calculate local discount (10% for "save10" coupon)
+    let discountPercent = 0;
+    if (couponCode.trim().toLowerCase() === 'save10') {
+      discountPercent = 0.10; // 10% discount
+    }
+    
+    if (discountPercent > 0) {
+      const discount = totalAmount * discountPercent;
+      const finalAmount = totalAmount - discount;
+      
+      setAppliedCoupon(couponCode.trim());
+      setLocalDiscountAmount(discount);
+      setLocalFinalAmount(finalAmount);
+      setCouponError('');
+    } else {
+      setCouponError('Invalid coupon code');
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponCode('');
+    setCouponError('');
+    setLocalDiscountAmount(0);
+    setLocalFinalAmount(0);
   };
 
   const handleSuccessModalClose = () => {
@@ -481,7 +629,13 @@ console.log('razorpayKey', razorpayKey);
             created_at: item.created_at,
             updated_at: item.updated_at,
           }
-        }))
+        })),
+        // Add coupon data if coupon is applied
+        ...(appliedCoupon && {
+          coupon_id: couponData?.coupon_id || 1, // Use server coupon_id if available, fallback to 1
+          discount_amount: localDiscountAmount || discountAmount || 0,
+          final_amount: localFinalAmount || finalAmount || totalAmount
+        })
       };
       
       console.log('Retrying payment verification with data:', paymentData);
@@ -740,6 +894,55 @@ console.log('razorpayKey', razorpayKey);
           </View>
         </View>
 
+        {/* Coupon Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Have a Coupon?</Text>
+          <View style={styles.couponContainer}>
+            <View style={styles.couponInputContainer}>
+              <TextInput
+                style={styles.couponInput}
+                placeholder="Enter coupon code"
+                placeholderTextColor="#999"
+                value={couponCode}
+                onChangeText={setCouponCode}
+                editable={!appliedCoupon}
+                autoCapitalize="characters"
+                autoCorrect={false}
+              />
+              {!appliedCoupon ? (
+                <TouchableOpacity 
+                  style={styles.applyCouponButton}
+                  onPress={handleApplyCoupon}
+                >
+                  <Text style={styles.applyCouponButtonText}>Apply</Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity 
+                  style={styles.removeCouponButton}
+                  onPress={handleRemoveCoupon}
+                >
+                  <Icon name="times" size={16} color="#fff" />
+                </TouchableOpacity>
+              )}
+            </View>
+            {appliedCoupon && (
+              <View style={styles.appliedCouponContainer}>
+                <Icon name="check-circle" size={16} color="#28a745" />
+                <Text style={styles.appliedCouponText}>Coupon "{appliedCoupon}" applied</Text>
+              </View>
+            )}
+            {couponError ? (
+              <Text style={styles.couponErrorText}>{couponError}</Text>
+            ) : null}
+            {!appliedCoupon && totalAmount < 100 && (
+              <View style={styles.couponInfoContainer}>
+                <Icon name="info-circle" size={14} color="#666" />
+                <Text style={styles.couponInfoText}>Minimum order ₹100 required for coupon</Text>
+              </View>
+            )}
+          </View>
+        </View>
+
         {/* Order Summary */}
         <View style={styles.orderSummaryCard}>
           <View style={styles.orderSummaryHeader}>
@@ -770,9 +973,17 @@ console.log('razorpayKey', razorpayKey);
             <Text style={styles.summaryLabel}>Delivery Fee</Text>
             <Text style={styles.summaryValue}>₹0.00</Text>
           </View>
+          {appliedCoupon && localDiscountAmount > 0 && (
+            <View style={[styles.summaryRow, styles.discountRow]}>
+              <Text style={styles.discountLabel}>Coupon Discount</Text>
+              <Text style={styles.discountValue}>-₹{localDiscountAmount.toFixed(2)}</Text>
+            </View>
+          )}
           <View style={[styles.summaryRow, styles.totalRow]}>
             <Text style={styles.totalLabel}>Total Price</Text>
-            <Text style={styles.totalValue}>₹{totalAmount.toFixed(2)}</Text>
+            <Text style={styles.totalValue}>
+              ₹{appliedCoupon && localFinalAmount > 0 ? localFinalAmount.toFixed(2) : totalAmount.toFixed(2)}
+            </Text>
           </View>
         </View>
       </ScrollView>
@@ -781,7 +992,9 @@ console.log('razorpayKey', razorpayKey);
       <View style={styles.bottomBar}>
         <View style={styles.totalContainer}>
           <Text style={styles.totalLabel}>Total Price</Text>
-          <Text style={styles.totalAmount}>₹{totalAmount.toFixed(2)}</Text>
+          <Text style={styles.totalAmount}>
+            ₹{appliedCoupon && localFinalAmount > 0 ? localFinalAmount.toFixed(2) : totalAmount.toFixed(2)}
+          </Text>
         </View>
         <TouchableOpacity 
           style={[
@@ -1282,6 +1495,105 @@ const styles = StyleSheet.create({
     color: '#666',
     fontFamily: 'Poppins-Regular',
     marginLeft: p(8),
+  },
+  
+  // Coupon Section Styles
+  couponContainer: {
+    marginTop: p(12),
+  },
+  couponInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: p(8),
+  },
+  couponInput: {
+    flex: 1,
+    height: p(44),
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: p(8),
+    paddingHorizontal: p(12),
+    fontSize: fontSizes.sm,
+    fontFamily: 'Poppins-Regular',
+    backgroundColor: '#fafafa',
+    marginRight: p(8),
+  },
+  applyCouponButton: {
+    backgroundColor: '#019a34',
+    paddingVertical: p(12),
+    paddingHorizontal: p(16),
+    borderRadius: p(8),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  applyCouponButtonText: {
+    color: '#fff',
+    fontSize: fontSizes.sm,
+    fontFamily: 'Poppins-SemiBold',
+  },
+  removeCouponButton: {
+    backgroundColor: '#dc3545',
+    paddingVertical: p(12),
+    paddingHorizontal: p(12),
+    borderRadius: p(8),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  appliedCouponContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#d4edda',
+    paddingVertical: p(8),
+    paddingHorizontal: p(12),
+    borderRadius: p(6),
+    borderLeftWidth: 4,
+    borderLeftColor: '#28a745',
+  },
+  appliedCouponText: {
+    fontSize: fontSizes.sm,
+    color: '#155724',
+    fontFamily: 'Poppins-Medium',
+    marginLeft: p(6),
+  },
+  couponErrorText: {
+    fontSize: fontSizes.xs,
+    color: '#dc3545',
+    fontFamily: 'Poppins-Regular',
+    marginTop: p(4),
+  },
+  couponInfoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
+    paddingVertical: p(6),
+    paddingHorizontal: p(10),
+    borderRadius: p(6),
+    marginTop: p(6),
+    borderLeftWidth: 3,
+    borderLeftColor: '#6c757d',
+  },
+  couponInfoText: {
+    fontSize: fontSizes.xs,
+    color: '#6c757d',
+    fontFamily: 'Poppins-Regular',
+    marginLeft: p(6),
+  },
+  
+  // Discount Row Styles
+  discountRow: {
+    backgroundColor: '#d4edda',
+    borderLeftWidth: 4,
+    borderLeftColor: '#28a745',
+  },
+  discountLabel: {
+    fontSize: fontSizes.sm,
+    color: '#155724',
+    fontFamily: 'Poppins-Medium',
+  },
+  discountValue: {
+    fontSize: fontSizes.base,
+    color: '#28a745',
+    fontFamily: 'Poppins-Bold',
   },
   emptyCartContainer: {
     flex: 1,

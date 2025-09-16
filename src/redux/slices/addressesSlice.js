@@ -63,14 +63,20 @@ export const deleteAddress = createAsyncThunk(
   }
 );
 
-// Async thunk for setting primary address
+// Async thunk for setting primary address - FIXED ENDPOINT (SINGULAR)
 export const setPrimaryAddress = createAsyncThunk(
   'addresses/setPrimaryAddress',
   async (addressId, { rejectWithValue }) => {
     try {
-      const response = await api.post(`/addresses/${addressId}/set-primary`);
+      console.log('Setting primary address with ID:', addressId);
+      console.log('CORRECT API endpoint: /address/' + addressId + '/set-primary');
+      // Using SINGULAR 'address' not 'addresses' as per API spec
+      const response = await api.post(`/address/${addressId}/set-primary`);
+      console.log('Set primary address API response:', response.data);
       return response.data;
     } catch (error) {
+      console.error('Set primary address error:', error);
+      console.error('Error details:', error.response?.data);
       return rejectWithValue(error.response?.data || 'Failed to set primary address');
     }
   }
@@ -197,10 +203,9 @@ const addressesSlice = createSlice({
       .addCase(deleteAddress.rejected, (state, action) => {
         state.deleteLoading = false;
         state.deleteError = action.payload;
-      });
+      })
 
     // Set Primary Address
-    builder
       .addCase(setPrimaryAddress.pending, (state) => {
         state.setPrimaryLoading = true;
         state.setPrimaryError = null;

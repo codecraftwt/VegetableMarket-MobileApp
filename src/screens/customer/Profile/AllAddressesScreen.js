@@ -309,7 +309,8 @@ const AllAddressesScreen = ({ navigation, route }) => {
         cancelText="Cancel"
         onConfirm={handleConfirmSetPrimary}
         onCancel={() => setShowConfirmModal(false)}
-        type="info"
+        confirmButtonStyle="primary"
+        icon="map-marker-check"
       />
 
       {/* Confirm Delete Modal */}
@@ -322,7 +323,8 @@ const AllAddressesScreen = ({ navigation, route }) => {
         cancelText="Cancel"
         onConfirm={handleConfirmDelete}
         onCancel={handleCancelDelete}
-        type="warning"
+        confirmButtonStyle="destructive"
+        icon="delete-alert"
       />
     </SafeAreaView>
   );
