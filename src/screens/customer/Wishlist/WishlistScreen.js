@@ -8,12 +8,15 @@ import { p } from '../../../utils/Responsive';
 import { fontSizes } from '../../../utils/fonts';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchWishlist, removeWishlistItem } from '../../../redux/slices/wishlistSlice';
+import { addToCart, addItemToCart, clearCartErrors } from '../../../redux/slices/cartSlice';
 import { useFocusEffect } from '@react-navigation/native';
 
 const WishlistScreen = ({ navigation }) => {
   const dispatch = useDispatch();
   const wishlistState = useSelector(state => state.wishlist);
+  const cartState = useSelector(state => state.cart);
   const { items, loading, error, removeLoading, removeError } = wishlistState;
+  const { addLoading, addError } = cartState;
 
   // Modal states
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -45,6 +48,15 @@ const WishlistScreen = ({ navigation }) => {
       setShowErrorModal(true);
     }
   }, [removeError]);
+
+  // Handle cart add error
+  useEffect(() => {
+    if (addError) {
+      setErrorMessage(addError);
+      setShowErrorModal(true);
+      dispatch(clearCartErrors());
+    }
+  }, [addError, dispatch]);
 
   const handleBackPress = useCallback(() => {
     navigation.goBack();
@@ -83,9 +95,31 @@ const WishlistScreen = ({ navigation }) => {
   }, [navigation]);
 
   const handleAddToCart = useCallback(async (item) => {
-    // This will be handled by the ProductCard component itself
-    // We just need to provide the navigation prop
-  }, []);
+    try {
+      // Add item to cart with default quantity of 1
+      const cartData = {
+        vegetable_id: item.id,
+        quantity: 1
+      };
+
+      // First add to local state for immediate UI update
+      dispatch(addItemToCart({
+        vegetable_id: item.id,
+        quantity: 1,
+        vegetable: item
+      }));
+
+      // Then sync with server
+      await dispatch(addToCart(cartData)).unwrap();
+      
+      setSuccessMessage(`${item.name} added to cart!`);
+      setShowSuccessModal(true);
+    } catch (error) {
+      console.error('Add to cart error:', error);
+      setErrorMessage(error.message || 'Failed to add item to cart');
+      setShowErrorModal(true);
+    }
+  }, [dispatch]);
 
   const handleRemoveFromWishlist = useCallback((item) => {
     handleRemoveItem(item);
@@ -152,6 +186,7 @@ const WishlistScreen = ({ navigation }) => {
                   showDeleteButton={true}
                   onDelete={handleRemoveFromWishlist}
                   isDeleteLoading={removeLoading}
+                  isAddToCartLoading={addLoading}
                   size="medium"
                   navigation={navigation}
                 />
