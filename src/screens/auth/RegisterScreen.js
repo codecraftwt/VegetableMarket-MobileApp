@@ -24,7 +24,7 @@ import ErrorModal from '../../components/ErrorModal';
 const RegisterScreen = () => {
   const navigation = useNavigation();
   const dispatch = useDispatch();
-  const { loading, error, isLoggedIn } = useSelector(state => state.auth);
+  const { loading, error, isLoggedIn, token } = useSelector(state => state.auth);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -54,17 +54,17 @@ const RegisterScreen = () => {
   // Get roles from the auth slice
   const roles = Object.values(ROLES).map(role => role.name);
 
-  // Handle registration success and errors
+  // After registration, navigate to email verification screen
   useEffect(() => {
-    if (isLoggedIn && !hasNavigated.current) {
-      console.log('Registration successful, showing modal...');
+    // In updated flow, register no longer sets isLoggedIn true; rely on token presence
+    if (token && !hasNavigated.current) {
       hasNavigated.current = true;
-      // Add a small delay to ensure the modal shows properly
+      // Directly navigate to EmailVerification screen
       setTimeout(() => {
-        setShowSuccessModal(true);
+        navigation.replace('EmailVerification');
       }, 200);
     }
-  }, [isLoggedIn]);
+  }, [token, navigation]);
 
   // Handle registration errors
   useEffect(() => {
@@ -148,23 +148,7 @@ const RegisterScreen = () => {
     setErrors({ ...errors, role: null });
   };
 
-  const handleSuccessModalClose = () => {
-    console.log('Success modal closing...');
-    setShowSuccessModal(false);
-    // Reset form data and navigate
-    setFormData({
-      name: '',
-      email: '',
-      phone: '',
-      role: '',
-      password: '',
-      confirmPassword: '',
-    });
-    // Add a small delay before navigation to ensure modal closes properly
-    setTimeout(() => {
-      navigation.navigate('Login');
-    }, 300);
-  };
+  const handleSuccessModalClose = () => {};
 
   const handleErrorModalClose = () => {
     setShowErrorModal(false);

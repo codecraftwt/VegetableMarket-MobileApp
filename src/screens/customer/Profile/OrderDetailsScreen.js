@@ -471,7 +471,7 @@ const OrderDetailsScreen = ({ navigation, route }) => {
             </View>
             <View style={styles.orderTotal}>
               <Text style={styles.totalLabel}>Total Amount</Text>
-              <Text style={styles.totalAmount}>₹{order.total_amount}</Text>
+              <Text style={styles.totalAmount}>₹{order.final_amount}</Text>
             </View>
           </View>
         </View>
@@ -628,9 +628,14 @@ const OrderDetailsScreen = ({ navigation, route }) => {
             <Text style={styles.priceValue}>₹0.00</Text>
           </View>
           
+          <View style={styles.priceRow}>
+            <Text style={styles.priceLabel}>Discount:</Text>
+            <Text style={styles.priceValue}>-₹{order.discount_amount ?? '0.00'}</Text>
+          </View>
+          
           <View style={[styles.priceRow, styles.totalRow]}>
             <Text style={styles.totalPriceLabel}>Total:</Text>
-            <Text style={styles.totalPriceValue}>₹{order.total_amount}</Text>
+            <Text style={styles.totalPriceValue}>₹{order.final_amount}</Text>
           </View>
         </View>
 

@@ -108,6 +108,12 @@ const initialState = {
   isLoggedIn: false,
   loading: false,
   error: null,
+  // Email verification related state
+  emailVerified: null,
+  verificationLoading: false,
+  verificationError: null,
+  resendLoading: false,
+  resendMessage: null,
 };
 
 const authSlice = createSlice({
@@ -117,11 +123,22 @@ const authSlice = createSlice({
     clearError: state => {
       state.error = null;
     },
+    clearVerificationState: state => {
+      state.verificationLoading = false;
+      state.verificationError = null;
+      state.resendLoading = false;
+      state.resendMessage = null;
+    },
     clearAuth: state => {
       state.user = null;
       state.token = null;
       state.isLoggedIn = false;
       state.error = null;
+      state.emailVerified = null;
+      state.verificationLoading = false;
+      state.verificationError = null;
+      state.resendLoading = false;
+      state.resendMessage = null;
       // Clear AsyncStorage with lazy import
       import('@react-native-async-storage/async-storage').then(AsyncStorage => {
         try {
@@ -137,6 +154,11 @@ const authSlice = createSlice({
       state.token = null;
       state.isLoggedIn = false;
       state.error = null;
+      state.emailVerified = null;
+      state.verificationLoading = false;
+      state.verificationError = null;
+      state.resendLoading = false;
+      state.resendMessage = null;
       // Clear AsyncStorage with lazy import
       import('@react-native-async-storage/async-storage').then(AsyncStorage => {
         try {
@@ -160,7 +182,9 @@ const authSlice = createSlice({
         // Access user and token from the nested data structure
         state.user = action.payload.data.user;
         state.token = action.payload.data.token;
-        state.isLoggedIn = true;
+        // Do not mark logged-in until email verified
+        state.isLoggedIn = false;
+        state.emailVerified = false;
         state.error = null;
         // Store token in AsyncStorage with lazy import
         import('@react-native-async-storage/async-storage').then(AsyncStorage => {
@@ -188,7 +212,9 @@ const authSlice = createSlice({
         // Access user and token from the nested data structure
         state.user = action.payload.data.user;
         state.token = action.payload.data.token;
+        // Tentatively logged in; will be gated by emailVerified check in UI
         state.isLoggedIn = true;
+        state.emailVerified = action.payload.data.user?.email_verified ?? state.emailVerified;
         state.error = null;
         // Store token in AsyncStorage with lazy import
         import('@react-native-async-storage/async-storage').then(AsyncStorage => {
@@ -217,6 +243,7 @@ const authSlice = createSlice({
           state.user = action.payload.user;
           state.token = action.payload.token;
           state.isLoggedIn = true;
+          state.emailVerified = action.payload.user?.email_verified ?? state.emailVerified;
           state.error = null;
         }
       })
@@ -224,8 +251,86 @@ const authSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       });
+
+    // Check email verified
+    builder
+      .addCase(checkEmailVerified.pending, state => {
+        state.verificationLoading = true;
+        state.verificationError = null;
+      })
+      .addCase(checkEmailVerified.fulfilled, (state, action) => {
+        state.verificationLoading = false;
+        state.emailVerified = action.payload.email_verified === true;
+        if (state.emailVerified) {
+          // Mark logged-in once verified so app can route into dashboards
+          state.isLoggedIn = true;
+        }
+      })
+      .addCase(checkEmailVerified.rejected, (state, action) => {
+        state.verificationLoading = false;
+        state.verificationError = action.payload || 'Failed to check verification status';
+      });
+
+    // Resend verification email
+    builder
+      .addCase(resendVerificationEmail.pending, state => {
+        state.resendLoading = true;
+        state.resendMessage = null;
+        state.verificationError = null;
+      })
+      .addCase(resendVerificationEmail.fulfilled, (state, action) => {
+        state.resendLoading = false;
+        state.resendMessage = action.payload.message || 'Verification email resent.';
+      })
+      .addCase(resendVerificationEmail.rejected, (state, action) => {
+        state.resendLoading = false;
+        state.verificationError = action.payload || 'Failed to resend verification email';
+      });
   },
 });
 
-export const { clearError, clearAuth, logout } = authSlice.actions;
+export const { clearError, clearAuth, logout, clearVerificationState } = authSlice.actions;
 export default authSlice.reducer;
+
+// New thunks for email verification flow
+export const checkEmailVerified = createAsyncThunk(
+  'auth/checkEmailVerified',
+  async (_, { getState, rejectWithValue }) => {
+    try {
+      const state = getState();
+      const tokenFromState = state.auth?.token;
+      const AsyncStorage = await import('@react-native-async-storage/async-storage');
+      const token = tokenFromState || (await AsyncStorage.default.getItem('token'));
+      if (!token) {
+        return rejectWithValue('Missing auth token');
+      }
+      const response = await api.get('email/verified', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Verification check failed');
+    }
+  }
+);
+
+export const resendVerificationEmail = createAsyncThunk(
+  'auth/resendVerificationEmail',
+  async (_, { getState, rejectWithValue }) => {
+    try {
+      const state = getState();
+      const tokenFromState = state.auth?.token;
+      const AsyncStorage = await import('@react-native-async-storage/async-storage');
+      const token = tokenFromState || (await AsyncStorage.default.getItem('token'));
+      if (!token) {
+        return rejectWithValue('Missing auth token');
+      }
+      const response = await api.post('email/resend', null, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Resend failed');
+    }
+  }
+);

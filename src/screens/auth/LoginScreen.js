@@ -35,7 +35,7 @@ const fontSizes = {
 const LoginScreen = () => {
   const navigation = useNavigation();
   const dispatch = useDispatch();
-  const { loading, error, isLoggedIn, user } = useSelector(state => state.auth);
+  const { loading, error, isLoggedIn, user, emailVerified } = useSelector(state => state.auth);
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -54,22 +54,22 @@ const LoginScreen = () => {
     }
   }, [dispatch, error]);
 
-  // Handle successful login navigation
+  // Handle successful login navigation with email verification gate
   React.useEffect(() => {
     if (isLoggedIn && user) {
-      // Check user role and navigate accordingly
+      if (emailVerified === false) {
+        navigation.replace('EmailVerification');
+        return;
+      }
       if (user.role_id === 2) {
-        // Farmer role
         navigation.replace('FarmerApp');
       } else if (user.role_id === 4) {
-        // Delivery agent role
         navigation.replace('DeliveryApp');
       } else {
-        // Customer or other roles (role_id === 3)
         navigation.replace('App');
       }
     }
-  }, [isLoggedIn, user, navigation]);
+  }, [isLoggedIn, user, emailVerified, navigation]);
 
   const validateForm = () => {
     const newErrors = {};

@@ -175,7 +175,7 @@ const MyOrdersScreen = ({ navigation }) => {
             <Text style={styles.orderDate}>{order.created_at}</Text>
           </View>
           <View style={styles.orderTotal}>
-            <Text style={styles.totalAmount}>₹{order.total_amount}</Text>
+            <Text style={styles.totalAmount}>₹{order.final_amount}</Text>
           </View>
         </View>
 

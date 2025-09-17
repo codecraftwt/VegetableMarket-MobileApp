@@ -26,6 +26,7 @@ import FarmerProfileScreen from '../screens/customer/Profile/FarmerProfileScreen
 import HelpCenterScreen from '../screens/customer/Profile/HelpCenterScreen';
 import MyFarmsScreen from '../screens/farmer/farm/MyFarmsScreen';
 import SalesReportScreen from '../screens/farmer/Sales/SalesReportScreen';
+import EmailVerificationScreen from '../screens/auth/EmailVerificationScreen';
 import { Easing, StatusBar } from 'react-native';
 import StatusBarSpacer from '../components/StatusBarSpacer';
 import AddFarmScreen from '../screens/farmer/farm/AddFarmScreen';
@@ -89,6 +90,7 @@ const AppNavigator = () => {
     { name: 'Splash', component: SplashScreen, transition: splashTransition },
     { name: 'Login', component: LoginScreen, transition: slideFromRight },
     { name: 'Register', component: RegisterScreen, transition: slideFromRight },
+    { name: 'EmailVerification', component: EmailVerificationScreen, transition: slideFromRight },
     { name: 'App', component: BottomTabNavigator, transition: slideFromRight },
     { name: 'FarmerApp', component: FarmerBottomTabNavigator, transition: slideFromRight },
     { name: 'DeliveryApp', component: DeliveryBottomTabNavigator, transition: slideFromRight },

@@ -9,6 +9,7 @@ import {
   Image,
   StatusBar,
   SafeAreaView,
+  Platform,
 } from 'react-native';
 import SkeletonLoader from '../../../components/SkeletonLoader';
 import Icon from 'react-native-vector-icons/FontAwesome';
@@ -421,6 +422,12 @@ const styles = StyleSheet.create({
     paddingVertical: p(2),
     borderWidth: 1,
     borderColor: '#e9ecef',
+    ...(Platform.OS === 'ios' && {
+      borderRadius: p(8),
+      paddingHorizontal: p(16),
+      paddingVertical: p(12),
+      minHeight: p(48),
+    }),
   },
   searchInput: {
     flex: 1,
@@ -428,6 +435,9 @@ const styles = StyleSheet.create({
     color: '#333',
     marginRight: p(8),
     fontFamily: 'Poppins-Regular',
+    ...(Platform.OS === 'ios' && {
+      paddingVertical: p(4),
+    }),
   },
   // Content Styles
   content: {
