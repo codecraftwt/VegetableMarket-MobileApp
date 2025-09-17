@@ -261,10 +261,7 @@ const authSlice = createSlice({
       .addCase(checkEmailVerified.fulfilled, (state, action) => {
         state.verificationLoading = false;
         state.emailVerified = action.payload.email_verified === true;
-        if (state.emailVerified) {
-          // Mark logged-in once verified so app can route into dashboards
-          state.isLoggedIn = true;
-        }
+        // Don't set isLoggedIn to true here - let EmailVerificationScreen handle navigation
       })
       .addCase(checkEmailVerified.rejected, (state, action) => {
         state.verificationLoading = false;

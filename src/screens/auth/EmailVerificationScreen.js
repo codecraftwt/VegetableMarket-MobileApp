@@ -1,9 +1,10 @@
-import React, { useEffect, useCallback } from 'react';
+import React, { useEffect, useCallback, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, ImageBackground, StatusBar } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigation } from '@react-navigation/native';
-import { checkEmailVerified, resendVerificationEmail, clearVerificationState } from '../../redux/slices/authSlice';
+import { checkEmailVerified, resendVerificationEmail, clearVerificationState, clearAuth } from '../../redux/slices/authSlice';
 import { p } from '../../utils/Responsive';
+import SuccessModal from '../../components/SuccessModal';
 
 const fontSizes = { xs: 12, sm: 14, base: 16, lg: 18, xl: 20, '2xl': 24 };
 
@@ -11,6 +12,7 @@ const EmailVerificationScreen = () => {
   const dispatch = useDispatch();
   const navigation = useNavigation();
   const { user, emailVerified, verificationLoading, resendLoading, resendMessage, verificationError } = useSelector(state => state.auth);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   const pollStatus = useCallback(() => {
     dispatch(checkEmailVerified());
@@ -26,16 +28,10 @@ const EmailVerificationScreen = () => {
 
   useEffect(() => {
     if (emailVerified) {
-      // Navigate based on role
-      if (user?.role_id === 2) {
-        navigation.replace('FarmerApp');
-      } else if (user?.role_id === 4) {
-        navigation.replace('DeliveryApp');
-      } else {
-        navigation.replace('App');
-      }
+      // Show success modal instead of navigating to dashboard
+      setShowSuccessModal(true);
     }
-  }, [emailVerified, navigation, user]);
+  }, [emailVerified]);
 
   useEffect(() => {
     return () => {
@@ -45,6 +41,13 @@ const EmailVerificationScreen = () => {
 
   const handleResend = () => {
     dispatch(resendVerificationEmail());
+  };
+
+  const handleSuccessModalClose = () => {
+    setShowSuccessModal(false);
+    // Clear auth state and navigate back to login
+    dispatch(clearAuth());
+    navigation.replace('Login');
   };
 
   return (
@@ -80,6 +83,17 @@ const EmailVerificationScreen = () => {
           </View>
         </View>
       </ImageBackground>
+
+      {/* Success Modal */}
+      <SuccessModal
+        visible={showSuccessModal}
+        onClose={handleSuccessModalClose}
+        title="Account Verified Successfully!"
+        message="Your email has been verified. You can now sign in to access the fresh vegetable marketplace."
+        buttonText="Sign In"
+        onButtonPress={handleSuccessModalClose}
+        closeOnBackdropPress={false}
+      />
     </>
   );
 };

@@ -204,8 +204,126 @@ const ProfileEditScreen = ({ navigation, route }) => {
     navigation.goBack();
   }, [navigation]);
 
+  // Validation function
+  const validateProfileData = useCallback(() => {
+    const errors = {};
+
+    // Name validation
+    if (!formData.name.trim()) {
+      errors.name = 'Name is required';
+    } else if (formData.name.trim().length < 2) {
+      errors.name = 'Name must be at least 2 characters';
+    } else if (formData.name.trim().length > 50) {
+      errors.name = 'Name must be less than 50 characters';
+    } else if (!/^[a-zA-Z\s]+$/.test(formData.name.trim())) {
+      errors.name = 'Name can only contain letters and spaces';
+    }
+
+    // Email validation
+    if (!formData.email.trim()) {
+      errors.email = 'Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
+      errors.email = 'Please enter a valid email address';
+    } else if (formData.email.trim().length > 100) {
+      errors.email = 'Email must be less than 100 characters';
+    }
+
+    // Phone validation
+    if (!formData.phone.trim()) {
+      errors.phone = 'Phone number is required';
+    } else if (!/^\d{10}$/.test(formData.phone)) {
+      errors.phone = 'Please enter a valid 10-digit phone number';
+    }
+
+    // Bio validation (optional but if provided, validate)
+    if (formData.bio.trim() && formData.bio.trim().length > 500) {
+      errors.bio = 'Bio must be less than 500 characters';
+    }
+
+    return errors;
+  }, [formData]);
+
+  const validateAddressData = useCallback(() => {
+    const errors = {};
+
+    // Address Label validation
+    if (!addressData.addressLabel.trim()) {
+      errors.addressLabel = 'Address label is required';
+    } else if (addressData.addressLabel.trim().length > 50) {
+      errors.addressLabel = 'Address label must be less than 50 characters';
+    }
+
+    // Address Line validation
+    if (!addressData.addressLine.trim()) {
+      errors.addressLine = 'Address line is required';
+    } else if (addressData.addressLine.trim().length > 200) {
+      errors.addressLine = 'Address line must be less than 200 characters';
+    }
+
+    // City validation
+    if (!addressData.city.trim()) {
+      errors.city = 'City is required';
+    } else if (addressData.city.trim().length > 50) {
+      errors.city = 'City must be less than 50 characters';
+    }
+
+    // Taluka validation
+    if (!addressData.taluka.trim()) {
+      errors.taluka = 'Taluka is required';
+    } else if (addressData.taluka.trim().length > 50) {
+      errors.taluka = 'Taluka must be less than 50 characters';
+    }
+
+    // District validation
+    if (!addressData.district.trim()) {
+      errors.district = 'District is required';
+    } else if (addressData.district.trim().length > 50) {
+      errors.district = 'District must be less than 50 characters';
+    }
+
+    // State validation
+    if (!addressData.state.trim()) {
+      errors.state = 'State is required';
+    } else if (addressData.state.trim().length > 50) {
+      errors.state = 'State must be less than 50 characters';
+    }
+
+    // Country validation
+    if (!addressData.country.trim()) {
+      errors.country = 'Country is required';
+    } else if (addressData.country.trim().length > 50) {
+      errors.country = 'Country must be less than 50 characters';
+    }
+
+    // Pincode validation
+    if (!addressData.pincode.trim()) {
+      errors.pincode = 'Pincode is required';
+    } else if (!/^\d{6}$/.test(addressData.pincode)) {
+      errors.pincode = 'Please enter a valid 6-digit pincode';
+    }
+
+    return errors;
+  }, [addressData]);
+
   const handleSaveProfile = useCallback(async () => {
     try {
+      // Validate profile data
+      const profileErrors = validateProfileData();
+      if (Object.keys(profileErrors).length > 0) {
+        const errorMessages = Object.values(profileErrors).join('\n');
+        setErrorMessage(errorMessages);
+        setShowErrorModal(true);
+        return;
+      }
+
+      // Check if address is complete
+      const addressErrors = validateAddressData();
+      if (Object.keys(addressErrors).length > 0) {
+        setErrorMessage('Please complete your address information to update your profile. All address fields are required.');
+        setShowErrorModal(true);
+        return;
+      }
+
       // Map the form data to match the API specification
       const updateData = {
         // Profile fields
@@ -240,10 +358,19 @@ const ProfileEditScreen = ({ navigation, route }) => {
       setErrorMessage(error.message || 'Failed to update profile');
       setShowErrorModal(true);
     }
-  }, [formData, addressData, dispatch]);
+  }, [formData, addressData, dispatch, validateProfileData, validateAddressData]);
 
   const handleSaveAddress = useCallback(async () => {
     try {
+      // Validate address data
+      const addressErrors = validateAddressData();
+      if (Object.keys(addressErrors).length > 0) {
+        const errorMessages = Object.values(addressErrors).join('\n');
+        setErrorMessage(errorMessages);
+        setShowErrorModal(true);
+        return;
+      }
+
       // If editing an existing address, use the addresses API
       if (editingAddressId) {
         const updateData = {
@@ -300,7 +427,7 @@ const ProfileEditScreen = ({ navigation, route }) => {
       setErrorMessage(error.message || 'Failed to update address');
       setShowErrorModal(true);
     }
-  }, [formData, addressData, dispatch, editingAddressId]);
+  }, [formData, addressData, dispatch, editingAddressId, validateAddressData]);
 
   const handleAddAddress = useCallback(async () => {
     // Only allow adding addresses for customers
@@ -311,6 +438,15 @@ const ProfileEditScreen = ({ navigation, route }) => {
     }
 
     try {
+      // Validate address data
+      const addressErrors = validateAddressData();
+      if (Object.keys(addressErrors).length > 0) {
+        const errorMessages = Object.values(addressErrors).join('\n');
+        setErrorMessage(errorMessages);
+        setShowErrorModal(true);
+        return;
+      }
+
       // Map the address data to match the API specification
       const newAddressData = {
         address_label: addressData.addressLabel,
@@ -327,38 +463,60 @@ const ProfileEditScreen = ({ navigation, route }) => {
       
       await dispatch(addAddress(newAddressData)).unwrap();
       
-      // Reset the adding new address state
-      setIsAddingNewAddress(false);
-      
       // Refresh profile data to get the new address
       dispatch(fetchProfile());
       
       // Show success modal
       setSuccessMessage('Address added successfully!');
       setShowSuccessModal(true);
+      
+      // Reset the adding new address state after showing success modal
+      // This will be handled in the success modal close handler
     } catch (error) {
       console.error('Add address error:', error);
       // Show error modal
       setErrorMessage(error.message || 'Failed to add address');
       setShowErrorModal(true);
     }
-  }, [addressData, dispatch, isCustomer]);
+  }, [addressData, dispatch, isCustomer, validateAddressData]);
 
   // Modal handlers
   const handleSuccessModalClose = useCallback(() => {
     setShowSuccessModal(false);
+    
     // Check if we came from CheckoutScreen (when adding address)
     if (route.params?.fromCheckout) {
       // Navigate back to CheckoutScreen
       navigation.navigate('Checkout');
-    } else if (route.params?.editAddress || route.params?.addNewAddress) {
-      // If editing or adding address from AllAddressesScreen, go back to AllAddressesScreen
+    } else if (route.params?.editAddress) {
+      // If editing address from AllAddressesScreen, go back to AllAddressesScreen
       navigation.navigate('AllAddresses');
-    } else if (!isAddingNewAddress) {
-      // Default behavior - go back
-      navigation.goBack();
+    } else if (route.params?.addNewAddress) {
+      // If adding new address from AllAddressesScreen, go back to AllAddressesScreen
+      navigation.navigate('AllAddresses');
+    } else if (isAddingNewAddress) {
+      // If we were adding a new address, stay on the same screen but reset the adding state
+      setIsAddingNewAddress(false);
+      // Reset address data to show the newly added address
+      if (address) {
+        setAddressData({
+          addressLabel: address.address_label || '',
+          addressLine: address.address_line || '',
+          city: address.city || '',
+          taluka: address.taluka || '',
+          district: address.district || '',
+          state: address.state || '',
+          country: address.country || '',
+          pincode: address.pincode || '',
+        });
+      }
+      // Don't navigate anywhere, just stay on the profile edit screen
+    } else {
+      // For profile updates, stay on the same screen instead of going back
+      // This prevents navigation back to register screen
+      // Just close the modal and stay on ProfileEditScreen
     }
-  }, [navigation, isAddingNewAddress, route.params?.fromCheckout, route.params?.editAddress, route.params?.addNewAddress]);
+  }, [navigation, isAddingNewAddress, route.params?.fromCheckout, route.params?.editAddress, route.params?.addNewAddress, address]);
 
   const handleConfirmProfileSave = useCallback(() => {
     setShowConfirmProfileModal(false);
@@ -429,21 +587,29 @@ const ProfileEditScreen = ({ navigation, route }) => {
     </TouchableOpacity>
   ), [activeTab]);
 
-  // Optimized form handlers
+  // Optimized form handlers with validation
   const handleNameChange = useCallback((text) => {
-    setFormData(prev => ({...prev, name: text}));
+    // Only allow letters and spaces, limit length
+    const processedText = text.replace(/[^a-zA-Z\s]/g, '').slice(0, 50);
+    setFormData(prev => ({...prev, name: processedText}));
   }, []);
 
   const handleEmailChange = useCallback((text) => {
-    setFormData(prev => ({...prev, email: text}));
+    // Limit email length
+    const processedText = text.slice(0, 100);
+    setFormData(prev => ({...prev, email: processedText}));
   }, []);
 
   const handlePhoneChange = useCallback((text) => {
-    setFormData(prev => ({...prev, phone: text}));
+    // Only allow numbers and limit to 10 digits
+    const processedText = text.replace(/[^0-9]/g, '').slice(0, 10);
+    setFormData(prev => ({...prev, phone: processedText}));
   }, []);
 
   const handleBioChange = useCallback((text) => {
-    setFormData(prev => ({...prev, bio: text}));
+    // Limit bio length
+    const processedText = text.slice(0, 500);
+    setFormData(prev => ({...prev, bio: processedText}));
   }, []);
 
   const ProfileTab = useMemo(() => (
@@ -460,6 +626,7 @@ const ProfileEditScreen = ({ navigation, route }) => {
           autoCapitalize="words"
           returnKeyType="next"
           blurOnSubmit={false}
+          maxLength={50}
         />
       </View>
 
@@ -474,6 +641,7 @@ const ProfileEditScreen = ({ navigation, route }) => {
           autoCapitalize="none"
           returnKeyType="next"
           blurOnSubmit={false}
+          maxLength={100}
         />
       </View>
 
@@ -487,6 +655,7 @@ const ProfileEditScreen = ({ navigation, route }) => {
           keyboardType="phone-pad"
           returnKeyType="next"
           blurOnSubmit={false}
+          maxLength={10}
         />
       </View>
 
@@ -502,6 +671,7 @@ const ProfileEditScreen = ({ navigation, route }) => {
           textAlignVertical="top"
           returnKeyType="default"
           blurOnSubmit={true}
+          maxLength={500}
         />
       </View>
 
@@ -519,37 +689,46 @@ const ProfileEditScreen = ({ navigation, route }) => {
     </View>
   ), [formData, handleNameChange, handleEmailChange, handlePhoneChange, handleBioChange, updateLoading]);
 
-  // Optimized address handlers
+  // Optimized address handlers with validation
   const handleAddressLabelChange = useCallback((text) => {
-    setAddressData(prev => ({...prev, addressLabel: text}));
+    const processedText = text.slice(0, 50);
+    setAddressData(prev => ({...prev, addressLabel: processedText}));
   }, []);
 
   const handleAddressLineChange = useCallback((text) => {
-    setAddressData(prev => ({...prev, addressLine: text}));
+    const processedText = text.slice(0, 200);
+    setAddressData(prev => ({...prev, addressLine: processedText}));
   }, []);
 
   const handleCityChange = useCallback((text) => {
-    setAddressData(prev => ({...prev, city: text}));
+    const processedText = text.slice(0, 50);
+    setAddressData(prev => ({...prev, city: processedText}));
   }, []);
 
   const handleTalukaChange = useCallback((text) => {
-    setAddressData(prev => ({...prev, taluka: text}));
+    const processedText = text.slice(0, 50);
+    setAddressData(prev => ({...prev, taluka: processedText}));
   }, []);
 
   const handleDistrictChange = useCallback((text) => {
-    setAddressData(prev => ({...prev, district: text}));
+    const processedText = text.slice(0, 50);
+    setAddressData(prev => ({...prev, district: processedText}));
   }, []);
 
   const handleStateChange = useCallback((text) => {
-    setAddressData(prev => ({...prev, state: text}));
+    const processedText = text.slice(0, 50);
+    setAddressData(prev => ({...prev, state: processedText}));
   }, []);
 
   const handleCountryChange = useCallback((text) => {
-    setAddressData(prev => ({...prev, country: text}));
+    const processedText = text.slice(0, 50);
+    setAddressData(prev => ({...prev, country: processedText}));
   }, []);
 
   const handlePincodeChange = useCallback((text) => {
-    setAddressData(prev => ({...prev, pincode: text}));
+    // Only allow numbers and limit to 6 digits
+    const processedText = text.replace(/[^0-9]/g, '').slice(0, 6);
+    setAddressData(prev => ({...prev, pincode: processedText}));
   }, []);
 
   const AddressTab = useMemo(() => {
@@ -595,6 +774,7 @@ const ProfileEditScreen = ({ navigation, route }) => {
           autoCapitalize="words"
           returnKeyType="next"
           blurOnSubmit={false}
+          maxLength={50}
         />
       </View>
 
@@ -608,6 +788,7 @@ const ProfileEditScreen = ({ navigation, route }) => {
           autoCapitalize="words"
           returnKeyType="next"
           blurOnSubmit={false}
+          maxLength={200}
         />
       </View>
 
@@ -622,6 +803,7 @@ const ProfileEditScreen = ({ navigation, route }) => {
             autoCapitalize="words"
             returnKeyType="next"
             blurOnSubmit={false}
+            maxLength={50}
           />
         </View>
         <View style={[styles.inputGroup, { flex: 1 }]}>
@@ -634,6 +816,7 @@ const ProfileEditScreen = ({ navigation, route }) => {
             autoCapitalize="words"
             returnKeyType="next"
             blurOnSubmit={false}
+            maxLength={50}
           />
         </View>
       </View>
@@ -649,6 +832,7 @@ const ProfileEditScreen = ({ navigation, route }) => {
             autoCapitalize="words"
             returnKeyType="next"
             blurOnSubmit={false}
+            maxLength={50}
           />
         </View>
         <View style={[styles.inputGroup, { flex: 1 }]}>
@@ -661,6 +845,7 @@ const ProfileEditScreen = ({ navigation, route }) => {
             autoCapitalize="words"
             returnKeyType="next"
             blurOnSubmit={false}
+            maxLength={50}
           />
         </View>
       </View>
@@ -676,6 +861,7 @@ const ProfileEditScreen = ({ navigation, route }) => {
             autoCapitalize="words"
             returnKeyType="next"
             blurOnSubmit={false}
+            maxLength={50}
           />
         </View>
         <View style={[styles.inputGroup, { flex: 1 }]}>
@@ -688,6 +874,7 @@ const ProfileEditScreen = ({ navigation, route }) => {
             keyboardType="numeric"
             returnKeyType="done"
             blurOnSubmit={true}
+            maxLength={6}
           />
         </View>
       </View>

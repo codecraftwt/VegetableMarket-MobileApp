@@ -78,32 +78,56 @@ const RegisterScreen = () => {
   const validateForm = () => {
     const newErrors = {};
 
+    // Name validation
     if (!formData.name.trim()) {
       newErrors.name = 'Name is required';
+    } else if (formData.name.trim().length < 2) {
+      newErrors.name = 'Name must be at least 2 characters';
+    } else if (formData.name.trim().length > 50) {
+      newErrors.name = 'Name must be less than 50 characters';
+    } else if (!/^[a-zA-Z\s]+$/.test(formData.name.trim())) {
+      newErrors.name = 'Name can only contain letters and spaces';
     }
 
+    // Email validation
     if (!formData.email.trim()) {
       newErrors.email = 'Email is required';
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
       newErrors.email = 'Please enter a valid email address';
+    } else if (formData.email.trim().length > 100) {
+      newErrors.email = 'Email must be less than 100 characters';
     }
 
+    // Phone validation
     if (!formData.phone.trim()) {
       newErrors.phone = 'Phone number is required';
-    } else if (formData.phone.length < 10) {
-      newErrors.phone = 'Please enter a valid phone number';
+    } else if (!/^\d{10}$/.test(formData.phone)) {
+      newErrors.phone = 'Please enter a valid 10-digit phone number';
     }
 
+    // Role validation
     if (!formData.role) {
       newErrors.role = 'Please select a role';
     }
 
+    // Password validation
     if (!formData.password.trim()) {
       newErrors.password = 'Password is required';
     } else if (formData.password.length < 8) {
       newErrors.password = 'Password must be at least 8 characters';
+    } else if (formData.password.length > 50) {
+      newErrors.password = 'Password must be less than 50 characters';
+    } else if (!/(?=.*[a-z])/.test(formData.password)) {
+      newErrors.password = 'Password must contain at least one lowercase letter';
+    } else if (!/(?=.*[A-Z])/.test(formData.password)) {
+      newErrors.password = 'Password must contain at least one uppercase letter';
+    } else if (!/(?=.*\d)/.test(formData.password)) {
+      newErrors.password = 'Password must contain at least one number';
+    } else if (!/(?=.*[@$!%*?&])/.test(formData.password)) {
+      newErrors.password = 'Password must contain at least one special character (@$!%*?&)';
     }
 
+    // Confirm Password validation
     if (!formData.confirmPassword.trim()) {
       newErrors.confirmPassword = 'Please confirm your password';
     } else if (formData.password !== formData.confirmPassword) {
@@ -136,7 +160,25 @@ const RegisterScreen = () => {
   };
 
   const handleInputChange = (field, value) => {
-    setFormData({ ...formData, [field]: value });
+    let processedValue = value;
+    
+    // Field-specific input processing
+    if (field === 'phone') {
+      // Only allow numbers and limit to 10 digits
+      processedValue = value.replace(/[^0-9]/g, '').slice(0, 10);
+    } else if (field === 'name') {
+      // Only allow letters and spaces, limit length
+      processedValue = value.replace(/[^a-zA-Z\s]/g, '').slice(0, 50);
+    } else if (field === 'email') {
+      // Allow email characters, limit length
+      processedValue = value.slice(0, 100);
+    } else if (field === 'password' || field === 'confirmPassword') {
+      // Limit password length
+      processedValue = value.slice(0, 50);
+    }
+    
+    setFormData({ ...formData, [field]: processedValue });
+    
     if (errors[field]) {
       setErrors({ ...errors, [field]: null });
     }
@@ -198,6 +240,7 @@ const RegisterScreen = () => {
                   autoCorrect={false}
                   editable={!loading}
                   returnKeyType="next"
+                  maxLength={50}
                 />
                 {errors.name && (
                   <Text style={styles.errorText}>{errors.name}</Text>
@@ -223,6 +266,7 @@ const RegisterScreen = () => {
                   autoCorrect={false}
                   editable={!loading}
                   returnKeyType="next"
+                  maxLength={100}
                 />
                 {errors.email && (
                   <Text style={styles.errorText}>{errors.email}</Text>
@@ -246,6 +290,7 @@ const RegisterScreen = () => {
                   keyboardType="phone-pad"
                   editable={!loading}
                   returnKeyType="next"
+                  maxLength={10}
                 />
                 {errors.phone && (
                   <Text style={styles.errorText}>{errors.phone}</Text>
@@ -314,6 +359,7 @@ const RegisterScreen = () => {
                     secureTextEntry={!showPassword}
                     editable={!loading}
                     returnKeyType="next"
+                    maxLength={50}
                   />
                   <TouchableOpacity
                     style={styles.eyeIcon}
@@ -353,6 +399,7 @@ const RegisterScreen = () => {
                       editable={!loading}
                       returnKeyType="done"
                       onSubmitEditing={handleRegister}
+                      maxLength={50}
                     />
                     <TouchableOpacity
                       style={styles.eyeIcon}

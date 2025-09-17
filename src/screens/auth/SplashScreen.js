@@ -20,7 +20,7 @@ const SplashScreen = () => {
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
   
   // Get authentication state
-  const { isLoggedIn, user, emailVerified } = useSelector(state => state.auth);
+  const { isLoggedIn, user } = useSelector(state => state.auth);
   const [authChecked, setAuthChecked] = useState(false);
 
   useEffect(() => {
@@ -65,13 +65,15 @@ const SplashScreen = () => {
         }).start(() => {
           // Navigate based on authentication status
           if (isLoggedIn && user) {
-            if (emailVerified === false) {
-              navigation.replace('EmailVerification');
-            } else if (user.role_id === 2) {
+            // Check user role and navigate accordingly
+            if (user.role_id === 2) {
+              // Farmer role
               navigation.replace('FarmerApp');
             } else if (user.role_id === 4) {
+              // Delivery agent role
               navigation.replace('DeliveryApp');
             } else {
+              // Customer or other roles (role_id === 3)
               navigation.replace('App');
             }
           } else {
@@ -82,7 +84,7 @@ const SplashScreen = () => {
     }, 3000); // 3 seconds
 
     return () => clearTimeout(timer);
-  }, [isLoggedIn, user, emailVerified, authChecked, navigation, fadeAnim, scaleAnim]);
+  }, [isLoggedIn, user, authChecked, navigation, fadeAnim, scaleAnim]);
 
   return (
     <Animated.View style={[styles.container, { opacity: fadeAnim }]}>

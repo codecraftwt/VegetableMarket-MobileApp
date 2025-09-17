@@ -54,22 +54,22 @@ const LoginScreen = () => {
     }
   }, [dispatch, error]);
 
-  // Handle successful login navigation with email verification gate
+  // Handle successful login navigation
   React.useEffect(() => {
     if (isLoggedIn && user) {
-      if (emailVerified === false) {
-        navigation.replace('EmailVerification');
-        return;
-      }
+      // Check user role and navigate accordingly
       if (user.role_id === 2) {
+        // Farmer role
         navigation.replace('FarmerApp');
       } else if (user.role_id === 4) {
+        // Delivery agent role
         navigation.replace('DeliveryApp');
       } else {
+        // Customer or other roles (role_id === 3)
         navigation.replace('App');
       }
     }
-  }, [isLoggedIn, user, emailVerified, navigation]);
+  }, [isLoggedIn, user, navigation]);
 
   const validateForm = () => {
     const newErrors = {};
