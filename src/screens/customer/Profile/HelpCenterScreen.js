@@ -89,19 +89,12 @@ const HelpCenterScreen = ({ navigation }) => {
       });
   };
 
-  const handleFAQPress = () => {
-    setSuccessMessage('FAQ section will be available soon!');
-    setShowSuccessModal(true);
+  const handleGenerateTicket = () => {
+    navigation.navigate('GenerateTicket');
   };
 
-  const handleReportBug = () => {
-    setSuccessMessage('Bug report feature will be available soon!');
-    setShowSuccessModal(true);
-  };
-
-  const handleFeedback = () => {
-    setSuccessMessage('Feedback feature will be available soon!');
-    setShowSuccessModal(true);
+  const handleViewTickets = () => {
+    navigation.navigate('ViewTickets');
   };
 
   const ContactMethod = ({ icon, title, subtitle, onPress, color = '#019a34' }) => (
@@ -190,25 +183,18 @@ const HelpCenterScreen = ({ navigation }) => {
         {/* Help & Support */}
         <HelpSection title="Help & Support">
           <HelpItem
-            icon="info-circle"
-            title="Frequently Asked Questions"
-            subtitle="Find answers to common questions"
-            onPress={handleFAQPress}
-            color="#FF9800"
+            icon="plus-circle"
+            title="Generate New Ticket"
+            subtitle="Create a new support ticket"
+            onPress={handleGenerateTicket}
+            color="#019a34"
           />
           <HelpItem
-            icon="bug"
-            title="Report a Bug"
-            subtitle="Help us improve the app"
-            onPress={handleReportBug}
-            color="#F44336"
-          />
-          <HelpItem
-            icon="comment"
-            title="Send Feedback"
-            subtitle="Share your thoughts with us"
-            onPress={handleFeedback}
-            color="#9C27B0"
+            icon="list-alt"
+            title="View All Tickets"
+            subtitle="Check status of your tickets"
+            onPress={handleViewTickets}
+            color="#2196F3"
           />
         </HelpSection>
 

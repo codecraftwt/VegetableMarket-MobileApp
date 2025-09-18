@@ -420,6 +420,17 @@ const FarmerProfileScreen = ({ navigation }) => {
         <Icon name="chevron-right" size={16} color="#999" />
       </TouchableOpacity>
 
+      <TouchableOpacity style={styles.actionItem} onPress={() => navigation.navigate('AdvertisementManagement')}>
+        <View style={styles.actionIcon}>
+          <Icon name="bullhorn" size={20} color="#019a34" />
+        </View>
+        <View style={styles.actionContent}>
+          <Text style={styles.actionTitle}>Advertisement Management</Text>
+          <Text style={styles.actionSubtitle}>Manage your product advertisements</Text>
+        </View>
+        <Icon name="chevron-right" size={16} color="#999" />
+      </TouchableOpacity>
+
       <TouchableOpacity
         style={styles.actionItem}
         onPress={handleHelpCenterPress}
@@ -474,7 +485,7 @@ const FarmerProfileScreen = ({ navigation }) => {
           {/* Skeleton loader for quick actions */}
           <View style={styles.skeletonSection}>
             <SkeletonLoader type="text" width="40%" height={p(20)} style={styles.skeletonSectionTitle} />
-            {[1, 2, 3, 4, 5].map((item) => (
+            {[1, 2, 3, 4, 5, 6].map((item) => (
               <View key={item} style={styles.skeletonActionItem}>
                 <SkeletonLoader type="category" width={p(40)} height={p(40)} borderRadius={p(20)} />
                 <View style={styles.skeletonActionContent}>

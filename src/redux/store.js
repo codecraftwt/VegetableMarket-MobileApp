@@ -13,6 +13,8 @@ import farmsReducer from './slices/farmsSlice';
 import farmerVegetablesReducer from './slices/farmerVegetablesSlice';
 import farmerOrdersReducer from './slices/farmerOrdersSlice';
 import salesReportReducer from './slices/salesReportSlice';
+import supportTicketReducer from './slices/supportTicketSlice';
+import advertisementReducer from './slices/advertisementSlice';
 import deliveryDashboardReducer from './slices/deliveryDashboardSlice';
 import deliveryReducer from './slices/deliverySlice';
 import todaysTaskReducer from './slices/todaysTaskSlice';
@@ -33,6 +35,8 @@ const rootReducer = combineReducers({
   farmerVegetables: farmerVegetablesReducer,
   farmerOrders: farmerOrdersReducer,
   salesReport: salesReportReducer,
+  supportTicket: supportTicketReducer,
+  advertisement: advertisementReducer,
   deliveryDashboard: deliveryDashboardReducer,
   delivery: deliveryReducer,
   todaysTask: todaysTaskReducer,

@@ -24,6 +24,9 @@ import CategoryProductsScreen from '../screens/customer/Category/CategoryProduct
 import OrderDetailsScreen from '../screens/customer/Profile/OrderDetailsScreen';
 import FarmerProfileScreen from '../screens/customer/Profile/FarmerProfileScreen';
 import HelpCenterScreen from '../screens/customer/Profile/HelpCenterScreen';
+import GenerateTicketScreen from '../screens/customer/Profile/GenerateTicketScreen';
+import ViewTicketsScreen from '../screens/customer/Profile/ViewTicketsScreen';
+import TicketDetailsScreen from '../screens/customer/Profile/TicketDetailsScreen';
 import MyFarmsScreen from '../screens/farmer/farm/MyFarmsScreen';
 import SalesReportScreen from '../screens/farmer/Sales/SalesReportScreen';
 import EmailVerificationScreen from '../screens/auth/EmailVerificationScreen';
@@ -40,6 +43,8 @@ import DeliveryHistoryScreen from '../screens/delivery/DeliveryHistory/DeliveryH
 import DeliveryDetailsScreen from '../screens/delivery/DeliveryDetails/DeliveryDetailsScreen';
 import AssignedDeliveryDetailsScreen from '../screens/delivery/AssignedDeliveryDetails/AssignedDeliveryDetailsScreen';
 import TodaysTaskDetailsScreen from '../screens/delivery/TodaysTaskDetails/TodaysTaskDetailsScreen';
+import AdvertisementManagementScreen from '../screens/farmer/Advertisement/AdvertisementManagementScreen';
+import CreateAdvertisementScreen from '../screens/farmer/Advertisement/CreateAdvertisementScreen';
 
 const Stack = createStackNavigator();
 
@@ -115,6 +120,9 @@ const AppNavigator = () => {
     { name: 'OrderDetails', component: OrderDetailsScreen, transition: slideFromRight },
     { name: 'FarmerProfile', component: FarmerProfileScreen, transition: slideFromRight },
     { name: 'HelpCenter', component: HelpCenterScreen, transition: slideFromRight },
+    { name: 'GenerateTicket', component: GenerateTicketScreen, transition: slideFromRight },
+    { name: 'ViewTickets', component: ViewTicketsScreen, transition: slideFromRight },
+    { name: 'TicketDetails', component: TicketDetailsScreen, transition: slideFromRight },
     { name: 'MyFarms', component: MyFarmsScreen, transition: slideFromRight },
     { name: 'SalesReport', component: SalesReportScreen, transition: slideFromRight },
     { name: 'AddFarm', component: AddFarmScreen, transition: slideFromRight },
@@ -128,6 +136,8 @@ const AppNavigator = () => {
     { name: 'DeliveryDetails', component: DeliveryDetailsScreen, transition: slideFromRight },
     { name: 'AssignedDeliveryDetails', component: AssignedDeliveryDetailsScreen, transition: slideFromRight },
     { name: 'TodaysTaskDetails', component: TodaysTaskDetailsScreen, transition: slideFromRight },
+    { name: 'AdvertisementManagement', component: AdvertisementManagementScreen, transition: slideFromRight },
+    { name: 'CreateAdvertisement', component: CreateAdvertisementScreen, transition: slideFromRight },
   ];
 
   return (
