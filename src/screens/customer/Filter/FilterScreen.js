@@ -68,38 +68,40 @@ const FilterScreen = ({ navigation }) => {
     }
   }, [addError, dispatch]);
 
-  // Apply filters when component mounts or filters change (with debounce for search)
+  // Load initial products when component mounts
   useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      const filters = {
-        search: searchQuery,
-        price_min: priceMin ? parseFloat(priceMin) : undefined,
-        price_max: priceMax ? parseFloat(priceMax) : undefined,
-        category_id: selectedCategory || undefined,
-        location: selectedLocation || undefined,
-        organic: isOrganic ? 1 : undefined,
-        page: 1,
-        per_page: 12,
-      };
+    dispatch(fetchFilteredVegetables({ page: 1, per_page: 12 }));
+  }, [dispatch]);
 
-      // Remove undefined values
-      const cleanFilters = Object.fromEntries(
-        Object.entries(filters).filter(([_, value]) => value !== undefined && value !== '')
-      );
+  // Apply filters immediately for category, location, and organic changes
+  useEffect(() => {
+    const filters = {
+      search: searchQuery,
+      price_min: priceMin ? parseFloat(priceMin) : undefined,
+      price_max: priceMax ? parseFloat(priceMax) : undefined,
+      category_id: selectedCategory || undefined,
+      location: selectedLocation || undefined,
+      organic: isOrganic ? 1 : undefined,
+      page: 1,
+      per_page: 12,
+    };
 
-      if (Object.keys(cleanFilters).length > 0) {
-        dispatch(fetchFilteredVegetables(cleanFilters));
-      }
-    }, searchQuery ? 500 : 0); // Debounce search by 500ms, immediate for other filters
+    // Remove undefined values
+    const cleanFilters = Object.fromEntries(
+      Object.entries(filters).filter(([_, value]) => value !== undefined && value !== '')
+    );
 
-    return () => clearTimeout(timeoutId);
-  }, [dispatch, searchQuery, priceMin, priceMax, selectedCategory, selectedLocation, isOrganic]);
+    if (Object.keys(cleanFilters).length > 0) {
+      dispatch(fetchFilteredVegetables(cleanFilters));
+    }
+  }, [dispatch, selectedCategory, selectedLocation, isOrganic]);
 
   const handleBackPress = useCallback(() => {
     navigation.goBack();
   }, [navigation]);
 
   const handleApplyFilters = useCallback(() => {
+    // Apply search and price filters when Apply button is clicked
     const filters = {
       search: searchQuery,
       price_min: priceMin ? parseFloat(priceMin) : undefined,
@@ -137,27 +139,48 @@ const FilterScreen = ({ navigation }) => {
     setSelectedLocation(location === selectedLocation ? '' : location);
   }, [selectedLocation]);
 
-  // Memoized handlers for TextInput to prevent re-renders
-  const handleSearchChange = useCallback((text) => {
+  // Refs for TextInputs
+  const searchInputRef = React.useRef(null);
+  const priceMinInputRef = React.useRef(null);
+  const priceMaxInputRef = React.useRef(null);
+
+  // Simple handlers for TextInput - no automatic search
+  const handleSearchChange = (text) => {
     setSearchQuery(text);
-  }, []);
+  };
 
-  const handlePriceMinChange = useCallback((text) => {
-    setPriceMin(text);
-  }, []);
+  const handlePriceMinChange = (text) => {
+    // Only allow numeric values and decimal point
+    const numericValue = text.replace(/[^0-9.]/g, '');
+    // Prevent multiple decimal points
+    const parts = numericValue.split('.');
+    if (parts.length > 2) {
+      setPriceMin(parts[0] + '.' + parts.slice(1).join(''));
+    } else {
+      setPriceMin(numericValue);
+    }
+  };
 
-  const handlePriceMaxChange = useCallback((text) => {
-    setPriceMax(text);
-  }, []);
+  const handlePriceMaxChange = (text) => {
+    // Only allow numeric values and decimal point
+    const numericValue = text.replace(/[^0-9.]/g, '');
+    // Prevent multiple decimal points
+    const parts = numericValue.split('.');
+    if (parts.length > 2) {
+      setPriceMax(parts[0] + '.' + parts.slice(1).join(''));
+    } else {
+      setPriceMax(numericValue);
+    }
+  };
 
   const locations = ['kolhapur', 'mumbai', 'pune', 'delhi', 'bangalore'];
 
-  const FilterSection = React.memo(({ title, children }) => (
+  const FilterSection = ({ title, children }) => (
     <View style={styles.filterSection}>
       <Text style={styles.filterSectionTitle}>{title}</Text>
       {children}
     </View>
-  ));
+  );
 
   const PriceRangeInput = () => (
     <View style={styles.priceRangeContainer}>
@@ -170,6 +193,8 @@ const FilterScreen = ({ navigation }) => {
           onChangeText={handlePriceMinChange}
           keyboardType="numeric"
           placeholderTextColor="#999"
+          returnKeyType="done"
+          blurOnSubmit={false}
         />
       </View>
       <View style={styles.priceInputContainer}>
@@ -181,6 +206,8 @@ const FilterScreen = ({ navigation }) => {
           onChangeText={handlePriceMaxChange}
           keyboardType="numeric"
           placeholderTextColor="#999"
+          returnKeyType="done"
+          blurOnSubmit={false}
         />
       </View>
     </View>
@@ -343,25 +370,71 @@ const FilterScreen = ({ navigation }) => {
         style={styles.content} 
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="none"
       >
         {/* Search */}
-        <FilterSection title="Search">
+        <View style={styles.filterSection}>
+          <Text style={styles.filterSectionTitle}>Search</Text>
           <View style={styles.searchContainer}>
             <Icon name="search" size={20} color="#019a34" style={styles.searchIcon} />
             <TextInput
+              ref={searchInputRef}
+              key="search-input"
               style={styles.searchInput}
               placeholder="Search products..."
               placeholderTextColor="#999"
               value={searchQuery}
               onChangeText={handleSearchChange}
+              autoCorrect={false}
+              autoCapitalize="none"
+              returnKeyType="search"
+              blurOnSubmit={false}
+              multiline={false}
+              numberOfLines={1}
             />
           </View>
-        </FilterSection>
+        </View>
 
         {/* Price Range */}
-        <FilterSection title="Price Range">
-          <PriceRangeInput />
-        </FilterSection>
+        <View style={styles.filterSection}>
+          <Text style={styles.filterSectionTitle}>Price Range</Text>
+          <View style={styles.priceRangeContainer}>
+            <View style={styles.priceInputContainer}>
+              <Text style={styles.priceLabel}>Min Price</Text>
+              <TextInput
+                ref={priceMinInputRef}
+                key="price-min-input"
+                style={styles.priceInput}
+                placeholder="0.00"
+                value={priceMin}
+                onChangeText={handlePriceMinChange}
+                keyboardType="numeric"
+                placeholderTextColor="#999"
+                returnKeyType="done"
+                blurOnSubmit={false}
+                multiline={false}
+                numberOfLines={1}
+              />
+            </View>
+            <View style={styles.priceInputContainer}>
+              <Text style={styles.priceLabel}>Max Price</Text>
+              <TextInput
+                ref={priceMaxInputRef}
+                key="price-max-input"
+                style={styles.priceInput}
+                placeholder="1000.00"
+                value={priceMax}
+                onChangeText={handlePriceMaxChange}
+                keyboardType="numeric"
+                placeholderTextColor="#999"
+                returnKeyType="done"
+                blurOnSubmit={false}
+                multiline={false}
+                numberOfLines={1}
+              />
+            </View>
+          </View>
+        </View>
 
         {/* Category */}
         <FilterSection title="Category">
@@ -392,7 +465,7 @@ const FilterScreen = ({ navigation }) => {
             style={styles.clearButton}
             onPress={handleClearFilters}
           >
-            <Icon name="times" size={16} color="#dc3545" />
+            {/* <Icon name="times" size={16} color="#dc3545" /> */}
             <Text style={styles.clearButtonText}>Clear All</Text>
           </TouchableOpacity>
           
@@ -400,8 +473,8 @@ const FilterScreen = ({ navigation }) => {
             style={styles.applyButton}
             onPress={handleApplyFilters}
           >
-            <Icon name="check" size={16} color="#fff" />
-            <Text style={styles.applyButtonText}>Apply Filters</Text>
+            {/* <Icon name="search" size={16} color="#fff" /> */}
+            <Text style={styles.applyButtonText}> Apply Filter</Text>
           </TouchableOpacity>
         </View>
 
