@@ -19,19 +19,22 @@ import Icon from 'react-native-vector-icons/FontAwesome';
 import { p } from '../../../utils/Responsive';
 import { fontSizes } from '../../../utils/fonts';
 import { 
-  createAdvertisement,
+  fetchAdvertisementById,
+  updateAdvertisement,
   clearAdvertisementError, 
-  clearAdvertisementSuccess 
+  clearAdvertisementSuccess,
+  clearCurrentAdvertisement
 } from '../../../redux/slices/advertisementSlice';
 
-const CreateAdvertisementScreen = ({ navigation }) => {
+const EditAdvertisementScreen = ({ navigation, route }) => {
+  const { advertisement } = route.params;
   const dispatch = useDispatch();
-  const { creating, error, success, message } = useSelector((state) => state.advertisement);
+  const { currentAdvertisement, loading, updating, error, success, message } = useSelector((state) => state.advertisement);
 
-  const [title, setTitle] = useState('');
-  const [advertisementMessage, setAdvertisementMessage] = useState('');
-  const [fromDate, setFromDate] = useState(new Date());
-  const [toDate, setToDate] = useState(new Date());
+  const [title, setTitle] = useState(advertisement?.title || '');
+  const [advertisementMessage, setAdvertisementMessage] = useState(advertisement?.message || '');
+  const [fromDate, setFromDate] = useState(advertisement?.from ? new Date(advertisement.from) : new Date());
+  const [toDate, setToDate] = useState(advertisement?.to ? new Date(advertisement.to) : new Date());
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
@@ -39,9 +42,32 @@ const CreateAdvertisementScreen = ({ navigation }) => {
   const [showToDatePicker, setShowToDatePicker] = useState(false);
   const [validationError, setValidationError] = useState('');
 
-  // Handle success/error states - Show modal for create
   useEffect(() => {
-    if (success && message && message.includes('created') && !showSuccessModal) {
+    // If we have advertisement data from navigation params, use it
+    if (advertisement) {
+      setTitle(advertisement.title || '');
+      setAdvertisementMessage(advertisement.message || '');
+      setFromDate(advertisement.from ? new Date(advertisement.from) : new Date());
+      setToDate(advertisement.to ? new Date(advertisement.to) : new Date());
+    } else {
+      // Otherwise, fetch the advertisement by ID
+      dispatch(fetchAdvertisementById(advertisement.id));
+    }
+  }, [advertisement, dispatch]);
+
+  // Update form when currentAdvertisement changes
+  useEffect(() => {
+    if (currentAdvertisement) {
+      setTitle(currentAdvertisement.title || '');
+      setAdvertisementMessage(currentAdvertisement.message || '');
+      setFromDate(currentAdvertisement.from ? new Date(currentAdvertisement.from) : new Date());
+      setToDate(currentAdvertisement.to ? new Date(currentAdvertisement.to) : new Date());
+    }
+  }, [currentAdvertisement]);
+
+  // Handle success/error states - Show modal for update
+  useEffect(() => {
+    if (success && message && message.includes('updated') && !showSuccessModal) {
       setShowSuccessModal(true);
       dispatch(clearAdvertisementSuccess());
     }
@@ -55,13 +81,13 @@ const CreateAdvertisementScreen = ({ navigation }) => {
   }, [error, dispatch]);
 
   const handleNotificationPress = () => {
-    console.log('Create Advertisement notification pressed');
+    console.log('Edit Advertisement notification pressed');
   };
 
   const handleBackPress = () => {
+    dispatch(clearCurrentAdvertisement());
     navigation.goBack();
   };
-
 
   const formatDateForAPI = (date) => {
     if (!date) return '';
@@ -131,7 +157,7 @@ const CreateAdvertisementScreen = ({ navigation }) => {
     return true;
   };
 
-  const handleCreateAdvertisement = () => {
+  const handleUpdateAdvertisement = () => {
     if (validateForm()) {
       const advertisementData = {
         title: title.trim(),
@@ -140,18 +166,42 @@ const CreateAdvertisementScreen = ({ navigation }) => {
         to: formatDateForAPI(toDate),
       };
 
-      console.log('Creating advertisement with data:', advertisementData);
-      dispatch(createAdvertisement(advertisementData));
+      console.log('Updating advertisement with data:', advertisementData);
+      dispatch(updateAdvertisement({ 
+        advertisementId: advertisement.id, 
+        advertisementData 
+      }));
     }
   };
 
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <StatusBar backgroundColor="#019a34" barStyle="light-content" />
+        
+        <CommonHeader
+          screenName="Edit Advertisement"
+          showBackButton={true}
+          onBackPress={handleBackPress}
+          showNotification={true}
+          onNotificationPress={handleNotificationPress}
+          navigation={navigation}
+        />
+
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Loading advertisement...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar backgroundColor="#019a34" barStyle="light-content" />
       
       <CommonHeader
-        screenName="Create Advertisement"
+        screenName="Edit Advertisement"
         showBackButton={true}
         onBackPress={handleBackPress}
         showNotification={true}
@@ -171,7 +221,7 @@ const CreateAdvertisementScreen = ({ navigation }) => {
           contentContainerStyle={styles.scrollContentContainer}
         >
           <View style={styles.formContainer}>
-            <Text style={styles.sectionTitle}>Advertisement Details</Text>
+            <Text style={styles.sectionTitle}>Edit Advertisement</Text>
 
             {/* Title Input */}
             <View style={styles.inputContainer}>
@@ -227,21 +277,20 @@ const CreateAdvertisementScreen = ({ navigation }) => {
               </View>
             </View>
 
-
-            {/* Create Button */}
+            {/* Update Button */}
             <TouchableOpacity 
-              style={[styles.createButton, creating && styles.createButtonDisabled]}
-              onPress={handleCreateAdvertisement}
-              disabled={creating}
+              style={[styles.updateButton, updating && styles.updateButtonDisabled]}
+              onPress={handleUpdateAdvertisement}
+              disabled={updating}
             >
-              {creating ? (
+              {updating ? (
                 <View style={styles.loadingContainer}>
-                  <Text style={styles.createButtonText}>Creating...</Text>
+                  <Text style={styles.updateButtonText}>Updating...</Text>
                 </View>
               ) : (
                 <View style={styles.buttonContent}>
-                  <Icon name="plus" size={20} color="#fff" />
-                  <Text style={styles.createButtonText}>Create Advertisement</Text>
+                  <Icon name="save" size={20} color="#fff" />
+                  <Text style={styles.updateButtonText}>Update Advertisement</Text>
                 </View>
               )}
             </TouchableOpacity>
@@ -270,16 +319,16 @@ const CreateAdvertisementScreen = ({ navigation }) => {
         />
       )}
 
-
       {/* Success Modal */}
       <SuccessModal
         visible={showSuccessModal}
         onClose={() => {
           setShowSuccessModal(false);
+          dispatch(clearCurrentAdvertisement());
           navigation.navigate('AdvertisementManagement');
         }}
         title="Success!"
-        message={message || "Advertisement created successfully"}
+        message={message || "Advertisement updated successfully"}
         buttonText="OK"
       />
 
@@ -408,15 +457,14 @@ const styles = StyleSheet.create({
     marginTop: p(4),
   },
 
-
-  // Create Button
-  createButton: {
+  // Update Button
+  updateButton: {
     backgroundColor: '#019a34',
     borderRadius: p(8),
     paddingVertical: p(16),
     marginTop: p(20),
   },
-  createButtonDisabled: {
+  updateButtonDisabled: {
     backgroundColor: '#95a5a6',
   },
   buttonContent: {
@@ -424,7 +472,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  createButtonText: {
+  updateButtonText: {
     fontSize: fontSizes.base,
     color: '#fff',
     fontFamily: 'Poppins-SemiBold',
@@ -433,6 +481,11 @@ const styles = StyleSheet.create({
   loadingContainer: {
     alignItems: 'center',
   },
+  loadingText: {
+    fontSize: fontSizes.base,
+    color: '#666',
+    fontFamily: 'Poppins-Regular',
+  },
 });
 
-export default CreateAdvertisementScreen;
+export default EditAdvertisementScreen;

@@ -73,6 +73,12 @@ const FarmerDashboardScreen = ({ navigation }) => {
       case 'myVegetables':
         navigation.navigate('FarmerBucket');
         break;
+      case 'withdrawalRequest':
+        navigation.navigate('WithdrawalRequest');
+        break;
+      case 'advertisementManagement':
+        navigation.navigate('AdvertisementManagement');
+        break;
     }
   };
 
@@ -177,6 +183,28 @@ const FarmerDashboardScreen = ({ navigation }) => {
             <Icon name="bar-chart" size={24} color="#fff" />
           </View>
           <Text style={styles.quickActionText}>Sales Report</Text>
+        </TouchableOpacity>
+      </View>
+      
+      <View style={styles.quickActionsRowCentered}>
+        <TouchableOpacity 
+          style={styles.quickActionCardWide}
+          onPress={() => handleQuickAction('withdrawalRequest')}
+        >
+          <View style={styles.quickActionIcon}>
+            <Icon name="money" size={24} color="#fff" />
+          </View>
+          <Text style={styles.quickActionText}>Request Withdrawal</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={styles.quickActionCardWide}
+          onPress={() => handleQuickAction('advertisementManagement')}
+        >
+          <View style={styles.quickActionIcon}>
+            <Icon name="bullhorn" size={24} color="#fff" />
+          </View>
+          <Text style={styles.quickActionText}>Advertisement</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -380,11 +408,31 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: p(8),
   },
+  quickActionsRowCentered: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: p(12),
+    marginTop: p(12),
+  },
   quickActionCard: {
     flex: 1,
     backgroundColor: '#f8f9fa',
     borderRadius: p(8),
     padding: p(12),
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  quickActionCardWide: {
+    width: (width - p(64)) / 2.2, // Wider than regular cards
+    backgroundColor: '#f8f9fa',
+    borderRadius: p(8),
+    padding: p(12), // Same padding as regular cards
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#e9ecef',

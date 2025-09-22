@@ -49,12 +49,83 @@ export const createAdvertisement = createAsyncThunk(
   }
 );
 
+// Async thunk to fetch advertisement by ID
+export const fetchAdvertisementById = createAsyncThunk(
+  'advertisement/fetchAdvertisementById',
+  async (advertisementId, { rejectWithValue }) => {
+    try {
+      console.log('Fetching advertisement by ID:', advertisementId);
+      const response = await api.get(`/farmer/advertisements/${advertisementId}`);
+      console.log('Advertisement by ID response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Fetch advertisement by ID error:', error);
+      console.error('Error response:', error.response?.data);
+      
+      return rejectWithValue(
+        error.response?.data?.message || error.message || 'Failed to fetch advertisement'
+      );
+    }
+  }
+);
+
+// Async thunk to update advertisement
+export const updateAdvertisement = createAsyncThunk(
+  'advertisement/updateAdvertisement',
+  async ({ advertisementId, advertisementData }, { rejectWithValue }) => {
+    try {
+      const formData = new FormData();
+      formData.append('title', advertisementData.title);
+      formData.append('message', advertisementData.message);
+      formData.append('from', advertisementData.from);
+      formData.append('to', advertisementData.to);
+
+      const response = await api.post(`/farmer/advertisements/${advertisementId}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Update advertisement error:', error);
+      console.error('Error response:', error.response?.data);
+      
+      return rejectWithValue(
+        error.response?.data?.message || error.message || 'Failed to update advertisement'
+      );
+    }
+  }
+);
+
+// Async thunk to delete advertisement
+export const deleteAdvertisement = createAsyncThunk(
+  'advertisement/deleteAdvertisement',
+  async (advertisementId, { rejectWithValue }) => {
+    try {
+      console.log('Deleting advertisement:', advertisementId);
+      const response = await api.delete(`/farmer/advertisements/${advertisementId}`);
+      console.log('Delete advertisement response:', response.data);
+      return { advertisementId, ...response.data };
+    } catch (error) {
+      console.error('Delete advertisement error:', error);
+      console.error('Error response:', error.response?.data);
+      
+      return rejectWithValue(
+        error.response?.data?.message || error.message || 'Failed to delete advertisement'
+      );
+    }
+  }
+);
+
 const advertisementSlice = createSlice({
   name: 'advertisement',
   initialState: {
     advertisements: [],
+    currentAdvertisement: null,
     loading: false,
     creating: false,
+    updating: false,
+    deleting: false,
     error: null,
     success: false,
     message: null,
@@ -70,6 +141,9 @@ const advertisementSlice = createSlice({
     clearAdvertisements: (state) => {
       state.advertisements = [];
       state.error = null;
+    },
+    clearCurrentAdvertisement: (state) => {
+      state.currentAdvertisement = null;
     },
   },
   extraReducers: (builder) => {
@@ -108,6 +182,63 @@ const advertisementSlice = createSlice({
         state.creating = false;
         state.error = action.payload;
         state.success = false;
+      })
+      // Fetch advertisement by ID reducers
+      .addCase(fetchAdvertisementById.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchAdvertisementById.fulfilled, (state, action) => {
+        state.loading = false;
+        state.currentAdvertisement = action.payload?.data || null;
+        state.error = null;
+      })
+      .addCase(fetchAdvertisementById.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      // Update advertisement reducers
+      .addCase(updateAdvertisement.pending, (state) => {
+        state.updating = true;
+        state.error = null;
+        state.success = false;
+      })
+      .addCase(updateAdvertisement.fulfilled, (state, action) => {
+        state.updating = false;
+        state.success = action.payload?.success || true;
+        state.message = action.payload?.message || 'Advertisement updated successfully';
+        state.error = null;
+        // Update the advertisement in the advertisements array
+        if (action.payload?.data) {
+          const index = state.advertisements.findIndex(ad => ad.id === action.payload.data.id);
+          if (index !== -1) {
+            state.advertisements[index] = action.payload.data;
+          }
+        }
+      })
+      .addCase(updateAdvertisement.rejected, (state, action) => {
+        state.updating = false;
+        state.error = action.payload;
+        state.success = false;
+      })
+      // Delete advertisement reducers
+      .addCase(deleteAdvertisement.pending, (state) => {
+        state.deleting = true;
+        state.error = null;
+        state.success = false;
+      })
+      .addCase(deleteAdvertisement.fulfilled, (state, action) => {
+        state.deleting = false;
+        state.success = action.payload?.success || true;
+        state.message = action.payload?.message || 'Advertisement deleted successfully';
+        state.error = null;
+        // Remove the advertisement from the advertisements array
+        state.advertisements = state.advertisements.filter(ad => ad.id !== action.payload.advertisementId);
+      })
+      .addCase(deleteAdvertisement.rejected, (state, action) => {
+        state.deleting = false;
+        state.error = action.payload;
+        state.success = false;
       });
   },
 });
@@ -115,7 +246,8 @@ const advertisementSlice = createSlice({
 export const { 
   clearAdvertisementError, 
   clearAdvertisementSuccess,
-  clearAdvertisements
+  clearAdvertisements,
+  clearCurrentAdvertisement
 } = advertisementSlice.actions;
 
 export default advertisementSlice.reducer;

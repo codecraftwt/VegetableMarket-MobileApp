@@ -9,27 +9,29 @@ import {
   TouchableOpacity,
   Image,
   RefreshControl,
-  Alert,
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import CommonHeader from '../../../components/CommonHeader';
-import { SuccessModal, ErrorModal } from '../../../components';
+import { SuccessModal, ErrorModal, ConfirmationModal } from '../../../components';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { p } from '../../../utils/Responsive';
 import { fontSizes } from '../../../utils/fonts';
 import { 
   fetchAdvertisements, 
+  deleteAdvertisement,
   clearAdvertisementError, 
   clearAdvertisementSuccess 
 } from '../../../redux/slices/advertisementSlice';
 
 const AdvertisementManagementScreen = ({ navigation }) => {
   const dispatch = useDispatch();
-  const { advertisements, loading, error, success, message } = useSelector((state) => state.advertisement);
+  const { advertisements, loading, error, success, message, deleting } = useSelector((state) => state.advertisement);
 
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
+  const [showDeleteConfirmationModal, setShowDeleteConfirmationModal] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [advertisementToDelete, setAdvertisementToDelete] = useState(null);
 
   useEffect(() => {
     const loadAdvertisements = async () => {
@@ -42,13 +44,13 @@ const AdvertisementManagementScreen = ({ navigation }) => {
     loadAdvertisements();
   }, [dispatch]);
 
-  // Handle success/error states
+  // Handle success/error states - Only handle delete success here
   useEffect(() => {
-    if (success && message) {
+    if (success && message && message.includes('deleted') && !showSuccessModal) {
       setShowSuccessModal(true);
       dispatch(clearAdvertisementSuccess());
     }
-  }, [success, message, dispatch]);
+  }, [success, message, dispatch, showSuccessModal]);
 
   useEffect(() => {
     if (error) {
@@ -78,13 +80,22 @@ const AdvertisementManagementScreen = ({ navigation }) => {
   };
 
   const handleDeleteAdvertisement = (advertisement) => {
-    Alert.alert(
-      'Delete Advertisement',
-      `Delete functionality is not implemented yet.`,
-      [
-        { text: 'OK', style: 'default' }
-      ]
-    );
+    setAdvertisementToDelete(advertisement);
+    setShowDeleteConfirmationModal(true);
+  };
+
+  const confirmDeleteAdvertisement = () => {
+    if (advertisementToDelete) {
+      console.log('Deleting advertisement:', advertisementToDelete.id);
+      dispatch(deleteAdvertisement(advertisementToDelete.id));
+      setShowDeleteConfirmationModal(false);
+      setAdvertisementToDelete(null);
+    }
+  };
+
+  const cancelDeleteAdvertisement = () => {
+    setShowDeleteConfirmationModal(false);
+    setAdvertisementToDelete(null);
   };
 
   const onRefresh = () => {
@@ -203,11 +214,14 @@ const AdvertisementManagementScreen = ({ navigation }) => {
         </TouchableOpacity>
         
         <TouchableOpacity 
-          style={[styles.actionButton, styles.deleteButton]}
+          style={[styles.actionButton, styles.deleteButton, deleting && styles.actionButtonDisabled]}
           onPress={() => handleDeleteAdvertisement(advertisement)}
+          disabled={deleting}
         >
           <Icon name="trash" size={16} color="#F44336" />
-          <Text style={[styles.actionButtonText, styles.deleteButtonText]}>Delete</Text>
+          <Text style={[styles.actionButtonText, styles.deleteButtonText]}>
+            {deleting ? 'Deleting...' : 'Delete'}
+          </Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -317,14 +331,13 @@ const AdvertisementManagementScreen = ({ navigation }) => {
         </ScrollView>
       )}
 
-      {/* Success Modal */}
+      {/* Success Modal - Only for delete operations */}
       <SuccessModal
         visible={showSuccessModal}
         onClose={() => setShowSuccessModal(false)}
         title="Success"
-        message={message || "Operation completed successfully"}
+        message={message || "Advertisement deleted successfully"}
         buttonText="OK"
-        onButtonPress={() => setShowSuccessModal(false)}
       />
 
       {/* Error Modal */}
@@ -338,6 +351,20 @@ const AdvertisementManagementScreen = ({ navigation }) => {
           setShowErrorModal(false);
           dispatch(fetchAdvertisements());
         }}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        visible={showDeleteConfirmationModal}
+        onClose={cancelDeleteAdvertisement}
+        title="Delete Advertisement"
+        message={`Are you sure you want to delete "${advertisementToDelete?.title}"? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        onConfirm={confirmDeleteAdvertisement}
+        onCancel={cancelDeleteAdvertisement}
+        confirmButtonStyle="destructive"
+        icon="delete-alert"
       />
     </SafeAreaView>
   );
@@ -513,6 +540,9 @@ const styles = StyleSheet.create({
   },
   deleteButtonText: {
     color: '#F44336',
+  },
+  actionButtonDisabled: {
+    opacity: 0.6,
   },
 
   // Empty State
