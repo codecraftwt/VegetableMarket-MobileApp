@@ -1,4 +1,4 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk, createSelector } from '@reduxjs/toolkit';
 import api from '../../api/axiosInstance';
 
 // Async thunk for fetching wallet details
@@ -148,13 +148,18 @@ export const {
 } = walletSlice.actions;
 
 // Selectors
-export const selectWalletData = (state) => ({
-  totalEarnings: state.wallet.totalEarnings,
-  totalWithdraw: state.wallet.totalWithdraw,
-  availableBalance: state.wallet.availableBalance,
-  withdrawals: state.wallet.withdrawals,
-  previousFundAccounts: state.wallet.previousFundAccounts,
-});
+const selectWalletState = (state) => state.wallet;
+
+export const selectWalletData = createSelector(
+  [selectWalletState],
+  (wallet) => ({
+    totalEarnings: wallet.totalEarnings,
+    totalWithdraw: wallet.totalWithdraw,
+    availableBalance: wallet.availableBalance,
+    withdrawals: wallet.withdrawals,
+    previousFundAccounts: wallet.previousFundAccounts,
+  })
+);
 
 export const selectWalletLoading = (state) => state.wallet.loading;
 export const selectSubmitLoading = (state) => state.wallet.submitLoading;

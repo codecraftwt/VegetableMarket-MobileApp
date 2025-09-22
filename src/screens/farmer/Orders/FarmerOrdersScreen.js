@@ -49,7 +49,7 @@ const FarmerOrdersScreen = ({ navigation }) => {
     if (searchQuery.trim() === '') {
       setFilteredOrders(orders);
     } else {
-      const filtered = orders.filter(order =>
+      const filtered = orders?.filter(order =>
         order.customer_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         order.id.toString().includes(searchQuery) ||
         (order.delivery_address?.city || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -266,7 +266,7 @@ const FarmerOrdersScreen = ({ navigation }) => {
 
       {loading ? (
         renderSkeletonLoader()
-      ) : orders.length === 0 ? (
+      ) : orders?.length === 0 ? (
         renderEmptyState()
       ) : (
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -298,13 +298,13 @@ const FarmerOrdersScreen = ({ navigation }) => {
             <>
               {viewMode === 'cards' ? (
                 <View style={styles.ordersList}>
-                  {filteredOrders.map(renderOrderCard)}
+                  {filteredOrders?.map(renderOrderCard)}
                 </View>
               ) : (
                 <ScrollView horizontal showsHorizontalScrollIndicator={true} style={styles.tableScrollContainer}>
                   <View style={styles.tableContainer}>
                     {renderTableHeader()}
-                    {filteredOrders.map(renderTableRow)}
+                    {filteredOrders?.map(renderTableRow)}
                   </View>
                 </ScrollView>
               )}

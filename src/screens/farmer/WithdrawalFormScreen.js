@@ -156,6 +156,12 @@ const WithdrawalFormScreen = ({ navigation }) => {
           return false;
         }
       }
+    } else {
+      // For existing account, we need to have selected an account
+      if (!selectedAccountId) {
+        Alert.alert('Error', 'Please select an existing account');
+        return false;
+      }
     }
 
     return true;
@@ -185,18 +191,23 @@ const WithdrawalFormScreen = ({ navigation }) => {
     const requestData = {
       withdrawal_amount: parseFloat(withdrawalAmount),
       account_type: accountType,
-      name: accountHolderName,
-      existing_fund_account_id: useNewAccount ? '' : selectedAccountId,
     };
 
     if (useNewAccount) {
+      // For new account, include name and account details
+      requestData.name = accountHolderName;
       if (accountType === 'vpa') {
         requestData.vpa = vpa;
       } else {
         requestData.account_number = accountNumber;
         requestData.ifsc = ifsc;
       }
+    } else {
+      // For existing account, only include the existing_fund_account_id
+      requestData.existing_fund_account_id = selectedAccountId;
     }
+
+    console.log('Submitting withdrawal request with data:', requestData);
 
     try {
       await dispatch(submitWithdrawalRequest(requestData)).unwrap();
