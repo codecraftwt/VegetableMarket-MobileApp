@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -6,12 +6,14 @@ import {
   SafeAreaView, 
   StatusBar, 
   ScrollView, 
-  TouchableOpacity 
+  TouchableOpacity,
+  Alert
 } from 'react-native';
 import CommonHeader from '../../components/CommonHeader';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { p } from '../../utils/Responsive';
 import { fontSizes } from '../../utils/fonts';
+import useNotification from '../../hooks/useNotification';
 
 const NotificationScreen = ({ navigation }) => {
   const [notifications, setNotifications] = useState([
@@ -65,44 +67,62 @@ const NotificationScreen = ({ navigation }) => {
       icon: 'download',
       iconColor: '#9C27B0',
     },
-    {
-      id: 6,
-      type: 'delivery',
-      title: 'Delivery Completed',
-      message: 'Your order #ORD-2024-001 has been delivered successfully. Enjoy your fresh vegetables!',
-      time: '2 days ago',
-      isRead: true,
-      icon: 'home',
-      iconColor: '#4CAF50',
-    },
-    {
-      id: 7,
-      type: 'promo',
-      title: 'Weekend Sale!',
-      message: 'Don\'t miss our weekend sale! Up to 30% off on selected items.',
-      time: '3 days ago',
-      isRead: true,
-      icon: 'tag',
-      iconColor: '#F44336',
-    },
-    {
-      id: 8,
-      type: 'order',
-      title: 'Order Shipped',
-      message: 'Your order #ORD-2024-002 has been shipped and is on its way to you.',
-      time: '4 days ago',
-      isRead: true,
-      icon: 'shipping-fast',
-      iconColor: '#2196F3',
-    },
   ]);
+  
+  const {
+    fcmToken,
+    isInitialized,
+    isLoading,
+    error,
+    permissionGranted,
+    getToken,
+    refreshToken,
+    requestPermission,
+  } = useNotification();
 
-  const handleNotificationPress = () => {
-    console.log('Notification pressed');
+  // Initialize FCM on component mount
+  useEffect(() => {
+    if (!isInitialized) {
+      initializeFCM();
+    }
+  }, [isInitialized]);
+
+  const initializeFCM = async () => {
+    try {
+      if (!permissionGranted) {
+        const granted = await requestPermission();
+        if (!granted) {
+          Alert.alert(
+            'Permission Required',
+            'Please enable notifications in your device settings to receive updates about your orders.',
+            [{ text: 'OK' }]
+          );
+          return;
+        }
+      }
+
+      const token = await getToken();
+      if (token) {
+        console.log('FCM Token generated:', token);
+      }
+    } catch (error) {
+      console.error('Error initializing FCM:', error);
+      // Don't show error alert for FCM, just log it
+    }
   };
 
   const handleBackPress = () => {
     navigation.goBack();
+  };
+
+  const handleNotificationPress = (notification) => {
+    console.log('Notification pressed:', notification);
+    // Mark as read when pressed
+    setNotifications(prevNotifications =>
+      prevNotifications.map(n =>
+        n.id === notification.id ? { ...n, isRead: true } : n
+      )
+    );
   };
 
   const handleMarkAllAsRead = () => {
@@ -135,7 +155,7 @@ const NotificationScreen = ({ navigation }) => {
         styles.notificationItem,
         !notification.isRead && styles.unreadNotification
       ]}
-      onPress={() => handleMarkAsRead(notification.id)}
+      onPress={() => handleNotificationPress(notification)}
     >
       <View style={styles.notificationLeft}>
         <View style={[

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "49629736762",
+    "project_id": "walstarveggiemart",
+    "storage_bucket": "walstarveggiemart.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:49629736762:android:f685f57e5416ed152faa03",
+        "android_client_info": {
+          "package_name": "com.vegetablemarket"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB5sdRCARbX-16ZG6yaA3u9twvvgz6k6No"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

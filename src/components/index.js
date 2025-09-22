@@ -10,3 +10,6 @@ export { default as CategoryItem } from './CategoryItem';
 export { default as ProductCard } from './ProductCard';
 export { default as ReviewModal } from './ReviewModal';
 export { default as SkeletonLoader } from './SkeletonLoader';
+
+// Notification Components
+export { default as NotificationInitializer } from './NotificationInitializer';
