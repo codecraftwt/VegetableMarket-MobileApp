@@ -206,11 +206,6 @@ const AssignedDeliveryDetailsScreen = ({ navigation, route }) => {
         <Text style={styles.sectionTitle}>Order Information</Text>
         <View style={styles.infoCard}>
           <View style={styles.infoRow}>
-            <Icon name="hashtag" size={p(16)} color="#019a34" />
-            <Text style={styles.infoLabel}>Order ID:</Text>
-            <Text style={styles.infoValue}>#{order.id}</Text>
-          </View>
-          <View style={styles.infoRow}>
             <Icon name="credit-card" size={p(16)} color="#019a34" />
             <Text style={styles.infoLabel}>Payment:</Text>
             <Text style={styles.infoValue}>
@@ -220,6 +215,7 @@ const AssignedDeliveryDetailsScreen = ({ navigation, route }) => {
           <View style={styles.infoRow}>
             <Icon name="truck" size={p(16)} color="#019a34" />
             <Text style={styles.infoLabel}>Status:</Text>
+            <View style={styles.infoSpacer} />
             <View style={[styles.statusBadge, { backgroundColor: getStatusColor(deliveryStatus) }]}>
               <Text style={styles.statusText}>{getStatusText(deliveryStatus)}</Text>
             </View>
@@ -538,6 +534,8 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-Regular',
     color: '#666',
     flex: 1,
+    textAlign: 'right',
+    marginLeft: 'auto',
   },
   phoneNumber: {
     color: '#019a34',
@@ -552,6 +550,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: p(8),
     paddingVertical: p(4),
     borderRadius: p(12),
+    marginLeft: 'auto',
+  },
+  infoSpacer: {
+    flex: 1,
   },
   statusText: {
     fontSize: fontSizes.xs,
