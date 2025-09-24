@@ -1,7 +1,6 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import BottomTabNavigator from './BottomTabNavigator';
 import FarmerBottomTabNavigator from './FarmerBottomTabNavigator';
 import DeliveryBottomTabNavigator from './DeliveryBottomTabNavigator';
@@ -51,8 +50,6 @@ import EditAdvertisementScreen from '../screens/farmer/Advertisement/EditAdverti
 const Stack = createStackNavigator();
 
 const AppNavigator = () => {
-  const insets = useSafeAreaInsets();
-  
   // Reusable transition functions
   const slideFromRight = ({ current, layouts }) => ({
     cardStyle: {
@@ -154,7 +151,7 @@ const AppNavigator = () => {
         screenOptions={{
           headerShown: false,
           cardStyle: { backgroundColor: '#019a34' },
-          contentStyle: { paddingBottom: Math.max(insets.bottom * 0.5, 8) }, // Reduced bottom padding for better balance
+          contentStyle: { backgroundColor: '#019a34' },
           transitionSpec: {
             open: {
               animation: 'timing',

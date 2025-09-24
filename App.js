@@ -5,8 +5,8 @@ import AppNavigator from './src/navigation/AppNavigator';
 import { Provider } from 'react-redux';
 // import { PersistGate } from 'redux-persist/integration/react';
 import { store } from './src/redux/store';
-import { StatusBar, StyleSheet, View, Text } from 'react-native';
-import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar, StyleSheet, View, Text, Platform } from 'react-native';
+import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Error boundary component
 class ErrorBoundary extends React.Component {
@@ -43,6 +43,32 @@ const LoadingComponent = () => (
   </View>
 );
 
+// Component to conditionally apply safe area
+const ConditionalSafeArea = ({ children }) => {
+  const insets = useSafeAreaInsets();
+  
+  // Debug: Log the inset values to see what we're getting
+  console.log('Safe area insets:', { 
+    platform: Platform.OS, 
+    bottom: insets.bottom,
+    shouldApply: Platform.OS === 'android' && insets.bottom > 30
+  });
+  
+  // Only apply bottom safe area on Android devices with system navigation buttons
+  // Bottom inset > 30 indicates system navigation buttons (not just gesture bar)
+  const shouldApplySafeArea = Platform.OS === 'android' && insets.bottom > 47; // Try 40px threshold
+  
+  if (shouldApplySafeArea) {
+    return (
+      <SafeAreaView style={{ flex: 1 }} edges={['bottom']}>
+        {children}
+      </SafeAreaView>
+    );
+  }
+  
+  return children;
+};
+
 const App = () => {
   return (
     <SafeAreaProvider>
@@ -50,9 +76,9 @@ const App = () => {
         <Provider store={store}>
           {/* <PersistGate loading={<LoadingComponent />} persistor={persistor}> */}
             <StatusBar backgroundColor="#019a34" barStyle="light-content" />
-            <SafeAreaView style={{ flex: 1 }} edges={['bottom']}>
+            <ConditionalSafeArea>
               <AppNavigator />
-            </SafeAreaView>
+            </ConditionalSafeArea>
           {/* </PersistGate> */}
         </Provider>
       </ErrorBoundary>
