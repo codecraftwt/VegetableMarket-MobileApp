@@ -13,3 +13,6 @@ export { default as SkeletonLoader } from './SkeletonLoader';
 
 // Notification Components
 export { default as NotificationInitializer } from './NotificationInitializer';
+
+// Layout Components
+export { default as BottomInsetSpacer } from './BottomInsetSpacer';

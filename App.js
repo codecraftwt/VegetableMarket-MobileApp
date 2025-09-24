@@ -6,6 +6,7 @@ import { Provider } from 'react-redux';
 // import { PersistGate } from 'redux-persist/integration/react';
 import { store } from './src/redux/store';
 import { StatusBar, StyleSheet, View, Text } from 'react-native';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 // Error boundary component
 class ErrorBoundary extends React.Component {
@@ -44,14 +45,18 @@ const LoadingComponent = () => (
 
 const App = () => {
   return (
-    <ErrorBoundary>
-      <Provider store={store}>
-        {/* <PersistGate loading={<LoadingComponent />} persistor={persistor}> */}
-          <StatusBar backgroundColor="#019a34" barStyle="light-content" />
-          <AppNavigator />
-        {/* </PersistGate> */}
-      </Provider>
-    </ErrorBoundary>
+    <SafeAreaProvider>
+      <ErrorBoundary>
+        <Provider store={store}>
+          {/* <PersistGate loading={<LoadingComponent />} persistor={persistor}> */}
+            <StatusBar backgroundColor="#019a34" barStyle="light-content" />
+            <SafeAreaView style={{ flex: 1 }} edges={['bottom']}>
+              <AppNavigator />
+            </SafeAreaView>
+          {/* </PersistGate> */}
+        </Provider>
+      </ErrorBoundary>
+    </SafeAreaProvider>
   );
 };
 
