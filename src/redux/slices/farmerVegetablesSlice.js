@@ -145,7 +145,7 @@ const farmerVegetablesSlice = createSlice({
       })
       .addCase(fetchFarmerVegetables.fulfilled, (state, action) => {
         state.loading = false;
-        state.vegetables = action.payload.data;
+        state.vegetables = action.payload.data.data;
         state.success = action.payload.success;
         state.error = null;
       })

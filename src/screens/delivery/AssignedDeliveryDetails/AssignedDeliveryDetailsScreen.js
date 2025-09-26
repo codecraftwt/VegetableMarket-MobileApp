@@ -10,6 +10,7 @@ import {
   Linking,
   Image,
   Alert,
+  Platform,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useDispatch, useSelector } from 'react-redux';
@@ -128,6 +129,57 @@ const AssignedDeliveryDetailsScreen = ({ navigation, route }) => {
 
   const handleCallFarmer = (phone) => {
     Linking.openURL(`tel:${phone}`);
+  };
+
+  const handleOpenAddressInMaps = (address, coordinates = null) => {
+    if (!address && !coordinates) {
+      Alert.alert('Error', 'No address or coordinates available to open in maps');
+      return;
+    }
+
+    let mapsUrl;
+    
+    // If we have coordinates, use them for more accurate location
+    if (coordinates && coordinates.latitude && coordinates.longitude) {
+      const { latitude, longitude } = coordinates;
+      
+      if (Platform.OS === 'ios') {
+        // For iOS, use Apple Maps with coordinates
+        mapsUrl = `http://maps.apple.com/?ll=${latitude},${longitude}&q=${encodeURIComponent(address || 'Location')}`;
+      } else {
+        // For Android, use Google Maps with coordinates
+        mapsUrl = `geo:${latitude},${longitude}?q=${latitude},${longitude}(${encodeURIComponent(address || 'Location')})`;
+      }
+    } else {
+      // Fallback to address-based search with better formatting
+      const encodedAddress = encodeURIComponent(address);
+      
+      if (Platform.OS === 'ios') {
+        // For iOS, use Apple Maps with address
+        mapsUrl = `http://maps.apple.com/?q=${encodedAddress}`;
+      } else {
+        // For Android, use Google Maps with address
+        mapsUrl = `geo:0,0?q=${encodedAddress}`;
+      }
+    }
+
+    // Try to open the maps URL
+    Linking.openURL(mapsUrl).catch(err => {
+      console.error('Failed to open maps:', err);
+      
+      // Enhanced fallback with coordinates if available
+      let fallbackUrl;
+      if (coordinates && coordinates.latitude && coordinates.longitude) {
+        fallbackUrl = `https://www.google.com/maps/@${coordinates.latitude},${coordinates.longitude},15z`;
+      } else {
+        fallbackUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+      }
+      
+      Linking.openURL(fallbackUrl).catch(fallbackErr => {
+        console.error('Failed to open fallback maps:', fallbackErr);
+        Alert.alert('Error', 'Unable to open maps. Please check your device settings.');
+      });
+    });
   };
 
   const handleStartDelivery = () => {
@@ -250,7 +302,20 @@ const AssignedDeliveryDetailsScreen = ({ navigation, route }) => {
           <View style={styles.infoRow}>
             <Icon name="map-marker" size={p(16)} color="#019a34" />
             <Text style={styles.infoLabel}>Address:</Text>
-            <Text style={styles.infoValue}>{assignedDeliveryDetails.order.customer_address}</Text>
+            <TouchableOpacity 
+              style={styles.addressContainer}
+              onPress={() => handleOpenAddressInMaps(
+                assignedDeliveryDetails.order.customer_address,
+                assignedDeliveryDetails.order.customer_coordinates || 
+                assignedDeliveryDetails.order.coordinates
+              )}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.infoValue, styles.clickableAddress]}>
+                {assignedDeliveryDetails.order.customer_address}
+              </Text>
+              <Icon name="external-link" size={p(12)} color="#019a34" style={styles.externalLinkIcon} />
+            </TouchableOpacity>
           </View>
         </View>
       </View>
@@ -313,10 +378,21 @@ const AssignedDeliveryDetailsScreen = ({ navigation, route }) => {
                 <Text style={styles.itemCountText}>{farmer.itemCount} item(s)</Text>
               </View>
             </View>
-            <View style={styles.farmerAddress}>
-              <Icon name="map-marker" size={p(14)} color="#666" />
-              <Text style={styles.addressText}>{farmer.address}</Text>
-            </View>
+            <TouchableOpacity 
+              style={styles.farmerAddress}
+              onPress={() => handleOpenAddressInMaps(
+                farmer.address,
+                farmer.coordinates || farmer.latitude && farmer.longitude ? {
+                  latitude: farmer.latitude,
+                  longitude: farmer.longitude
+                } : null
+              )}
+              activeOpacity={0.7}
+            >
+              <Icon name="map-marker" size={p(14)} color="#019a34" />
+              <Text style={[styles.addressText, styles.clickableAddress]}>{farmer.address}</Text>
+              <Icon name="external-link" size={p(10)} color="#019a34" style={styles.externalLinkIcon} />
+            </TouchableOpacity>
             <View style={styles.farmerItems}>
               {farmer.items.map((item, itemIndex) => (
                 <View key={itemIndex} style={styles.farmerItem}>
@@ -540,6 +616,20 @@ const styles = StyleSheet.create({
   phoneNumber: {
     color: '#019a34',
     textDecorationLine: 'underline',
+  },
+  addressContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+  },
+  clickableAddress: {
+    color: '#019a34',
+    textDecorationLine: 'underline',
+    flex: 1,
+  },
+  externalLinkIcon: {
+    marginLeft: p(4),
   },
   totalAmount: {
     fontSize: fontSizes.base,
