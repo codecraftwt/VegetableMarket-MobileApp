@@ -79,7 +79,7 @@ const farmerOrdersSlice = createSlice({
       })
       .addCase(fetchFarmerOrders.fulfilled, (state, action) => {
         state.loading = false;
-        state.orders = action.payload.data;
+        state.orders = action.payload.data.data;
         state.success = action.payload.success;
         state.message = action.payload.message;
         state.error = null;
