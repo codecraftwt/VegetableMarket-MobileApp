@@ -30,6 +30,7 @@ import {
   downloadOrderInvoice,
   clearDownloadInvoiceError
 } from '../../../redux/slices/ordersSlice';
+import { getOTPStatus, clearOTPError } from '../../../redux/slices/otpSlice';
 import { ReviewModal, ConfirmationModal, SuccessModal, ErrorModal } from '../../../components';
 import RNFS from 'react-native-fs';
 import Share from 'react-native-share';
@@ -61,6 +62,11 @@ const OrderDetailsScreen = ({ navigation, route }) => {
     downloadInvoiceLoading,
     downloadInvoiceError
   } = useSelector(state => state.orders);
+  const { 
+    statusLoading: otpStatusLoading,
+    error: otpError,
+    otpStatus
+  } = useSelector(state => state.otp);
 
   useEffect(() => {
     if (cancelOrderError) {
@@ -91,6 +97,39 @@ const OrderDetailsScreen = ({ navigation, route }) => {
     }
   }, [downloadInvoiceError, dispatch]);
 
+  useEffect(() => {
+    if (otpError) {
+      Alert.alert('Error', otpError);
+      dispatch(clearOTPError());
+    }
+  }, [otpError, dispatch]);
+
+  // Fetch OTP status when order is out for delivery
+  useEffect(() => {
+    if (order.delivery_status === 'out for delivery' && order.order_id) {
+      console.log('📊 Fetching OTP Status for Customer:', {
+        orderId: order.order_id,
+        orderIdType: typeof order.order_id,
+        deliveryStatus: order.delivery_status,
+        fullOrder: order
+      });
+      dispatch(getOTPStatus(order.order_id));
+    }
+  }, [order.delivery_status, order.order_id, dispatch]);
+
+  // Debug OTP status changes
+  useEffect(() => {
+    if (otpStatus) {
+      console.log('📱 OTP Status Received in Customer Screen:', {
+        otpStatus: otpStatus,
+        exists: otpStatus.exists,
+        verified: otpStatus.verified,
+        created_at: otpStatus.created_at,
+        expires_at: otpStatus.expires_at
+      });
+    }
+  }, [otpStatus]);
+
   const handleBackPress = () => {
     navigation.goBack();
   };
@@ -105,6 +144,15 @@ const OrderDetailsScreen = ({ navigation, route }) => {
         setOrder(updatedOrder);
         // Also update the route params for consistency
         navigation.setParams({ order: updatedOrder });
+        
+        // Refresh OTP status if order is out for delivery
+        if (updatedOrder.delivery_status === 'out for delivery') {
+          console.log('🔄 Refreshing OTP Status for Customer:', {
+            orderId: updatedOrder.order_id,
+            deliveryStatus: updatedOrder.delivery_status
+          });
+          dispatch(getOTPStatus(updatedOrder.order_id));
+        }
       }
     } catch (error) {
       console.log('Failed to refresh order details:', error);
@@ -241,6 +289,52 @@ const OrderDetailsScreen = ({ navigation, route }) => {
   // Check if order is eligible for invoice download
   const isEligibleForInvoice = () => {
     return order.delivery_status === 'delivered' || order.delivery_status === 'cancelled' || order.is_canceled;
+  };
+
+  // Format OTP status for display
+  const formatOTPStatus = () => {
+    if (!otpStatus) return null;
+    
+    const { verified, exists, created_at, expires_at } = otpStatus;
+    
+    if (!exists) {
+      return {
+        status: 'No OTP Generated',
+        color: '#666',
+        icon: 'clock-o',
+        message: 'Delivery agent has not generated OTP yet'
+      };
+    }
+    
+    if (verified) {
+      return {
+        status: 'OTP Verified',
+        color: '#4CAF50',
+        icon: 'check-circle',
+        message: 'OTP has been verified by delivery agent'
+      };
+    }
+    
+    // Check if OTP is expired
+    const now = new Date();
+    const expiresAt = new Date(expires_at);
+    const isExpired = now > expiresAt;
+    
+    if (isExpired) {
+      return {
+        status: 'OTP Expired',
+        color: '#dc3545',
+        icon: 'exclamation-triangle',
+        message: 'OTP has expired. Please contact delivery agent for new OTP'
+      };
+    }
+    
+    return {
+      status: 'OTP Active',
+      color: '#FF9800',
+      icon: 'key',
+      message: `OTP is active until ${new Date(expires_at).toLocaleTimeString()}`
+    };
   };
 
   // Request storage permissions for file operations
@@ -531,6 +625,84 @@ const OrderDetailsScreen = ({ navigation, route }) => {
             <Text style={styles.addressText}>{formatDeliveryAddress()}</Text>
           </View>
         </View>
+
+        {/* OTP Status - Only show when order is out for delivery */}
+        {order.delivery_status === 'out for delivery' && (
+          <View style={styles.otpStatusCard}>
+            <View style={styles.otpStatusHeader}>
+              <Text style={styles.sectionTitle}>Delivery Verification</Text>
+              <TouchableOpacity 
+                style={styles.refreshOTPButton}
+                onPress={() => {
+                  console.log('🔄 Manual OTP Status Refresh:', { orderId: order.order_id });
+                  dispatch(getOTPStatus(order.order_id));
+                }}
+                disabled={otpStatusLoading}
+              >
+                <Icon 
+                  name="refresh" 
+                  size={16} 
+                  color={otpStatusLoading ? "#ccc" : "#019a34"} 
+                />
+              </TouchableOpacity>
+            </View>
+            
+            {otpStatusLoading ? (
+              <View style={styles.otpLoadingContainer}>
+                <Icon name="spinner" size={20} color="#019a34" />
+                <Text style={styles.otpLoadingText}>Checking OTP status...</Text>
+              </View>
+            ) : (
+              (() => {
+                const otpStatusInfo = formatOTPStatus();
+                return otpStatusInfo ? (
+                  <View style={styles.otpStatusContainer}>
+                    <View style={styles.otpStatusInfoHeader}>
+                      <View style={[
+                        styles.otpStatusIconContainer,
+                        { backgroundColor: otpStatusInfo.color + '20' }
+                      ]}>
+                        <Icon name={otpStatusInfo.icon} size={20} color={otpStatusInfo.color} />
+                      </View>
+                      <View style={styles.otpStatusContent}>
+                        <Text style={[styles.otpStatusTitle, { color: otpStatusInfo.color }]}>
+                          {otpStatusInfo.status}
+                        </Text>
+                        <Text style={styles.otpStatusMessage}>
+                          {otpStatusInfo.message}
+                        </Text>
+                      </View>
+                    </View>
+                    
+                    {/* Show OTP details if available */}
+                    {otpStatus.exists && !otpStatus.verified && (
+                      <View style={styles.otpDetailsContainer}>
+                        <View style={styles.otpDetailRow}>
+                          <Icon name="calendar" size={14} color="#666" />
+                          <Text style={styles.otpDetailText}>
+                            Generated: {new Date(otpStatus.created_at).toLocaleString()}
+                          </Text>
+                        </View>
+                        <View style={styles.otpDetailRow}>
+                          <Icon name="clock-o" size={14} color="#666" />
+                          <Text style={styles.otpDetailText}>
+                            Expires: {new Date(otpStatus.expires_at).toLocaleString()}
+                          </Text>
+                        </View>
+                      </View>
+                    )}
+                  </View>
+                ) : (
+                  <View style={styles.otpStatusContainer}>
+                    <Text style={styles.otpStatusMessage}>
+                      Unable to load OTP status. Please refresh or contact support.
+                    </Text>
+                  </View>
+                );
+              })()
+            )}
+          </View>
+        )}
 
         {/* Delivery Boy Information */}
         {order.delivery_boy && (
@@ -1263,6 +1435,89 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: fontSizes.sm,
     fontFamily: 'Poppins-Bold',
+  },
+
+  // OTP Status Card
+  otpStatusCard: {
+    backgroundColor: '#fff',
+    borderRadius: p(8),
+    padding: p(16),
+    marginBottom: p(12),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
+  },
+  otpLoadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: p(12),
+    gap: p(8),
+  },
+  otpLoadingText: {
+    fontSize: fontSizes.sm,
+    color: '#019a34',
+    fontFamily: 'Poppins-Regular',
+  },
+  otpStatusContainer: {
+    gap: p(12),
+  },
+  otpStatusHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: p(12),
+  },
+  refreshOTPButton: {
+    padding: p(8),
+    borderRadius: p(4),
+    backgroundColor: '#f0f8f0',
+  },
+  otpStatusInfoHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: p(12),
+  },
+  otpStatusIconContainer: {
+    width: p(40),
+    height: p(40),
+    borderRadius: p(20),
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  otpStatusContent: {
+    flex: 1,
+  },
+  otpStatusTitle: {
+    fontSize: fontSizes.base,
+    fontFamily: 'Poppins-Bold',
+    marginBottom: p(4),
+  },
+  otpStatusMessage: {
+    fontSize: fontSizes.sm,
+    color: '#666',
+    fontFamily: 'Poppins-Regular',
+    lineHeight: p(18),
+  },
+  otpDetailsContainer: {
+    backgroundColor: '#f8f9fa',
+    borderRadius: p(8),
+    padding: p(12),
+    gap: p(8),
+  },
+  otpDetailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: p(8),
+  },
+  otpDetailText: {
+    fontSize: fontSizes.xs,
+    color: '#666',
+    fontFamily: 'Poppins-Regular',
   },
 
   // Review Status Indicator

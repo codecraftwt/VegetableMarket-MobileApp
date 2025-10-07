@@ -100,47 +100,90 @@ class FirebaseMessagingService {
       if (userInfo) {
         const user = JSON.parse(userInfo);
         
-        // Replace with your actual API endpoint
-        const response = await fetch('YOUR_BACKEND_API/fcm-token', {
+        // Use the correct API endpoint
+        const response = await fetch('https://vegetables.walstarmedia.com/api/fcm-token', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${user.token}`, // Adjust based on your auth structure
+            'Authorization': `Bearer ${user.token}`,
           },
           body: JSON.stringify({
             fcm_token: token,
             user_id: user.id,
             platform: Platform.OS,
-            app_version: '1.0.0', // You can get this from package.json
+            app_version: '1.0.0',
           }),
         });
 
         if (response.ok) {
-          console.log('FCM token sent to backend successfully');
+          console.log('✅ FCM token sent to backend successfully');
         } else {
-          console.log('Failed to send FCM token to backend');
+          console.log('❌ Failed to send FCM token to backend:', response.status);
         }
+      } else {
+        console.log('⚠️ No user info found, cannot send FCM token');
       }
     } catch (error) {
-      console.error('Error sending FCM token to backend:', error);
+      console.error('❌ Error sending FCM token to backend:', error);
     }
   }
 
-  // Set up basic message handlers
-  setupMessageHandlers() {
+  // Set up message handlers with Redux integration
+  setupMessageHandlers(dispatch) {
     // Handle background messages
     messaging().setBackgroundMessageHandler(async remoteMessage => {
-      console.log('Background message received:', remoteMessage);
+      console.log('📱 Background message received:', remoteMessage);
+      
+      // Add notification to Redux store even in background
+      if (dispatch && remoteMessage.data) {
+        const notificationData = {
+          id: remoteMessage.messageId || Date.now(),
+          title: remoteMessage.notification?.title || 'New Notification',
+          message: remoteMessage.notification?.body || remoteMessage.data.message || '',
+          type: remoteMessage.data.type || 'general',
+          is_read: false,
+          created_at: new Date().toISOString(),
+          ...remoteMessage.data
+        };
+        
+        console.log('📱 Adding background notification to Redux:', notificationData);
+        dispatch({ type: 'notification/addNotification', payload: notificationData });
+      }
     });
 
     // Handle foreground messages
     messaging().onMessage(async remoteMessage => {
-      console.log('Foreground message received:', remoteMessage);
+      console.log('📱 Foreground message received:', remoteMessage);
+      console.log('📱 Message data:', remoteMessage.data);
+      console.log('📱 Notification:', remoteMessage.notification);
+      
+      // Add notification to Redux store for real-time updates
+      if (dispatch && remoteMessage.data) {
+        const notificationData = {
+          id: remoteMessage.messageId || Date.now(),
+          title: remoteMessage.notification?.title || 'New Notification',
+          message: remoteMessage.notification?.body || remoteMessage.data.message || '',
+          type: remoteMessage.data.type || 'general',
+          is_read: false,
+          created_at: new Date().toISOString(),
+          ...remoteMessage.data
+        };
+        
+        console.log('📱 Adding foreground notification to Redux:', notificationData);
+        dispatch({ type: 'notification/addNotification', payload: notificationData });
+      }
+      
+      // Show local notification for foreground messages
+      if (remoteMessage.notification) {
+        console.log('📱 Showing local notification:', remoteMessage.notification.title);
+        // You can add local notification display logic here if needed
+      }
     });
 
     // Handle notification tap when app is in background/quit
     messaging().onNotificationOpenedApp(remoteMessage => {
-      console.log('Notification opened app:', remoteMessage);
+      console.log('📱 Notification opened app:', remoteMessage);
+      this.handleNotificationTap(remoteMessage);
     });
 
     // Handle notification tap when app is quit
@@ -148,9 +191,29 @@ class FirebaseMessagingService {
       .getInitialNotification()
       .then(remoteMessage => {
         if (remoteMessage) {
-          console.log('Notification opened app from quit state:', remoteMessage);
+          console.log('📱 Notification opened app from quit state:', remoteMessage);
+          this.handleNotificationTap(remoteMessage);
         }
       });
+  }
+
+  // Handle notification tap
+  handleNotificationTap(remoteMessage) {
+    console.log('📱 Handling notification tap:', remoteMessage);
+    
+    // You can add navigation logic here based on notification type
+    const data = remoteMessage.data || {};
+    
+    if (data.type === 'otp') {
+      console.log('📱 OTP notification tapped - order:', data.order_id);
+      // Navigate to order details or OTP screen
+    } else if (data.type === 'order') {
+      console.log('📱 Order notification tapped - order:', data.order_id);
+      // Navigate to order details
+    } else if (data.type === 'delivery') {
+      console.log('📱 Delivery notification tapped - order:', data.order_id);
+      // Navigate to order details
+    }
   }
 
   // Get current FCM token

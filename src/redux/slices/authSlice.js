@@ -42,11 +42,46 @@ export const loginUser = createAsyncThunk(
   'auth/login',
   async (credentials, { rejectWithValue }) => {
     try {
-      const response = await api.post('login', credentials);
-      console.log('Login response:', response.data);
+      // Get device token from AsyncStorage if available
+      let deviceToken = null;
+      let deviceType = 'android'; // Default to android
+      
+      try {
+        const AsyncStorage = await import('@react-native-async-storage/async-storage');
+        deviceToken = await AsyncStorage.default.getItem('fcm_token');
+        
+        // Determine device type
+        const Platform = await import('react-native');
+        deviceType = Platform.default.OS === 'ios' ? 'ios' : 'android';
+        
+        console.log('🔑 Device Token for Login:', {
+          hasToken: !!deviceToken,
+          deviceType: deviceType,
+          tokenPreview: deviceToken ? deviceToken.substring(0, 20) + '...' : 'No token'
+        });
+      } catch (tokenError) {
+        console.log('⚠️ Could not get device token for login:', tokenError);
+      }
+      
+      // Prepare login data with device token
+      const loginData = {
+        ...credentials,
+        device_token: deviceToken,
+        device_type: deviceType
+      };
+      
+      console.log('📱 Login Request Data:', {
+        email: credentials.email,
+        hasPassword: !!credentials.password,
+        device_token: deviceToken ? 'Present' : 'Missing',
+        device_type: deviceType
+      });
+      
+      const response = await api.post('login', loginData);
+      console.log('✅ Login response:', response.data);
       return response.data;
     } catch (error) {
-      console.log('Login error:', error.response?.data);
+      console.log('❌ Login error:', error.response?.data);
       return rejectWithValue(error.response?.data?.message || 'Login failed');
     }
   },

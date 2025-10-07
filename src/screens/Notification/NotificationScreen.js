@@ -7,67 +7,35 @@ import {
   StatusBar, 
   ScrollView, 
   TouchableOpacity,
-  Alert
+  Alert,
+  RefreshControl
 } from 'react-native';
 import CommonHeader from '../../components/CommonHeader';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { p } from '../../utils/Responsive';
 import { fontSizes } from '../../utils/fonts';
 import useNotification from '../../hooks/useNotification';
+import { useSelector, useDispatch } from 'react-redux';
+import { 
+  fetchNotifications, 
+  markNotificationAsRead, 
+  markAllNotificationsAsRead,
+  clearNotificationsError,
+  addNotification,
+  sendTestNotification
+} from '../../redux/slices/notificationSlice';
 
 const NotificationScreen = ({ navigation }) => {
-  const [notifications, setNotifications] = useState([
-    {
-      id: 1,
-      type: 'order',
-      title: 'Order Confirmed!',
-      message: 'Your order #ORD-2024-001 has been confirmed and is being processed.',
-      time: '2 minutes ago',
-      isRead: false,
-      icon: 'check-circle',
-      iconColor: '#4CAF50',
-    },
-    {
-      id: 2,
-      type: 'delivery',
-      title: 'Out for Delivery',
-      message: 'Your order #ORD-2024-001 is out for delivery. Expected delivery in 2-3 hours.',
-      time: '1 hour ago',
-      isRead: false,
-      icon: 'truck',
-      iconColor: '#2196F3',
-    },
-    {
-      id: 3,
-      type: 'promo',
-      title: 'Special Offer!',
-      message: 'Get 20% off on all fruits this weekend. Use code: FRESH20',
-      time: '3 hours ago',
-      isRead: true,
-      icon: 'gift',
-      iconColor: '#FF9800',
-    },
-    {
-      id: 4,
-      type: 'payment',
-      title: 'Payment Successful',
-      message: 'Your payment of ₹15.99 has been processed successfully.',
-      time: '5 hours ago',
-      isRead: true,
-      icon: 'credit-card',
-      iconColor: '#4CAF50',
-    },
-    {
-      id: 5,
-      type: 'system',
-      title: 'App Update Available',
-      message: 'A new version of Vegetable Market is available. Update now for better experience.',
-      time: '1 day ago',
-      isRead: true,
-      icon: 'download',
-      iconColor: '#9C27B0',
-    },
-  ]);
+  const dispatch = useDispatch();
+  const [refreshing, setRefreshing] = useState(false);
+  
+  const { 
+    notifications, 
+    notificationsLoading, 
+    notificationsError,
+    markAsReadLoading,
+    markAllAsReadLoading
+  } = useSelector(state => state.notification);
   
   const {
     fcmToken,
@@ -86,6 +54,26 @@ const NotificationScreen = ({ navigation }) => {
       initializeFCM();
     }
   }, [isInitialized]);
+
+  // Fetch notifications on component mount
+  useEffect(() => {
+    // Try to fetch from API, but don't show error if route doesn't exist
+    dispatch(fetchNotifications()).catch(error => {
+      console.log('📱 Notifications API not available, using local notifications only');
+    });
+  }, [dispatch]);
+
+  // Handle notifications error
+  useEffect(() => {
+    if (notificationsError && !notificationsError.includes('could not be found')) {
+      Alert.alert('Error', notificationsError);
+      dispatch(clearNotificationsError());
+    } else if (notificationsError && notificationsError.includes('could not be found')) {
+      // Don't show error for missing API route, just log it
+      console.log('📱 Notifications API route not found, using local notifications only');
+      dispatch(clearNotificationsError());
+    }
+  }, [notificationsError, dispatch]);
 
   const initializeFCM = async () => {
     try {
@@ -115,80 +103,157 @@ const NotificationScreen = ({ navigation }) => {
     navigation.goBack();
   };
 
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await dispatch(fetchNotifications()).unwrap();
+    } catch (error) {
+      console.log('Failed to refresh notifications:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   const handleNotificationPress = (notification) => {
-    console.log('Notification pressed:', notification);
-    // Mark as read when pressed
-    setNotifications(prevNotifications =>
-      prevNotifications.map(n =>
-        n.id === notification.id ? { ...n, isRead: true } : n
-      )
-    );
+    console.log('📱 Notification pressed:', notification);
+    // Mark as read when pressed if not already read
+    if (!notification.is_read) {
+      dispatch(markNotificationAsRead(notification.id));
+    }
   };
 
   const handleMarkAllAsRead = () => {
-    setNotifications(prevNotifications =>
-      prevNotifications.map(notification => ({
-        ...notification,
-        isRead: true,
-      }))
-    );
+    dispatch(markAllNotificationsAsRead());
   };
 
-  const handleMarkAsRead = (notificationId) => {
-    setNotifications(prevNotifications =>
-      prevNotifications.map(notification =>
-        notification.id === notificationId
-          ? { ...notification, isRead: true }
-          : notification
-      )
-    );
+  const handleSendTestNotification = () => {
+    const testNotification = {
+      title: 'OTP Generated',
+      message: 'Your OTP for order #44 is : 123456',
+      type: 'otp',
+      order_id: 44
+    };
+    
+    console.log('📱 Sending test notification:', testNotification);
+    dispatch(sendTestNotification(testNotification));
   };
 
   const getUnreadCount = () => {
-    return notifications.filter(notification => !notification.isRead).length;
+    return notifications.filter(notification => !notification.is_read).length;
+  };
+
+  // Format notification time
+  const formatNotificationTime = (createdAt) => {
+    if (!createdAt) return 'Just now';
+    
+    const now = new Date();
+    const notificationTime = new Date(createdAt);
+    const diffInMinutes = Math.floor((now - notificationTime) / (1000 * 60));
+    
+    if (diffInMinutes < 1) return 'Just now';
+    if (diffInMinutes < 60) return `${diffInMinutes} minute${diffInMinutes > 1 ? 's' : ''} ago`;
+    
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    if (diffInHours < 24) return `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`;
+    
+    const diffInDays = Math.floor(diffInHours / 24);
+    return `${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`;
+  };
+
+  // Get notification icon and color based on type
+  const getNotificationIcon = (notification) => {
+    // Check if it's an OTP notification
+    if (notification.message && notification.message.includes('OTP')) {
+      return {
+        icon: 'key',
+        color: '#6f42c1'
+      };
+    }
+    
+    // Check notification type or title for other icons
+    const type = notification.type || '';
+    const title = notification.title || '';
+    
+    if (type.includes('order') || title.includes('Order')) {
+      return {
+        icon: 'shopping-cart',
+        color: '#4CAF50'
+      };
+    }
+    
+    if (type.includes('delivery') || title.includes('Delivery') || title.includes('delivery')) {
+      return {
+        icon: 'truck',
+        color: '#2196F3'
+      };
+    }
+    
+    if (type.includes('payment') || title.includes('Payment')) {
+      return {
+        icon: 'credit-card',
+        color: '#4CAF50'
+      };
+    }
+    
+    if (type.includes('promo') || title.includes('Offer') || title.includes('Discount')) {
+      return {
+        icon: 'gift',
+        color: '#FF9800'
+      };
+    }
+    
+    // Default icon
+    return {
+      icon: 'bell',
+      color: '#666'
+    };
   };
 
   // Notification Item Component
-  const NotificationItem = ({ notification }) => (
-    <TouchableOpacity
-      style={[
-        styles.notificationItem,
-        !notification.isRead && styles.unreadNotification
-      ]}
-      onPress={() => handleNotificationPress(notification)}
-    >
-      <View style={styles.notificationLeft}>
-        <View style={[
-          styles.iconContainer,
-          { backgroundColor: notification.iconColor + '20' }
-        ]}>
-          <Icon 
-            name={notification.icon} 
-            size={16} 
-            color={notification.iconColor} 
-          />
-        </View>
-        <View style={styles.notificationContent}>
-          <Text style={[
-            styles.notificationTitle,
-            !notification.isRead && styles.unreadTitle
+  const NotificationItem = ({ notification }) => {
+    const iconInfo = getNotificationIcon(notification);
+    
+    return (
+      <TouchableOpacity
+        style={[
+          styles.notificationItem,
+          !notification.is_read && styles.unreadNotification
+        ]}
+        onPress={() => handleNotificationPress(notification)}
+      >
+        <View style={styles.notificationLeft}>
+          <View style={[
+            styles.iconContainer,
+            { backgroundColor: iconInfo.color + '20' }
           ]}>
-            {notification.title}
-          </Text>
-          <Text style={styles.notificationMessage}>
-            {notification.message}
-          </Text>
-          <Text style={styles.notificationTime}>
-            {notification.time}
-          </Text>
+            <Icon 
+              name={iconInfo.icon} 
+              size={16} 
+              color={iconInfo.color} 
+            />
+          </View>
+          <View style={styles.notificationContent}>
+            <Text style={[
+              styles.notificationTitle,
+              !notification.is_read && styles.unreadTitle
+            ]}>
+              {notification.title}
+            </Text>
+            <Text style={styles.notificationMessage}>
+              {notification.message}
+            </Text>
+            <Text style={styles.notificationTime}>
+              {formatNotificationTime(notification.created_at)}
+            </Text>
+          </View>
         </View>
-      </View>
-      
-      {!notification.isRead && (
-        <View style={styles.unreadDot} />
-      )}
-    </TouchableOpacity>
-  );
+        
+        {!notification.is_read && (
+          <View style={styles.unreadDot} />
+        )}
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -208,15 +273,47 @@ const NotificationScreen = ({ navigation }) => {
             {getUnreadCount()} unread notification{getUnreadCount() !== 1 ? 's' : ''}
           </Text>
         </View>
-        {getUnreadCount() > 0 && (
-          <TouchableOpacity style={styles.markAllReadButton} onPress={handleMarkAllAsRead}>
-            <Text style={styles.markAllReadText}>Mark all as read</Text>
+        <View style={styles.headerButtons}>
+          <TouchableOpacity 
+            style={styles.testNotificationButton} 
+            onPress={handleSendTestNotification}
+          >
+            <Text style={styles.testNotificationText}>Test OTP</Text>
           </TouchableOpacity>
-        )}
+          {getUnreadCount() > 0 && (
+            <TouchableOpacity 
+              style={[styles.markAllReadButton, markAllAsReadLoading && styles.buttonDisabled]} 
+              onPress={handleMarkAllAsRead}
+              disabled={markAllAsReadLoading}
+            >
+              <Text style={styles.markAllReadText}>
+                {markAllAsReadLoading ? 'Marking...' : 'Mark all as read'}
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {notifications.length === 0 ? (
+      <ScrollView 
+        style={styles.content} 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            colors={['#019a34']}
+            tintColor="#019a34"
+            title="Pull to refresh"
+            titleColor="#019a34"
+          />
+        }
+      >
+        {notificationsLoading ? (
+          <View style={styles.loadingContainer}>
+            <Icon name="spinner" size={30} color="#019a34" />
+            <Text style={styles.loadingText}>Loading notifications...</Text>
+          </View>
+        ) : notifications.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Icon name="bell-slash" size={60} color="#ccc" />
             <Text style={styles.emptyTitle}>No Notifications</Text>
@@ -265,6 +362,21 @@ const styles = StyleSheet.create({
     color: '#666',
     fontFamily: 'Poppins-Regular',
   },
+  headerButtons: {
+    flexDirection: 'row',
+    gap: p(8),
+  },
+  testNotificationButton: {
+    paddingHorizontal: p(12),
+    paddingVertical: p(6),
+    backgroundColor: '#6f42c1',
+    borderRadius: p(15),
+  },
+  testNotificationText: {
+    color: '#fff',
+    fontSize: fontSizes.sm,
+    fontFamily: 'Poppins-SemiBold',
+  },
   markAllReadButton: {
     paddingHorizontal: p(12),
     paddingVertical: p(6),
@@ -275,6 +387,22 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: fontSizes.sm,
     fontFamily: 'Poppins-SemiBold',
+  },
+  buttonDisabled: {
+    opacity: 0.7,
+  },
+
+  // Loading State
+  loadingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: p(60),
+  },
+  loadingText: {
+    fontSize: fontSizes.sm,
+    color: '#019a34',
+    marginTop: p(10),
+    fontFamily: 'Poppins-Regular',
   },
 
   // Empty State

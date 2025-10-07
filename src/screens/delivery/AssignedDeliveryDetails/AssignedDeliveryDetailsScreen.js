@@ -24,8 +24,11 @@ import {
   clearDeliveryError
 } from '../../../redux/slices/deliverySlice';
 import { updateOrderStatus, updateAssignmentStatus, updatePaymentStatus, clearTodaysTaskSuccess } from '../../../redux/slices/todaysTaskSlice';
+import { generateOTP, verifyOTP, getOTPStatus, clearOTPError, clearOTPSuccess, setOTPGenerated, setOTPVerified } from '../../../redux/slices/otpSlice';
+import { addNotification } from '../../../redux/slices/notificationSlice';
 import ErrorModal from '../../../components/ErrorModal';
 import SuccessModal from '../../../components/SuccessModal';
+import OTPModal from '../../../components/OTPModal';
 
 const AssignedDeliveryDetailsScreen = ({ navigation, route }) => {
   const dispatch = useDispatch();
@@ -40,10 +43,23 @@ const AssignedDeliveryDetailsScreen = ({ navigation, route }) => {
     success: updatePaymentStatusSuccess,
     message: updatePaymentStatusMessage
   } = useSelector(state => state.todaysTask);
+  const { 
+    generateLoading: generateOTPLoading,
+    verifyLoading: verifyOTPLoading,
+    statusLoading: otpStatusLoading,
+    error: otpError,
+    success: otpSuccess,
+    message: otpMessage,
+    otpGenerated,
+    otpVerified,
+    otpStatus,
+    actualOTP
+  } = useSelector(state => state.otp);
   const { orderId } = route.params;
   
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showOTPModal, setShowOTPModal] = useState(false);
   
   // Local state to track current order and payment status for immediate UI updates
   const [currentDeliveryStatus, setCurrentDeliveryStatus] = useState(null);
@@ -53,6 +69,7 @@ const AssignedDeliveryDetailsScreen = ({ navigation, route }) => {
     React.useCallback(() => {
       // Clear any lingering success state when screen comes into focus
       dispatch(clearTodaysTaskSuccess());
+      dispatch(clearOTPSuccess());
       
       if (orderId) {
         dispatch(fetchAssignedDeliveryDetails(orderId));
@@ -69,6 +86,19 @@ const AssignedDeliveryDetailsScreen = ({ navigation, route }) => {
       // Initialize local state with current values
       setCurrentDeliveryStatus(assignedDeliveryDetails.order?.delivery_status);
       setCurrentPaymentStatus(assignedDeliveryDetails.order?.payment_status);
+      
+      // Check for existing OTP if order is out for delivery and payment is paid
+      const deliveryStatus = assignedDeliveryDetails.order?.delivery_status;
+      const paymentStatus = assignedDeliveryDetails.order?.payment_status;
+      
+      if (deliveryStatus === 'out_for_delivery' && paymentStatus === 'paid') {
+        console.log('🔍 Checking for existing OTP:', {
+          orderId: assignedDeliveryDetails.order.id,
+          deliveryStatus,
+          paymentStatus
+        });
+        dispatch(getOTPStatus(assignedDeliveryDetails.order.id));
+      }
     }
   }, [assignedDeliveryDetails]);
 
@@ -122,6 +152,133 @@ const AssignedDeliveryDetailsScreen = ({ navigation, route }) => {
       }
     }
   }, [updatePaymentStatusSuccess, updatePaymentStatusMessage]);
+
+  // OTP related useEffect hooks
+  useEffect(() => {
+    if (otpError && !otpError.includes('OTP has already been sent and is still valid')) {
+      console.log('🚨 OTP Error Detected (Non-Exists):', otpError);
+      setShowErrorModal(true);
+      dispatch(clearOTPError());
+    }
+  }, [otpError]);
+
+  useEffect(() => {
+    if (otpSuccess && otpMessage) {
+      console.log('🎉 OTP Success Effect Triggered:', {
+        message: otpMessage,
+        otpGenerated: otpGenerated,
+        otpVerified: otpVerified
+      });
+      
+      if (otpMessage.includes('generated')) {
+        console.log('📱 OTP Generated - Opening Modal');
+        setShowSuccessModal(true);
+        setShowOTPModal(true);
+        
+        // Add OTP notification to the notification list
+        const otpNotification = {
+          id: Date.now(),
+          title: 'OTP Generated',
+          message: `Your OTP for order #${assignedDeliveryDetails?.order?.id} is : ${actualOTP || otpStatus?.otp || 'Generated'}`,
+          type: 'otp',
+          is_read: false,
+          created_at: new Date().toISOString(),
+          order_id: assignedDeliveryDetails?.order?.id
+        };
+        
+        console.log('📱 Adding OTP Notification:', otpNotification);
+        dispatch(addNotification(otpNotification));
+        
+      } else if (otpMessage.includes('verified')) {
+        console.log('✅ OTP Verified - Closing Modal and Enabling Mark Complete');
+        setShowOTPModal(false);
+        setShowSuccessModal(true);
+        // After OTP verification, allow marking complete
+        dispatch(setOTPVerified(true));
+      }
+    }
+  }, [otpSuccess, otpMessage, otpStatus, actualOTP, assignedDeliveryDetails, dispatch]);
+
+  // Handle OTP already exists scenario
+  useEffect(() => {
+    if (otpError && otpError.includes('OTP has already been sent and is still valid')) {
+      console.log('🔄 OTP Already Exists - Opening Verification Modal');
+      setShowOTPModal(true);
+      dispatch(setOTPGenerated(true)); // Mark as generated so button doesn't show
+      dispatch(clearOTPError()); // Clear the error
+      
+      // Add notification for existing OTP
+      const existingOTPNotification = {
+        id: Date.now(),
+        title: 'OTP Already Generated',
+        message: `Your OTP for order #${assignedDeliveryDetails?.order?.id} is already active`,
+        type: 'otp',
+        is_read: false,
+        created_at: new Date().toISOString(),
+        order_id: assignedDeliveryDetails?.order?.id
+      };
+      
+      console.log('📱 Adding Existing OTP Notification:', existingOTPNotification);
+      dispatch(addNotification(existingOTPNotification));
+    }
+  }, [otpError, assignedDeliveryDetails, dispatch]);
+
+  // Handle OTP status received - automatically show modal if OTP exists and is not verified
+  useEffect(() => {
+    console.log('🔍 OTP Status Effect Triggered:', {
+      otpStatus: otpStatus,
+      otpGenerated: otpGenerated,
+      otpVerified: otpVerified
+    });
+    
+    if (otpStatus && otpStatus.exists && !otpStatus.verified) {
+      console.log('📱 Existing OTP Found - Opening Verification Modal:', {
+        exists: otpStatus.exists,
+        verified: otpStatus.verified,
+        created_at: otpStatus.created_at,
+        expires_at: otpStatus.expires_at
+      });
+      
+      // Check if OTP is not expired
+      const now = new Date();
+      const expiresAt = new Date(otpStatus.expires_at);
+      const isExpired = now > expiresAt;
+      
+      console.log('⏰ OTP Expiration Check:', {
+        now: now.toISOString(),
+        expiresAt: expiresAt.toISOString(),
+        isExpired: isExpired
+      });
+      
+      if (!isExpired) {
+        console.log('✅ OTP is valid - Opening modal and marking as generated');
+        setShowOTPModal(true);
+        dispatch(setOTPGenerated(true)); // Mark as generated so button doesn't show
+        
+        // Add notification for existing valid OTP
+        const existingValidOTPNotification = {
+          id: Date.now(),
+          title: 'OTP Found',
+          message: `Your OTP for order #${assignedDeliveryDetails?.order?.id} is still valid`,
+          type: 'otp',
+          is_read: false,
+          created_at: new Date().toISOString(),
+          order_id: assignedDeliveryDetails?.order?.id
+        };
+        
+        console.log('📱 Adding Existing Valid OTP Notification:', existingValidOTPNotification);
+        dispatch(addNotification(existingValidOTPNotification));
+      } else {
+        console.log('⏰ OTP is expired, will show Generate OTP button');
+      }
+    } else if (otpStatus) {
+      console.log('📊 OTP Status Details:', {
+        exists: otpStatus.exists,
+        verified: otpStatus.verified,
+        reason: !otpStatus.exists ? 'OTP does not exist' : 'OTP already verified'
+      });
+    }
+  }, [otpStatus]);
 
   const handleBackPress = () => {
     navigation.goBack();
@@ -212,6 +369,88 @@ const AssignedDeliveryDetailsScreen = ({ navigation, route }) => {
       setCurrentPaymentStatus('paid');
       dispatch(updatePaymentStatus({ orderId: assignedDeliveryDetails.order.id, paymentStatus: 'paid' }));
     }
+  };
+
+  const handleGenerateOTP = () => {
+    if (assignedDeliveryDetails?.order?.id) {
+      console.log('🎯 Generate OTP Button Clicked:', {
+        orderId: assignedDeliveryDetails.order.id,
+        orderIdType: typeof assignedDeliveryDetails.order.id,
+        orderStatus: currentDeliveryStatus || assignedDeliveryDetails.order.delivery_status,
+        paymentStatus: currentPaymentStatus || assignedDeliveryDetails.order.payment_status,
+        fullOrderData: assignedDeliveryDetails.order
+      });
+      
+      // Ensure orderId is a number
+      const orderId = parseInt(assignedDeliveryDetails.order.id);
+      console.log('🔢 Parsed Order ID:', {
+        original: assignedDeliveryDetails.order.id,
+        parsed: orderId,
+        isValid: !isNaN(orderId)
+      });
+      
+      dispatch(generateOTP({ orderId: orderId }));
+    } else {
+      console.log('❌ Cannot generate OTP - Missing order data:', {
+        assignedDeliveryDetails: assignedDeliveryDetails,
+        orderExists: !!assignedDeliveryDetails?.order,
+        orderIdExists: !!assignedDeliveryDetails?.order?.id
+      });
+    }
+  };
+
+  const handleVerifyOTP = async (otp) => {
+    if (assignedDeliveryDetails?.order?.id) {
+      console.log('🔍 Verify OTP Button Clicked:', {
+        orderId: assignedDeliveryDetails.order.id,
+        otp: otp,
+        otpLength: otp.length
+      });
+      
+      // Check OTP status before verification
+      console.log('🔍 Current OTP Status Before Verification:', {
+        otpStatus: otpStatus,
+        otpGenerated: otpGenerated,
+        otpVerified: otpVerified
+      });
+      
+      try {
+        await dispatch(verifyOTP({ orderId: assignedDeliveryDetails.order.id, otp })).unwrap();
+      } catch (error) {
+        console.log('🚨 Verify OTP failed:', error);
+        
+        // Check if it's a 422 error (validation error)
+        if (error.message && error.message.includes('422')) {
+          console.log('🚨 OTP Validation Error - Possible causes:');
+          console.log('   - OTP is incorrect');
+          console.log('   - OTP has expired');
+          console.log('   - OTP has already been used');
+          console.log('   - Order ID mismatch');
+          
+          // Check if OTP has expired
+          if (otpStatus && otpStatus.expires_at) {
+            const now = new Date();
+            const expiresAt = new Date(otpStatus.expires_at);
+            const isExpired = now > expiresAt;
+            console.log('🕐 OTP Expiration Check:', {
+              now: now.toISOString(),
+              expiresAt: expiresAt.toISOString(),
+              isExpired: isExpired,
+              timeRemaining: isExpired ? 'EXPIRED' : `${Math.floor((expiresAt - now) / 1000 / 60)} minutes`
+            });
+          }
+        }
+      }
+    }
+  };
+
+  const handleResendOTP = () => {
+    handleGenerateOTP();
+  };
+
+  const handleOTPModalClose = () => {
+    setShowOTPModal(false);
+    dispatch(clearOTPSuccess());
   };
 
   const getStatusColor = (status) => {
@@ -421,6 +660,15 @@ const AssignedDeliveryDetailsScreen = ({ navigation, route }) => {
     const deliveryStatus = currentDeliveryStatus || order.delivery_status;
     const paymentStatus = currentPaymentStatus || order.payment_status;
     
+    console.log('🎯 Action Buttons Render Check:', {
+      deliveryStatus,
+      paymentStatus,
+      otpGenerated,
+      otpVerified,
+      showGenerateOTP: deliveryStatus === 'out_for_delivery' && paymentStatus === 'paid' && !otpGenerated,
+      showMarkComplete: deliveryStatus === 'out_for_delivery' && paymentStatus === 'paid' && otpVerified
+    });
+    
     return (
       <View style={styles.section}>
         <View style={styles.actionButtonsContainer}>
@@ -460,8 +708,26 @@ const AssignedDeliveryDetailsScreen = ({ navigation, route }) => {
             </TouchableOpacity>
           )}
 
-          {/* Step 3: ONLY Mark Complete button when out for delivery and payment is paid */}
-          {deliveryStatus === 'out_for_delivery' && paymentStatus === 'paid' && (
+          {/* Step 3: Generate OTP button when out for delivery and payment is paid */}
+          {deliveryStatus === 'out_for_delivery' && paymentStatus === 'paid' && !otpGenerated && (
+            <TouchableOpacity
+              style={[styles.actionButton, styles.otpButton, generateOTPLoading && styles.disabledButton]}
+              onPress={handleGenerateOTP}
+              disabled={generateOTPLoading}
+            >
+              {generateOTPLoading ? (
+                <Icon name="spinner" size={p(16)} color="#fff" />
+              ) : (
+                <Icon name="key" size={p(16)} color="#fff" />
+              )}
+              <Text style={styles.actionButtonText}>
+                {generateOTPLoading ? 'Generating...' : 'Generate OTP'}
+              </Text>
+            </TouchableOpacity>
+          )}
+
+          {/* Step 4: Mark Complete button when OTP is verified */}
+          {deliveryStatus === 'out_for_delivery' && paymentStatus === 'paid' && otpVerified && (
             <TouchableOpacity
               style={[styles.actionButton, styles.completeButton, updateOrderStatusLoading && styles.disabledButton]}
               onPress={handleMarkComplete}
@@ -539,13 +805,15 @@ const AssignedDeliveryDetailsScreen = ({ navigation, route }) => {
         onClose={() => {
           setShowSuccessModal(false);
           dispatch(clearTodaysTaskSuccess());
+          dispatch(clearOTPSuccess());
         }}
         title="Success"
-        message={updateOrderStatusMessage || updatePaymentStatusMessage || "Action completed successfully!"}
+        message={updateOrderStatusMessage || updatePaymentStatusMessage || otpMessage || "Action completed successfully!"}
         buttonText="OK"
         onButtonPress={() => {
           setShowSuccessModal(false);
           dispatch(clearTodaysTaskSuccess());
+          dispatch(clearOTPSuccess());
         }}
       />
 
@@ -554,9 +822,20 @@ const AssignedDeliveryDetailsScreen = ({ navigation, route }) => {
         visible={showErrorModal}
         onClose={() => setShowErrorModal(false)}
         title="Error"
-        message={error || updateOrderStatusError || updatePaymentStatusError || "Failed to load delivery details. Please try again."}
+        message={error || updateOrderStatusError || updatePaymentStatusError || otpError || "Failed to load delivery details. Please try again."}
         buttonText="OK"
         onButtonPress={() => setShowErrorModal(false)}
+      />
+
+      {/* OTP Modal */}
+      <OTPModal
+        visible={showOTPModal}
+        onClose={handleOTPModalClose}
+        onVerifyOTP={handleVerifyOTP}
+        onResendOTP={handleResendOTP}
+        loading={verifyOTPLoading}
+        error={otpError}
+        orderId={assignedDeliveryDetails?.order?.id}
       />
     </SafeAreaView>
   );
@@ -786,6 +1065,9 @@ const styles = StyleSheet.create({
   },
   paymentButton: {
     backgroundColor: '#007bff',
+  },
+  otpButton: {
+    backgroundColor: '#6f42c1',
   },
   actionButtonText: {
     fontSize: fontSizes.sm,
