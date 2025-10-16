@@ -456,7 +456,7 @@ const ProfileScreen = ({ navigation }) => {
         <TouchableOpacity style={styles.avatar} onPress={handleCameraPress}>
           {profile?.profile_picture ? (
             <Image 
-              source={{ uri: `https://vegetables.walstarmedia.com/storage/${profile.profile_picture}` }} 
+              source={{ uri: `https://kisancart.in/storage/${profile.profile_picture}` }} 
               style={styles.profileImage} 
             />
           ) : (

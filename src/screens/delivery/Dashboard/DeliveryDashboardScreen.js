@@ -143,7 +143,7 @@ const DeliveryDashboardScreen = ({ navigation }) => {
               <View style={styles.profileImageContainer}>
                 {user?.profile_image ? (
                   <Image
-                    source={{ uri: `https://vegetables.walstarmedia.com/storage/${user.profile_image}` }}
+                    source={{ uri: `https://kisancart.in/storage/${user.profile_image}` }}
                     style={styles.profileImage}
                   />
                 ) : (

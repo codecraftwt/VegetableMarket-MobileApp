@@ -155,7 +155,7 @@ const FarmDetailsScreen = ({ navigation, route }) => {
         <View style={styles.mainImageContainer}>
           <Image
             source={{ 
-              uri: `https://vegetables.walstarmedia.com/storage/${selectedFarm.images[currentImageIndex].image_path}` 
+              uri: `https://kisancart.in/storage/${selectedFarm.images[currentImageIndex].image_path}` 
             }}
             style={styles.mainImage}
             resizeMode="cover"
@@ -186,7 +186,7 @@ const FarmDetailsScreen = ({ navigation, route }) => {
                 onPress={() => handleImagePress(index)}
               >
                 <Image
-                  source={{ uri: `https://vegetables.walstarmedia.com/storage/${image.image_path}` }}
+                  source={{ uri: `https://kisancart.in/storage/${image.image_path}` }}
                   style={styles.thumbnailImage}
                   resizeMode="cover"
                 />

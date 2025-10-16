@@ -54,7 +54,7 @@ const ProductCard = ({
     if (item?.images && item.images.length > 0) {
       // Use the first image from the API
       return {
-        uri: `https://vegetables.walstarmedia.com/storage/${item.images[0].image_path}`,
+        uri: `https://kisancart.in/storage/${item.images[0].image_path}`,
       };
     }
     // Fallback to local image

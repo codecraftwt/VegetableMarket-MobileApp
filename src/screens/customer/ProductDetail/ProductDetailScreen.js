@@ -304,7 +304,7 @@ const ProductDetailScreen = ({ navigation, route }) => {
   // Helper function to get product image
   const getProductImage = () => {
     if (completeProduct?.images && completeProduct.images.length > 0) {
-      return { uri: `https://vegetables.walstarmedia.com/storage/${completeProduct.images[0].image_path}` };
+      return { uri: `https://kisancart.in/storage/${completeProduct.images[0].image_path}` };
     }
     return completeProduct.image || require('../../../assets/vegebg.png');
   };

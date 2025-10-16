@@ -97,7 +97,7 @@ const TicketDetailsScreen = ({ navigation, route }) => {
 
   const handleDownloadAttachment = () => {
     if (currentTicket?.ticket?.attachment) {
-      const attachmentUrl = `https://vegetables.walstarmedia.com/storage/${currentTicket.ticket.attachment}`;
+      const attachmentUrl = `https://kisancart.in/storage/${currentTicket.ticket.attachment}`;
       Linking.openURL(attachmentUrl);
     }
   };
@@ -303,7 +303,7 @@ const TicketDetailsScreen = ({ navigation, route }) => {
 
           {ticket.attachment && (
             <Image
-              source={{ uri: `https://vegetables.walstarmedia.com/storage/${ticket.attachment}` }}
+              source={{ uri: `https://kisancart.in/storage/${ticket.attachment}` }}
               style={styles.attachmentRightImage}
               resizeMode="cover"
             />

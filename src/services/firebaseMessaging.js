@@ -101,7 +101,7 @@ class FirebaseMessagingService {
         const user = JSON.parse(userInfo);
         
         // Use the correct API endpoint
-        const response = await fetch('https://vegetables.walstarmedia.com/api/fcm-token', {
+        const response = await fetch('https://kisancart.in/api/fcm-token', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

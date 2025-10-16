@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, StatusBar, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import CommonHeader from '../../../components/CommonHeader';
 import { SuccessModal, ErrorModal, ConfirmationModal } from '../../../components';
@@ -25,21 +25,12 @@ const WishlistScreen = ({ navigation }) => {
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [itemToRemove, setItemToRemove] = useState(null);
-
-  // Fetch wishlist when component mounts
+  
+  // Fetch wishlist only once when component mounts
   useEffect(() => {
+    console.log('Component mounted, fetching wishlist');
     dispatch(fetchWishlist());
   }, [dispatch]);
-
-  // Refresh wishlist when screen comes into focus
-  useFocusEffect(
-    React.useCallback(() => {
-      // Only fetch if not already loading
-      if (!loading) {
-        dispatch(fetchWishlist());
-      }
-    }, [dispatch]) // Remove loading from dependencies to prevent infinite loop
-  );
 
   // Handle remove error
   useEffect(() => {
@@ -71,7 +62,12 @@ const WishlistScreen = ({ navigation }) => {
     if (!itemToRemove) return;
 
     try {
+      console.log('Starting delete for item:', itemToRemove.id);
+      console.log('Items before delete:', items.length);
+      
       await dispatch(removeWishlistItem(itemToRemove.id)).unwrap();
+      
+      console.log('Delete successful, items after delete:', items.length);
       
       setShowConfirmModal(false);
       setItemToRemove(null);
@@ -82,7 +78,7 @@ const WishlistScreen = ({ navigation }) => {
       setErrorMessage(error.message || 'Failed to remove item from wishlist');
       setShowErrorModal(true);
     }
-  }, [itemToRemove, dispatch]);
+  }, [itemToRemove, dispatch, items]);
 
   const handleCancelRemove = useCallback(() => {
     setShowConfirmModal(false);
@@ -185,7 +181,7 @@ const WishlistScreen = ({ navigation }) => {
                   showWishlist={true}
                   showDeleteButton={true}
                   onDelete={handleRemoveFromWishlist}
-                  isDeleteLoading={removeLoading}
+                  isDeleteLoading={removeLoading && itemToRemove?.id === item.id}
                   isAddToCartLoading={addLoading}
                   size="medium"
                   navigation={navigation}

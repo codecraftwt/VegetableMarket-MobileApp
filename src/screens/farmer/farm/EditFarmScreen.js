@@ -432,7 +432,7 @@ const EditFarmScreen = ({ navigation, route }) => {
             {existingImages.map((image) => (
               <View key={image.id} style={styles.imagePreviewContainer}>
                 <Image 
-                  source={{ uri: `https://vegetables.walstarmedia.com/storage/${image.image_path}` }} 
+                  source={{ uri: `https://kisancart.in/storage/${image.image_path}` }} 
                   style={styles.imagePreview} 
                 />
                 <TouchableOpacity

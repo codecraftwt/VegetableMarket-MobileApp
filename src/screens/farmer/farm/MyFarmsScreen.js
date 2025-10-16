@@ -130,9 +130,9 @@ const MyFarmsScreen = ({ navigation }) => {
   const renderFarmCard = (farm) => {
     // Get the main image URL
     const imageUrl = farm.main_image 
-      ? `https://vegetables.walstarmedia.com/storage/${farm.main_image.image_path}`
+      ? `https://kisancart.in/storage/${farm.main_image.image_path}`
       : farm.images && farm.images.length > 0 
-        ? `https://vegetables.walstarmedia.com/storage/${farm.images[0].image_path}`
+        ? `https://kisancart.in/storage/${farm.images[0].image_path}`
         : 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=400';
 
     // Truncate description to 5 lines

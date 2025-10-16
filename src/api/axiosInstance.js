@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'https://vegetables.walstarmedia.com/api/',
+  baseURL: 'https://kisancart.in/api/',
   headers: {
     'Content-Type': 'application/json',  
   },

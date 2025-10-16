@@ -151,7 +151,7 @@ const VegetableDetailsScreen = ({ navigation, route }) => {
       <View style={styles.imageContainer}>
         <Image
           source={{ 
-            uri: `https://vegetables.walstarmedia.com/storage/${vegetableData.images[0].image_path}` 
+            uri: `https://kisancart.in/storage/${vegetableData.images[0].image_path}` 
           }}
           style={styles.vegetableImage}
           resizeMode="cover"

@@ -474,7 +474,7 @@ const EditVegetableScreen = ({ navigation, route }) => {
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             {existingImages.map((image, index) => (
               <View key={index} style={styles.existingImageContainer}>
-                <Image source={{ uri: `https://vegetables.walstarmedia.com/storage/${image.image_path}` }} style={styles.existingImage} />
+                <Image source={{ uri: `https://kisancart.in/storage/${image.image_path}` }} style={styles.existingImage} />
                 <Text style={styles.existingImageText}>Current</Text>
               </View>
             ))}

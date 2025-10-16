@@ -178,7 +178,7 @@ const AdvertisementManagementScreen = ({ navigation }) => {
 
       {advertisement.image && (
         <Image
-          source={{ uri: `https://vegetables.walstarmedia.com/storage/${advertisement.image}` }}
+          source={{ uri: `https://kisancart.in/storage/${advertisement.image}` }}
           style={styles.advertisementImage}
           resizeMode="cover"
         />

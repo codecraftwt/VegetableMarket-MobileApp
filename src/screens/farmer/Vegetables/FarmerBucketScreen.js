@@ -216,7 +216,7 @@ const FarmerBucketScreen = ({ navigation }) => {
   const renderVegetableCard = (vegetable) => {
     // Get the first image URL if available
     const imageUrl = vegetable.images && vegetable.images.length > 0 
-      ? `https://vegetables.walstarmedia.com/storage/${vegetable.images[0].image_path}`
+      ? `https://kisancart.in/storage/${vegetable.images[0].image_path}`
       : 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=400';
 
     return (
@@ -298,7 +298,7 @@ const FarmerBucketScreen = ({ navigation }) => {
   const renderVegetableListItem = (vegetable) => {
     // Get the first image URL if available
     const imageUrl = vegetable.images && vegetable.images.length > 0 
-      ? `https://vegetables.walstarmedia.com/storage/${vegetable.images[0].image_path}`
+      ? `https://kisancart.in/storage/${vegetable.images[0].image_path}`
       : 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=400';
 
     return (
