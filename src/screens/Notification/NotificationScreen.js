@@ -267,7 +267,7 @@ const NotificationScreen = ({ navigation }) => {
       />
       
       {/* Header Actions */}
-      <View style={styles.headerActions}>
+      {/* <View style={styles.headerActions}>
         <View style={styles.notificationCount}>
           <Text style={styles.countText}>
             {getUnreadCount()} unread notification{getUnreadCount() !== 1 ? 's' : ''}
@@ -292,7 +292,7 @@ const NotificationScreen = ({ navigation }) => {
             </TouchableOpacity>
           )}
         </View>
-      </View>
+      </View> */}
 
       <ScrollView 
         style={styles.content} 

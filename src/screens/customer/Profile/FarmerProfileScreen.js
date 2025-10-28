@@ -378,7 +378,7 @@ const FarmerProfileScreen = ({ navigation, route }) => {
             {farmerProfile.reviews.map((review, index) => (
               <View key={index} style={styles.reviewCard}>
                 <View style={styles.reviewHeader}>
-                  <Text style={styles.reviewerName}>{review.reviewer_name || 'Anonymous'}</Text>
+                  <Text style={styles.reviewerName}>{review.customer_name || 'Anonymous'}</Text>
                   <StarRating stars={review.stars || []} />
                 </View>
                 <Text style={styles.reviewText}>{review.comment}</Text>
