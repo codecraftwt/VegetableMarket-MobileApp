@@ -36,6 +36,7 @@ const FarmDetailsScreen = ({ navigation, route }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showOptionsModal, setShowOptionsModal] = useState(false);
   const [modalPosition, setModalPosition] = useState({ x: 0, y: 0 });
+  const [deleteSuccess, setDeleteSuccess] = useState(false);
 
   const { farmId } = route.params;
 
@@ -58,6 +59,9 @@ const FarmDetailsScreen = ({ navigation, route }) => {
   useEffect(() => {
     // Handle success and error states
     if (success && message) {
+      if (message.includes('deleted') || message.includes('delete')) {
+        setDeleteSuccess(true);
+      }
       setShowSuccessModal(true);
       dispatch(clearFarmsSuccess());
     }
@@ -87,7 +91,7 @@ const FarmDetailsScreen = ({ navigation, route }) => {
   };
 
   const handleEditFarm = () => {
-    navigation.navigate('EditFarm', { farmId: selectedFarm.id });
+    navigation.navigate('EditFarm', { farmId: selectedFarm?.id });
   };
 
   const handleDeleteFarm = () => {
@@ -99,6 +103,22 @@ const FarmDetailsScreen = ({ navigation, route }) => {
       dispatch(deleteFarm(selectedFarm.id));
     }
     setShowDeleteModal(false);
+  };
+
+  const handleSuccessModalClose = () => {
+    setShowSuccessModal(false);
+    dispatch(clearFarmsSuccess());
+    
+    // Navigate back to MyFarms after successful deletion
+    if (deleteSuccess) {
+      setDeleteSuccess(false);
+      navigation.goBack();
+    }
+  };
+
+  const handleErrorModalClose = () => {
+    setShowErrorModal(false);
+    dispatch(clearFarmsError());
   };
 
   const handleImagePress = (index) => {
@@ -212,7 +232,7 @@ const FarmDetailsScreen = ({ navigation, route }) => {
           <Icon name="home" size={20} color="#019a34" />
           <View style={styles.infoContent}>
             <Text style={styles.infoLabel}>Farm Name</Text>
-            <Text style={styles.infoValue}>{selectedFarm.name}</Text>
+            <Text style={styles.infoValue}>{selectedFarm?.name || 'N/A'}</Text>
           </View>
         </View>
 
@@ -221,7 +241,7 @@ const FarmDetailsScreen = ({ navigation, route }) => {
           <View style={styles.infoContent}>
             <Text style={styles.infoLabel}>Location</Text>
             <Text style={styles.infoValue}>
-              {selectedFarm.location || 'Location not specified'}
+              {selectedFarm?.location || 'Location not specified'}
             </Text>
           </View>
         </View>
@@ -234,7 +254,7 @@ const FarmDetailsScreen = ({ navigation, route }) => {
       <Text style={styles.sectionTitle}>Description</Text>
       <View style={styles.descriptionCard}>
         <Text style={styles.descriptionText}>
-          {selectedFarm.description || 'No description available'}
+          {selectedFarm?.description || 'No description available'}
         </Text>
       </View>
     </View>
@@ -275,7 +295,7 @@ const FarmDetailsScreen = ({ navigation, route }) => {
     );
   }
 
-  if (!selectedFarm) {
+  if (!selectedFarm && !deleteSuccess) {
     return (
       <SafeAreaView style={styles.container}>
         <StatusBar backgroundColor="#019a34" barStyle="light-content" />
@@ -310,34 +330,26 @@ const FarmDetailsScreen = ({ navigation, route }) => {
         navigation={navigation}
       />
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {renderImageGallery()}
-        {renderFarmInfo()}
-        {renderDescription()}
-      </ScrollView>
+      {selectedFarm && (
+        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+          {renderImageGallery()}
+          {renderFarmInfo()}
+          {renderDescription()}
+        </ScrollView>
+      )}
 
       {/* Success Modal */}
       <SuccessModal
         visible={showSuccessModal}
         message={message}
-        onClose={() => {
-          setShowSuccessModal(false);
-          dispatch(clearFarmsSuccess());
-          // Navigate back to MyFarms after successful deletion
-          if (message && message.includes('deleted')) {
-            navigation.goBack();
-          }
-        }}
+        onClose={handleSuccessModalClose}
       />
 
       {/* Error Modal */}
       <ErrorModal
         visible={showErrorModal}
         message={error}
-        onClose={() => {
-          setShowErrorModal(false);
-          dispatch(clearFarmsError());
-        }}
+        onClose={handleErrorModalClose}
       />
 
       {/* Delete Confirmation Modal */}

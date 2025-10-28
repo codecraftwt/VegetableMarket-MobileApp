@@ -149,7 +149,8 @@ const OrderDetailsScreen = ({ navigation, route }) => {
         if (updatedOrder.delivery_status === 'out for delivery') {
           console.log('🔄 Refreshing OTP Status for Customer:', {
             orderId: updatedOrder.order_id,
-            deliveryStatus: updatedOrder.delivery_status
+            deliveryStatus: updatedOrder.delivery_status,
+            deliveryOTP: updatedOrder.delivery_otp // Log the OTP
           });
           dispatch(getOTPStatus(updatedOrder.order_id));
         }
@@ -528,6 +529,21 @@ const OrderDetailsScreen = ({ navigation, route }) => {
     }
   };
 
+  const renderOTPSection = () => {
+    if (order?.delivery_status === 'out_for_delivery' && order?.delivery_otp) {
+      return (
+        <View style={styles.otpContainer}>
+          <Text style={styles.otpTitle}>Delivery OTP</Text>
+          <Text style={styles.otpCode}>{order.delivery_otp}</Text>
+          <Text style={styles.otpInstructions}>
+            Please provide this OTP to the delivery person when they arrive
+          </Text>
+        </View>
+      );
+    }
+    return null;
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar backgroundColor="#019a34" barStyle="light-content" />
@@ -539,10 +555,11 @@ const OrderDetailsScreen = ({ navigation, route }) => {
         showNotification={true}
         navigation={navigation}
       />
-      
-      
-      <ScrollView 
-        style={styles.content} 
+      {/* OTP Section */}
+      {renderOTPSection()}
+
+      <ScrollView
+        style={styles.content}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
         refreshControl={
@@ -820,7 +837,7 @@ const OrderDetailsScreen = ({ navigation, route }) => {
           
           {/* Download Invoice Button - Only show for delivered and cancelled orders */}
           {isEligibleForInvoice() && (
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.actionButton, styles.secondaryButton, downloadInvoiceLoading && styles.buttonDisabled]}
               onPress={handleDownloadInvoice}
               disabled={downloadInvoiceLoading}
@@ -1555,7 +1572,53 @@ const styles = StyleSheet.create({
     color: '#FF9800',
     fontFamily: 'Poppins-Bold',
   },
-
+  // otp container style
+  otpContainer: {
+    backgroundColor: '#e8f5e8',
+    margin: 16,
+    padding: 20,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#4caf50',
+    borderStyle: 'dashed',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  otpTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#2e7d32',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  otpCode: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#1b5e20',
+    letterSpacing: 8,
+    backgroundColor: '#ffffff',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: '#4caf50',
+    marginBottom: 12,
+    minWidth: 160,
+    textAlign: 'center',
+  },
+  otpInstructions: {
+    fontSize: 14,
+    color: '#388e3c',
+    textAlign: 'center',
+    lineHeight: 20,
+  },
 });
 
 export default OrderDetailsScreen;

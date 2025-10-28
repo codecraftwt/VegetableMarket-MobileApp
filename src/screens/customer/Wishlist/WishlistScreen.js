@@ -87,7 +87,8 @@ const WishlistScreen = ({ navigation }) => {
 
   const handleProductPress = useCallback((item) => {
     // Navigate to product detail screen
-    navigation.navigate('ProductDetail', { productId: item.id });
+    // navigation.navigate('ProductDetail', { productId: item.id });
+     navigation.navigate('ProductDetail', { product: item });
   }, [navigation]);
 
   const handleAddToCart = useCallback(async (item) => {

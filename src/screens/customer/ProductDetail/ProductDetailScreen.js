@@ -156,7 +156,7 @@ const ProductDetailScreen = ({ navigation, route }) => {
     try {
       // Use toggleWishlistItem which handles both add and remove
       const result = await dispatch(toggleWishlistItem(completeProduct.id)).unwrap();
-      
+
       if (result.wishlisted) {
         setWishlistMessage(`${completeProduct.name} added to wishlist!`);
       } else {
@@ -454,78 +454,78 @@ const ProductDetailScreen = ({ navigation, route }) => {
             
             {/* Product Information Card */}
             <View style={styles.productCard}>
-          {/* Product Name and Rating */}
-          <Text style={styles.productName}>{completeProduct?.name || 'Unknown Product'}</Text>
-          <StarRating rating={completeProduct?.rating || 0} />
-          
-          {/* Price and Quantity Selector */}
-          <View style={styles.priceQuantityRow}>
-            <Text style={styles.productPrice}>{getPriceDisplay()}/{getProductUnit()}</Text>
-            <View style={styles.quantitySelector}>
-              <TouchableOpacity 
-                style={styles.quantityButton} 
-                onPress={() => handleQuantityChange('decrease')}
-              >
-                <Icon name="minus" size={16} color="#666" />
-              </TouchableOpacity>
-              <Text style={styles.quantityText}>{quantity} {getProductUnit()}</Text>
-              <TouchableOpacity 
-                style={styles.quantityButton} 
-                onPress={() => handleQuantityChange('increase')}
-              >
-                <Icon name="plus" size={16} color="#019a34" />
-              </TouchableOpacity>
-            </View>
-          </View>
-          
-          {/* Product Details */}
-          <View style={styles.detailsSection}>
-            <Text style={styles.detailsTitle}>Product Details</Text>
-            <Text style={styles.detailsText}>
-              {getProductDescription()}
-            </Text>
-          </View>
-          
-          {/* Farmer Information */}
-          <View style={styles.farmerSection}>
-            <Text style={styles.farmerTitle}>Farmer Information</Text>
-            {completeProduct?.farmer ? (
-              <>
-                <TouchableOpacity 
-                  style={styles.farmerInfo}
-                  onPress={() => navigation.navigate('FarmerProfile', { 
-                    farmerId: completeProduct.farmer.id, 
-                    farmerName: completeProduct.farmer.name 
-                  })}
-                >
-                  <Icon name="user" size={16} color="#019a34" style={styles.farmerIcon} />
-                  <Text style={styles.farmerName}>{completeProduct.farmer.name}</Text>
-                  <Icon name="chevron-right" size={14} color="#019a34" style={styles.farmerChevron} />
-                </TouchableOpacity>
-                {completeProduct.farmer.phone && (
-                  <View style={styles.farmerInfo}>
-                    <Icon name="phone" size={16} color="#019a34" style={styles.farmerIcon} />
-                    <TouchableOpacity onPress={handlePhonePress}>
-                      <Text style={styles.farmerPhone}>{completeProduct.farmer.phone}</Text>
-                    </TouchableOpacity>
-                  </View>
-                )}
-              </>
-            ) : (
-              <View style={styles.noFarmerInfo}>
-                <Icon name="user" size={16} color="#999" style={styles.farmerIcon} />
-                <Text style={styles.noFarmerText}>
-                  {completeProduct.farmer?.name === 'Farmer Information Not Available' 
-                    ? 'Farmer information not available' 
-                    : 'Loading farmer information...'}
+              {/* Product Name and Rating */}
+              <Text style={styles.productName}>{completeProduct?.name || 'Unknown Product'}</Text>
+              <StarRating rating={completeProduct?.rating || 0} />
+
+              {/* Price and Quantity Selector */}
+              <View style={styles.priceQuantityRow}>
+                <Text style={styles.productPrice}>{getPriceDisplay()}/{getProductUnit()}</Text>
+                <View style={styles.quantitySelector}>
+                  <TouchableOpacity
+                    style={styles.quantityButton}
+                    onPress={() => handleQuantityChange('decrease')}
+                  >
+                    <Icon name="minus" size={16} color="#666" />
+                  </TouchableOpacity>
+                  <Text style={styles.quantityText}>{quantity} {getProductUnit()}</Text>
+                  <TouchableOpacity
+                    style={styles.quantityButton}
+                    onPress={() => handleQuantityChange('increase')}
+                  >
+                    <Icon name="plus" size={16} color="#019a34" />
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Product Details */}
+              <View style={styles.detailsSection}>
+                <Text style={styles.detailsTitle}>Product Details</Text>
+                <Text style={styles.detailsText}>
+                  {getProductDescription()}
                 </Text>
               </View>
-            )}
-          </View>
-          
-          {/* Related Products */}
-          <RelatedProducts />
-        </View>
+
+              {/* Farmer Information */}
+              <View style={styles.farmerSection}>
+                <Text style={styles.farmerTitle}>Farmer Information</Text>
+                {completeProduct?.farmer ? (
+                  <>
+                    <TouchableOpacity
+                      style={styles.farmerInfo}
+                      onPress={() => navigation.navigate('FarmerProfile', {
+                        farmerId: completeProduct.farmer.id,
+                        farmerName: completeProduct.farmer.name
+                      })}
+                    >
+                      <Icon name="user" size={16} color="#019a34" style={styles.farmerIcon} />
+                      <Text style={styles.farmerName}>{completeProduct.farmer.name}</Text>
+                      <Icon name="chevron-right" size={14} color="#019a34" style={styles.farmerChevron} />
+                    </TouchableOpacity>
+                    {completeProduct.farmer.phone && (
+                      <View style={styles.farmerInfo}>
+                        <Icon name="phone" size={16} color="#019a34" style={styles.farmerIcon} />
+                        <TouchableOpacity onPress={handlePhonePress}>
+                          <Text style={styles.farmerPhone}>{completeProduct.farmer.phone}</Text>
+                        </TouchableOpacity>
+                      </View>
+                    )}
+                  </>
+                ) : (
+                  <View style={styles.noFarmerInfo}>
+                    <Icon name="user" size={16} color="#999" style={styles.farmerIcon} />
+                    <Text style={styles.noFarmerText}>
+                      {completeProduct.farmer?.name === 'Farmer Information Not Available'
+                        ? 'Farmer information not available'
+                        : 'Loading farmer information...'}
+                    </Text>
+                  </View>
+                )}
+              </View>
+
+              {/* Related Products */}
+              <RelatedProducts />
+            </View>
           </>
         )}
       </ScrollView>
@@ -790,6 +790,7 @@ const styles = StyleSheet.create({
     paddingVertical: p(12),
     borderTopWidth: 1,
     borderTopColor: '#e9ecef',
+    // marginBottom: 25,
   },
   totalSection: {
     flex: 1,

@@ -553,7 +553,10 @@ const EditFarmScreen = ({ navigation, route }) => {
           screenName="Edit Farm"
           showBackButton={true}
           showNotification={true}
-          onBackPress={() => navigation.goBack()}
+          // onBackPress={() => navigation.goBack()}
+          onBackPress={() => navigation.navigate('FarmDetails', {
+            farmId: farmId
+          })}
           onNotificationPress={handleNotificationPress}
           navigation={navigation}
         />
@@ -570,7 +573,10 @@ const EditFarmScreen = ({ navigation, route }) => {
           screenName="Edit Farm"
           showBackButton={true}
           showNotification={true}
-          onBackPress={() => navigation.goBack()}
+          // onBackPress={() => navigation.goBack()}
+          onBackPress={() => navigation.navigate('FarmDetails', {
+            farmId: farmId
+          })}
           onNotificationPress={handleNotificationPress}
           navigation={navigation}
         />
@@ -592,7 +598,10 @@ const EditFarmScreen = ({ navigation, route }) => {
         screenName="Edit Farm"
         showBackButton={true}
         showNotification={true}
-        onBackPress={() => navigation.goBack()}
+        // onBackPress={() => navigation.goBack()}
+        onBackPress={() => navigation.navigate('FarmDetails', {
+          farmId: farmId
+        })}
         onNotificationPress={handleNotificationPress}
         navigation={navigation}
       />
