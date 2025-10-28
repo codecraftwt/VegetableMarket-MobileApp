@@ -790,7 +790,7 @@ const styles = StyleSheet.create({
     paddingVertical: p(12),
     borderTopWidth: 1,
     borderTopColor: '#e9ecef',
-    // marginBottom: 25,
+    marginBottom: 25,
   },
   totalSection: {
     flex: 1,
