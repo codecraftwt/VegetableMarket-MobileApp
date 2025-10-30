@@ -764,7 +764,7 @@ const ProfileEditScreen = ({ navigation, route }) => {
         )}
       </View>
       
-      <View style={styles.inputGroup}>
+      <View style={[styles.inputGroup, {marginTop:0}]}>
         <Text style={styles.inputLabel}>Address Label</Text>
         <TextInput
           style={styles.textInput}
@@ -1116,11 +1116,12 @@ const styles = StyleSheet.create({
     elevation: 2,
     borderWidth: 1,
     borderColor: '#f0f0f0',
+     marginBottom: p(44),
   },
   sectionTitle: {
     fontSize: fontSizes.lg,
     color: '#1a1a1a',
-    marginBottom: p(20),
+    marginBottom: p(14),
     textAlign: 'center',
     fontFamily: 'Poppins-Bold',
   },

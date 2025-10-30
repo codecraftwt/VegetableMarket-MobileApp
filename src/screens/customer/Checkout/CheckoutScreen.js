@@ -1428,6 +1428,7 @@ const styles = StyleSheet.create({
     elevation: 4,
     borderTopWidth: 1,
     borderTopColor: '#f0f0f0',
+    marginBottom:32
   },
   totalContainer: {
     flexDirection: 'column',

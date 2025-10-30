@@ -32,6 +32,26 @@ export const fetchAssignedDeliveries = createAsyncThunk(
 );
 
 // Async thunk to assign delivery to self
+// export const assignDeliveryToSelf = createAsyncThunk(
+//   'delivery/assignDeliveryToSelf',
+//   async (orderId, { rejectWithValue }) => {
+//     try {
+//       const formData = new FormData();
+//       formData.append('order_id', orderId);
+
+//       const response = await api.post('/delivery/assign-delivery', formData, {
+//         headers: {
+//           'Content-Type': 'multipart/form-data',
+//         },
+//       });
+//       return response.data;
+//     } catch (error) {
+//       return rejectWithValue(
+//         error.response?.data?.message || 'Failed to assign delivery'
+//       );
+//     }
+//   }
+// );
 export const assignDeliveryToSelf = createAsyncThunk(
   'delivery/assignDeliveryToSelf',
   async (orderId, { rejectWithValue }) => {
@@ -44,11 +64,12 @@ export const assignDeliveryToSelf = createAsyncThunk(
           'Content-Type': 'multipart/form-data',
         },
       });
-      return response.data;
+      return { orderId, data: response.data };
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || 'Failed to assign delivery'
-      );
+      return rejectWithValue({
+        orderId,
+        error: error.response?.data?.message || 'Failed to assign delivery'
+      });
     }
   }
 );
@@ -95,7 +116,8 @@ const deliverySlice = createSlice({
     loadingAssigned: false,
     loadingDetails: false,
     loadingAssignedDetails: false,
-    assigningDelivery: false,
+    //assigningDelivery: false,
+    assigningDelivery: {},
     error: null,
     success: false,
     message: '',
@@ -119,10 +141,15 @@ const deliverySlice = createSlice({
       state.loadingAssigned = false;
       state.loadingDetails = false;
       state.loadingAssignedDetails = false;
-      state.assigningDelivery = false;
+      //state.assigningDelivery = false;
+      state.assigningDelivery = {};
       state.error = null;
       state.success = false;
       state.message = '';
+     },
+    clearAssigningState: (state, action) => {
+      const orderId = action.payload;
+      delete state.assigningDelivery[orderId];
     },
   },
   extraReducers: (builder) => {
@@ -162,22 +189,46 @@ const deliverySlice = createSlice({
       })
       
       // Assign delivery to self
-      .addCase(assignDeliveryToSelf.pending, (state) => {
-        state.assigningDelivery = true;
+      // .addCase(assignDeliveryToSelf.pending, (state) => {
+      //   state.assigningDelivery = true;
+      //   state.error = null;
+      // })
+      // .addCase(assignDeliveryToSelf.fulfilled, (state, action) => {
+      //   state.assigningDelivery = false;
+      //   state.success = action.payload.success;
+      //   state.message = action.payload.message;
+      //   state.error = null;
+      // })
+      // .addCase(assignDeliveryToSelf.rejected, (state, action) => {
+      //   state.assigningDelivery = false;
+      //   state.error = action.payload;
+      //   state.success = false;
+      // })
+      // Assign delivery to self - UPDATED CASES
+      .addCase(assignDeliveryToSelf.pending, (state, action) => {
+        const orderId = action.meta.arg;
+        state.assigningDelivery[orderId] = true; // Set loading for specific order
         state.error = null;
       })
       .addCase(assignDeliveryToSelf.fulfilled, (state, action) => {
-        state.assigningDelivery = false;
-        state.success = action.payload.success;
-        state.message = action.payload.message;
+        const { orderId, data } = action.payload;
+        state.assigningDelivery[orderId] = false; // Clear loading for specific order
+        state.success = data.success;
+        state.message = data.message;
         state.error = null;
+
+        // Remove the assigned delivery from available list
+        state.availableDeliveries = state.availableDeliveries.filter(
+          delivery => delivery.id !== orderId
+        );
       })
       .addCase(assignDeliveryToSelf.rejected, (state, action) => {
-        state.assigningDelivery = false;
-        state.error = action.payload;
+        const { orderId, error } = action.payload;
+        state.assigningDelivery[orderId] = false; // Clear loading for specific order
+        state.error = error;
         state.success = false;
       })
-      
+
       // Fetch delivery details
       .addCase(fetchDeliveryDetails.pending, (state) => {
         state.loadingDetails = true;
@@ -214,10 +265,11 @@ const deliverySlice = createSlice({
   },
 });
 
-export const { 
-  clearDeliveryError, 
-  clearDeliverySuccess, 
-  resetDeliveryState 
+export const {
+  clearDeliveryError,
+  clearDeliverySuccess,
+  resetDeliveryState,
+  clearAssigningState
 } = deliverySlice.actions;
 
 export default deliverySlice.reducer;

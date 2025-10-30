@@ -12,6 +12,7 @@ import {
   Alert,
   Platform,
   Modal,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { CommonHeader } from '../../../components';
 import { SkeletonLoader } from '../../../components';
@@ -605,35 +606,39 @@ const EditFarmScreen = ({ navigation, route }) => {
         onNotificationPress={handleNotificationPress}
         navigation={navigation}
       />
+      <KeyboardAvoidingView
+        style={styles.keyboardAvoidingView}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      >
+        <ScrollView style={styles.content} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollViewContent}>
+          <View style={styles.header}>
+            <Text style={styles.headerTitle}>Edit Farm</Text>
+            <Text style={styles.headerSubtitle}>
+              Update your farm information and images
+            </Text>
+          </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Edit Farm</Text>
-          <Text style={styles.headerSubtitle}>
-            Update your farm information and images
-          </Text>
-        </View>
+          {renderForm()}
 
-        {renderForm()}
-
-        <View style={styles.submitContainer}>
-          <TouchableOpacity
-            style={[styles.submitButton, loading && styles.submitButtonDisabled]}
-            onPress={handleSubmit}
-            disabled={loading}
-          >
-            {loading ? (
-              <SkeletonLoader height={p(20)} width="60%" borderRadius={p(4)} />
-            ) : (
-              <>
-                <Icon name="save" size={20} color="#fff" />
-                <Text style={styles.submitButtonText}>Update Farm</Text>
-              </>
-            )}
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-
+          <View style={styles.submitContainer}>
+            <TouchableOpacity
+              style={[styles.submitButton, loading && styles.submitButtonDisabled]}
+              onPress={handleSubmit}
+              disabled={loading}
+            >
+              {loading ? (
+                <SkeletonLoader height={p(20)} width="60%" borderRadius={p(4)} />
+              ) : (
+                <>
+                  <Icon name="save" size={20} color="#fff" />
+                  <Text style={styles.submitButtonText}>Update Farm</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
       {/* Success Modal */}
       <SuccessModal
         visible={showSuccessModal}
@@ -753,6 +758,14 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     padding: p(12),
+  },
+    keyboardAvoidingView: {
+    flex: 1,
+  },
+  scrollViewContent: {
+    flexGrow: 1,
+    padding: p(12),
+    paddingBottom: p(80),
   },
   header: {
     marginBottom: p(16),

@@ -6,10 +6,13 @@ import DeliveryProfileScreen from '../screens/delivery/Profile/DeliveryProfileSc
 import DeliveryDashboardScreen from '../screens/delivery/Dashboard/DeliveryDashboardScreen';
 import DeliveriesScreen from '../screens/delivery/Deliveries/DeliveriesScreen';
 import TodaysTaskScreen from '../screens/delivery/TodaysTask/TodaysTaskScreen';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 const Tab = createBottomTabNavigator();
 
 const DeliveryBottomTabNavigator = () => {
+  const insets = useSafeAreaInsets();
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -36,7 +39,8 @@ const DeliveryBottomTabNavigator = () => {
           borderTopColor: '#e9ecef',
           paddingVertical: 4,
           paddingHorizontal: 20,
-          height: 75,
+          // height: 75,
+          height: 55 + insets.bottom, 
         },
         tabBarLabelStyle: {
           fontSize: 11,

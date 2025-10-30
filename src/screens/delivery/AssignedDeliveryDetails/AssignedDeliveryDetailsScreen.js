@@ -55,8 +55,10 @@ const AssignedDeliveryDetailsScreen = ({ navigation, route }) => {
     otpStatus,
     actualOTP
   } = useSelector(state => state.otp);
-  const { orderId } = route.params;
-  
+  // const { orderId } = route.params;
+  const { orderId, deliveryId } = route.params;
+  const actualOrderId = orderId || deliveryId
+
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showOTPModal, setShowOTPModal] = useState(false);
@@ -70,11 +72,16 @@ const AssignedDeliveryDetailsScreen = ({ navigation, route }) => {
       // Clear any lingering success state when screen comes into focus
       dispatch(clearTodaysTaskSuccess());
       dispatch(clearOTPSuccess());
-      
-      if (orderId) {
-        dispatch(fetchAssignedDeliveryDetails(orderId));
+
+      //     if (orderId) {
+      //       dispatch(fetchAssignedDeliveryDetails(orderId));
+      //     }
+      //   }, [orderId, dispatch])
+      // );
+      if (actualOrderId) {
+        dispatch(fetchAssignedDeliveryDetails(actualOrderId));
       }
-    }, [orderId, dispatch])
+    }, [actualOrderId, dispatch])
   );
 
   // Debug the API response structure and initialize local state
@@ -854,7 +861,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   section: {
-    marginBottom: p(12),
+    marginBottom: p(50),
   },
   sectionTitle: {
     fontSize: fontSizes.base,

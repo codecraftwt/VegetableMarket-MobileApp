@@ -6,10 +6,13 @@ import FarmerProfileScreen from '../screens/farmer/Profile/FarmerProfileScreen';
 import FarmerDashboardScreen from '../screens/farmer/Dashboard/FarmerDashboardScreen';
 import FarmerBucketScreen from '../screens/farmer/Vegetables/FarmerBucketScreen';
 import FarmerOrdersScreen from '../screens/farmer/Orders/FarmerOrdersScreen';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const Tab = createBottomTabNavigator();
 
 const FarmerBottomTabNavigator = () => {
+const insets = useSafeAreaInsets();
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -36,7 +39,7 @@ const FarmerBottomTabNavigator = () => {
           borderTopColor: '#e9ecef',
           paddingVertical: 4,
           paddingHorizontal: 20,
-          height: 75,
+          height: 55 + insets.bottom,
         },
         tabBarLabelStyle: {
           fontSize: 11,

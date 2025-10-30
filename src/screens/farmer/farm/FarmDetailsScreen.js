@@ -325,7 +325,8 @@ const FarmDetailsScreen = ({ navigation, route }) => {
         screenName="Farm Details"
         showBackButton={true}
         showNotification={true}
-        onBackPress={() => navigation.goBack()}
+        // onBackPress={() => navigation.goBack()}
+        onBackPress={() => navigation.navigate('MyFarms')}
         onNotificationPress={handleNotificationPress}
         navigation={navigation}
       />

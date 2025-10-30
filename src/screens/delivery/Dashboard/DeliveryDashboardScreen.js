@@ -210,7 +210,7 @@ const DeliveryDashboardScreen = ({ navigation }) => {
           </View>
 
           {/* Assigned Deliveries */}
-          <View style={styles.assignedDeliveriesSection}>
+          {/* <View style={styles.assignedDeliveriesSection}>
             <Text style={styles.sectionTitle}>Assigned Deliveries</Text>
             <View style={styles.deliveriesCard}>
               {dashboardData?.assigned_deliveries && dashboardData.assigned_deliveries.length > 0 ? (
@@ -232,6 +232,46 @@ const DeliveryDashboardScreen = ({ navigation }) => {
                       <TouchableOpacity 
                         style={styles.viewButton}
                         onPress={() => navigation.navigate('Deliveries')}
+                      >
+                        <Text style={styles.viewButtonText}>View</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ))
+              ) : (
+                <View style={styles.emptyDeliveries}>
+                  <Icon name="truck" size={p(40)} color="#ccc" />
+                  <Text style={styles.emptyDeliveriesText}>No assigned deliveries</Text>
+                  <Text style={styles.emptyDeliveriesSubtext}>Check back later for new assignments</Text>
+                </View>
+              )}
+            </View>
+          </View> */}
+          <View style={styles.assignedDeliveriesSection}>
+            <Text style={styles.sectionTitle}>Assigned Deliveries</Text>
+            <View style={styles.deliveriesCard}>
+              {dashboardData?.assigned_deliveries && dashboardData.assigned_deliveries.length > 0 ? (
+                dashboardData.assigned_deliveries.map((delivery, index) => (
+                  <View key={index} style={styles.deliveryItem}>
+                    <View style={styles.deliveryIcon}>
+                      <Icon name="truck" size={p(20)} color="#019a34" />
+                    </View>
+                    <View style={styles.deliveryContent}>
+                      <Text style={styles.deliveryTitle}>Order #{delivery.order_id || delivery.id}</Text>
+                      <Text style={styles.deliverySubtitle}>
+                        {delivery.customer_name || 'Customer'} • {delivery.delivery_address?.city || 'Location'}
+                      </Text>
+                      <Text style={styles.deliveryStatus}>
+                        Status: {delivery.delivery_status || 'Pending'}
+                      </Text>
+                    </View>
+                    <View style={styles.deliveryAction}>
+                      <TouchableOpacity
+                        style={styles.viewButton}
+                        onPress={() => navigation.navigate('AssignedDeliveryDetails', {
+                          orderId: delivery.order_id || delivery.id,
+                          deliveryId: delivery.order_id || delivery.id
+                        })}
                       >
                         <Text style={styles.viewButtonText}>View</Text>
                       </TouchableOpacity>
@@ -395,7 +435,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   assignedDeliveriesSection: {
-    marginBottom: p(16),
+    marginBottom: p(28),
   },
   deliveriesCard: {
     backgroundColor: '#fff',

@@ -9,6 +9,7 @@ import CartScreen from '../screens/customer/Cart/CartScreen';
 import BucketScreen from '../screens/customer/Bucket/BucketScreen';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { p } from '../utils/Responsive';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 const Tab = createBottomTabNavigator();
 
@@ -40,6 +41,7 @@ const CartIconWithBadge = ({ focused, color, size }) => {
 
 const BottomTabNavigator = () => {
   const dispatch = useDispatch();
+   const insets = useSafeAreaInsets();
 
   // Fetch cart data when the tab navigator loads
   useEffect(() => {
@@ -73,7 +75,8 @@ const BottomTabNavigator = () => {
           borderTopColor: '#e9ecef',
           paddingVertical: 4,
           paddingHorizontal: 20,
-          height: 75,
+          // height: 75,
+           height: 55 + insets.bottom,
         },
         tabBarLabelStyle: {
           fontSize: 11,

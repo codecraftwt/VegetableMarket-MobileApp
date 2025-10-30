@@ -1402,6 +1402,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 6,
     elevation: 2,
+    marginBottom: p(40),
   },
   cancelOrderButtonText: {
     color: '#fff',
@@ -1543,7 +1544,7 @@ const styles = StyleSheet.create({
     borderRadius: p(8),
     padding: p(12),
     marginTop: p(12),
-    marginBottom: p(12),
+    marginBottom: p(40),
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,

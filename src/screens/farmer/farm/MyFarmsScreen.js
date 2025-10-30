@@ -127,6 +127,11 @@ const MyFarmsScreen = ({ navigation }) => {
     setSelectedFarm(null);
   };
 
+  const handleBackPress = () => {
+    // Pop all screens until we reach the initial screen
+    navigation.popToTop();
+  };
+
   const renderFarmCard = (farm) => {
     // Get the main image URL
     const imageUrl = farm.main_image 
@@ -237,7 +242,8 @@ const MyFarmsScreen = ({ navigation }) => {
         screenName="My Farms"
         showBackButton={true}
         showNotification={true}
-        onBackPress={() => navigation.goBack()}
+        // onBackPress={() => navigation.goBack()}
+        onBackPress={handleBackPress}
         onNotificationPress={handleNotificationPress}
         navigation={navigation}
       />
@@ -356,6 +362,7 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     padding: p(12),
+    marginBottom: p(50),
   },
   header: {
     flexDirection: 'row',

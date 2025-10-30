@@ -12,6 +12,7 @@ import {
   Alert,
   PermissionsAndroid,
   Platform,
+  KeyboardAvoidingView,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import CommonHeader from '../../../components/CommonHeader';
@@ -502,124 +503,130 @@ const AddVegetableScreen = ({ navigation }) => {
         navigation={navigation}
       />
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.form}>
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>
-              <Icon name="info-circle" size={16} color="#019a34" /> Basic Information
-            </Text>
-            {renderFormField('Vegetable Name *', 'name', 'Enter vegetable name')}
-            {renderFormField('Description *', 'description', 'Enter description')}
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Category *</Text>
-              {categoriesLoading ? (
-                <View style={styles.loadingContainer}>
-                  <Text style={styles.loadingText}>Loading categories...</Text>
-                </View>
-              ) : categoriesError ? (
-                <View style={styles.errorContainer}>
-                  <Text style={styles.errorText}>Failed to load categories</Text>
-                </View>
-              ) : (
-                <View style={styles.pickerContainer}>
-                  {categories.map((category) => (
-                    <TouchableOpacity
-                      key={category.id}
-                      style={[
-                        styles.pickerOption,
-                        formData.category_id === category.id.toString() && styles.pickerOptionSelected
-                      ]}
-                      onPress={() => handleInputChange('category_id', category.id.toString())}
-                    >
-                      <Text style={[
-                        styles.pickerOptionText,
-                        formData.category_id === category.id.toString() && styles.pickerOptionTextSelected
-                      ]}>
-                        {category.name}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              )}
-            </View>
-          </View>
+      <KeyboardAvoidingView
+        style={styles.keyboardAvoidingView}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      >
 
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>
-              <Icon name="dollar" size={16} color="#019a34" /> Pricing & Stock
-            </Text>
-            <View style={styles.rowContainer}>
-              <View style={styles.halfWidth}>
-                {renderFormField('Price *', 'price', '₹0.00', 'numeric')}
-              </View>
-              <View style={styles.halfWidth}>
-                {renderPickerField('Unit Type', 'unit_type', unitTypes.map(type => ({ id: type, name: type })))}
+        <ScrollView style={styles.content} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollViewContent}>
+          <View style={styles.form}>
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>
+                <Icon name="info-circle" size={16} color="#019a34" /> Basic Information
+              </Text>
+              {renderFormField('Vegetable Name *', 'name', 'Enter vegetable name')}
+              {renderFormField('Description *', 'description', 'Enter description')}
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Category *</Text>
+                {categoriesLoading ? (
+                  <View style={styles.loadingContainer}>
+                    <Text style={styles.loadingText}>Loading categories...</Text>
+                  </View>
+                ) : categoriesError ? (
+                  <View style={styles.errorContainer}>
+                    <Text style={styles.errorText}>Failed to load categories</Text>
+                  </View>
+                ) : (
+                  <View style={styles.pickerContainer}>
+                    {categories.map((category) => (
+                      <TouchableOpacity
+                        key={category.id}
+                        style={[
+                          styles.pickerOption,
+                          formData.category_id === category.id.toString() && styles.pickerOptionSelected
+                        ]}
+                        onPress={() => handleInputChange('category_id', category.id.toString())}
+                      >
+                        <Text style={[
+                          styles.pickerOptionText,
+                          formData.category_id === category.id.toString() && styles.pickerOptionTextSelected
+                        ]}>
+                          {category.name}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
               </View>
             </View>
-            <View style={styles.rowContainer}>
-              <View style={styles.halfWidth}>
-                {renderFormField('Total Stock *', 'stock', '0', 'numeric')}
-              </View>
-              <View style={styles.halfWidth}>
-                {renderFormField('Available Stock *', 'availablestock', '0', 'numeric')}
-              </View>
-            </View>
-          </View>
 
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>
-              <Icon name="star" size={16} color="#019a34" /> Quality & Details
-            </Text>
-            <View style={styles.rowContainer}>
-              <View style={styles.halfWidth}>
-                {renderPickerField('Organic', 'is_organic', [
-                  { id: '0', name: 'No' },
-                  { id: '1', name: 'Yes' }
-                ])}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>
+                <Icon name="dollar" size={16} color="#019a34" /> Pricing & Stock
+              </Text>
+              <View style={styles.rowContainer}>
+                <View style={styles.halfWidth}>
+                  {renderFormField('Price *', 'price', '₹0.00', 'numeric')}
+                </View>
+                <View style={styles.halfWidth}>
+                  {renderPickerField('Unit Type', 'unit_type', unitTypes.map(type => ({ id: type, name: type })))}
+                </View>
               </View>
-              <View style={styles.halfWidth}>
-                {renderPickerField('Grade', 'grade', grades.map(grade => ({ id: grade, name: grade })))}
+              <View style={styles.rowContainer}>
+                <View style={styles.halfWidth}>
+                  {renderFormField('Total Stock *', 'stock', '0', 'numeric')}
+                </View>
+                <View style={styles.halfWidth}>
+                  {renderFormField('Available Stock *', 'availablestock', '0', 'numeric')}
+                </View>
               </View>
             </View>
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Harvest Date</Text>
-              <TouchableOpacity 
-                style={styles.datePickerButton}
-                onPress={() => setShowDatePicker(true)}
-              >
-                <Icon name="calendar" size={16} color="#019a34" />
-                <Text style={styles.datePickerText}>
-                  {formatDate(formData.harvest_date)}
-                </Text>
-                <Icon name="chevron-down" size={14} color="#666" />
-              </TouchableOpacity>
-            </View>
-          </View>
-          
-          {renderImagePicker()}
-          
-          <TouchableOpacity
-            style={[styles.submitButton, loading && styles.submitButtonDisabled]}
-            onPress={handleSubmit}
-            disabled={loading}
-          >
-            <View style={styles.submitButtonContent}>
-              {loading ? (
-                <>
-                  <Icon name="spinner" size={20} color="#fff" />
-                  <Text style={styles.submitButtonText}>Adding Vegetable...</Text>
-                </>
-              ) : (
-                <>
-                  <Icon name="plus" size={20} color="#fff" />
-                  <Text style={styles.submitButtonText}>Add Vegetable</Text>
-                </>
-              )}
-            </View>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
 
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>
+                <Icon name="star" size={16} color="#019a34" /> Quality & Details
+              </Text>
+              <View style={styles.rowContainer}>
+                <View style={styles.halfWidth}>
+                  {renderPickerField('Organic', 'is_organic', [
+                    { id: '0', name: 'No' },
+                    { id: '1', name: 'Yes' }
+                  ])}
+                </View>
+                <View style={styles.halfWidth}>
+                  {renderPickerField('Grade', 'grade', grades.map(grade => ({ id: grade, name: grade })))}
+                </View>
+              </View>
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Harvest Date</Text>
+                <TouchableOpacity
+                  style={styles.datePickerButton}
+                  onPress={() => setShowDatePicker(true)}
+                >
+                  <Icon name="calendar" size={16} color="#019a34" />
+                  <Text style={styles.datePickerText}>
+                    {formatDate(formData.harvest_date)}
+                  </Text>
+                  <Icon name="chevron-down" size={14} color="#666" />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {renderImagePicker()}
+
+            <TouchableOpacity
+              style={[styles.submitButton, loading && styles.submitButtonDisabled]}
+              onPress={handleSubmit}
+              disabled={loading}
+            >
+              <View style={styles.submitButtonContent}>
+                {loading ? (
+                  <>
+                    <Icon name="spinner" size={20} color="#fff" />
+                    <Text style={styles.submitButtonText}>Adding Vegetable...</Text>
+                  </>
+                ) : (
+                  <>
+                    <Icon name="plus" size={20} color="#fff" />
+                    <Text style={styles.submitButtonText}>Add Vegetable</Text>
+                  </>
+                )}
+              </View>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
       {/* Success Modal */}
       <SuccessModal
         visible={showSuccessModal}
@@ -670,6 +677,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f6fbf7',
+  },
+  keyboardAvoidingView: {
+    flex: 1,
+  },
+  scrollViewContent: {
+    flexGrow: 1,
+    padding: p(16),
+    paddingBottom: p(100), 
   },
   content: {
     flex: 1,
@@ -867,7 +882,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: p(18),
+    paddingVertical: p(16),
     gap: p(8),
   },
   submitButtonText: {

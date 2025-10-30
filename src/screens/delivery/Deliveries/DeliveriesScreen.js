@@ -8,6 +8,7 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
+  RefreshControl,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useDispatch, useSelector } from 'react-redux';
@@ -16,14 +17,15 @@ import { SkeletonLoader } from '../../../components';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { p } from '../../../utils/Responsive';
 import { fontSizes } from '../../../utils/fonts';
-import { 
-  fetchAvailableDeliveries, 
+import {
+  fetchAvailableDeliveries,
   fetchAssignedDeliveries,
   assignDeliveryToSelf,
   fetchDeliveryDetails,
   fetchAssignedDeliveryDetails,
   clearDeliveryError,
-  clearDeliverySuccess
+  clearDeliverySuccess,
+  clearAssigningState
 } from '../../../redux/slices/deliverySlice';
 import { updateOrderStatus, updateAssignmentStatus, updatePaymentStatus } from '../../../redux/slices/todaysTaskSlice';
 import SuccessModal from '../../../components/SuccessModal';
@@ -31,12 +33,12 @@ import ErrorModal from '../../../components/ErrorModal';
 
 const DeliveriesScreen = ({ navigation }) => {
   const dispatch = useDispatch();
-  const { 
-    availableDeliveries, 
-    assignedDeliveries, 
-    loadingAvailable, 
-    loadingAssigned, 
-    assigningDelivery,
+  const {
+    availableDeliveries,
+    assignedDeliveries,
+    loadingAvailable,
+    loadingAssigned,
+    assigningDelivery, // Now this is an object: { orderId1: true, orderId2: false }
     error,
     success,
     message
@@ -44,9 +46,12 @@ const DeliveriesScreen = ({ navigation }) => {
   
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredDeliveries, setFilteredDeliveries] = useState([]);
-  const [activeTab, setActiveTab] = useState('available'); // 'available' or 'assigned'
+  const [activeTab, setActiveTab] = useState('available');
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [tabChanging, setTabChanging] = useState(false);
+  const [startingDeliveries, setStartingDeliveries] = useState({});
 
   useFocusEffect(
     React.useCallback(() => {
@@ -85,6 +90,36 @@ const DeliveriesScreen = ({ navigation }) => {
     }
   };
 
+  // NEW: Helper function to check if a specific delivery is being assigned
+  const isDeliveryAssigning = (deliveryId) => {
+    return assigningDelivery[deliveryId] || false;
+  };
+
+  const handleTabChange = async (tab) => {
+    if (tabChanging) return;
+
+    setTabChanging(true);
+    setActiveTab(tab);
+
+    try {
+      if (tab === 'available') {
+        await dispatch(fetchAvailableDeliveries());
+      } else {
+        await dispatch(fetchAssignedDeliveries());
+      }
+    } catch (error) {
+      console.log('Error loading tab data:', error);
+    } finally {
+      setTabChanging(false);
+    }
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadDeliveriesData();
+    setRefreshing(false);
+  };
+
   const filterDeliveries = () => {
     const currentDeliveries = activeTab === 'available' ? availableDeliveries : assignedDeliveries;
     let filtered = currentDeliveries || [];
@@ -113,12 +148,72 @@ const DeliveriesScreen = ({ navigation }) => {
     }
   };
 
+  // const handleStatusChange = (deliveryId, newStatus) => {
+  //   if (newStatus === 'assign') {
+  //     dispatch(assignDeliveryToSelf(deliveryId));
+  //   } else if (newStatus === 'in_progress') {
+  //     dispatch(updateOrderStatus({ orderId: deliveryId, status: 'out_for_delivery' }));
+  //     // Navigate to the AssignedDeliveryDetails screen after status update
+  //     setTimeout(() => {
+  //       navigation.navigate('AssignedDeliveryDetails', {
+  //         orderId: deliveryId
+  //       });
+  //     }, 2200); // 2 seconds delay
+  //   } else if (newStatus === 'delivered') {
+  //     dispatch(updateOrderStatus({ orderId: deliveryId, status: 'delivered' }));
+  //   } else {
+  //     console.log('Status change:', deliveryId, newStatus);
+  //   }
+  // };
+  // const handleStatusChange = (deliveryId, newStatus) => {
+  //   if (newStatus === 'assign') {
+  //     dispatch(assignDeliveryToSelf(deliveryId));
+  //   } else if (newStatus === 'in_progress') {
+  //     // Set loading state for this specific delivery
+  //     setStartingDeliveries(prev => ({ ...prev, [deliveryId]: true }));
+
+  //     dispatch(updateOrderStatus({ orderId: deliveryId, status: 'out_for_delivery' }));
+
+  //     // Navigate to the AssignedDeliveryDetails screen after status update
+  //     setTimeout(() => {
+  //       navigation.navigate('AssignedDeliveryDetails', {
+  //         orderId: deliveryId
+  //       });
+  //       // Clear the loading state after navigation
+  //       setStartingDeliveries(prev => {
+  //         const newState = { ...prev };
+  //         delete newState[deliveryId];
+  //         return newState;
+  //       });
+  //     }, 2200); // 2 seconds delay
+  //   } else if (newStatus === 'delivered') {
+  //     dispatch(updateOrderStatus({ orderId: deliveryId, status: 'delivered' }));
+  //   } else {
+  //     console.log('Status change:', deliveryId, newStatus);
+  //   }
+  // };
   const handleStatusChange = (deliveryId, newStatus) => {
     if (newStatus === 'assign') {
       dispatch(assignDeliveryToSelf(deliveryId));
     } else if (newStatus === 'in_progress') {
-      // Map to API format
+      // Set loading state for this specific delivery
+      setStartingDeliveries(prev => ({ ...prev, [deliveryId]: true }));
+
       dispatch(updateOrderStatus({ orderId: deliveryId, status: 'out_for_delivery' }));
+
+      // Navigate to the AssignedDeliveryDetails screen after status update
+      setTimeout(() => {
+        navigation.navigate('AssignedDeliveryDetails', {
+          orderId: deliveryId,
+          autoScrollToBottom: true // Add this flag
+        });
+        // Clear the loading state after navigation
+        setStartingDeliveries(prev => {
+          const newState = { ...prev };
+          delete newState[deliveryId];
+          return newState;
+        });
+      }, 2200); // 2 seconds delay
     } else if (newStatus === 'delivered') {
       dispatch(updateOrderStatus({ orderId: deliveryId, status: 'delivered' }));
     } else {
@@ -202,7 +297,7 @@ const DeliveriesScreen = ({ navigation }) => {
           onChangeText={setSearchQuery}
         />
         {searchQuery.length > 0 && (
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.clearButton}
             onPress={() => setSearchQuery('')}
           >
@@ -217,7 +312,8 @@ const DeliveriesScreen = ({ navigation }) => {
     <View style={styles.tabContainer}>
       <TouchableOpacity
         style={[styles.tabButton, activeTab === 'available' && styles.activeTabButton]}
-        onPress={() => setActiveTab('available')}
+        onPress={() => handleTabChange('available')}
+        disabled={tabChanging}
       >
         <Text style={[styles.tabButtonText, activeTab === 'available' && styles.activeTabButtonText]}>
           Available ({availableDeliveries.length})
@@ -225,7 +321,8 @@ const DeliveriesScreen = ({ navigation }) => {
       </TouchableOpacity>
       <TouchableOpacity
         style={[styles.tabButton, activeTab === 'assigned' && styles.activeTabButton]}
-        onPress={() => setActiveTab('assigned')}
+        onPress={() => handleTabChange('assigned')}
+        disabled={tabChanging}
       >
         <Text style={[styles.tabButtonText, activeTab === 'assigned' && styles.activeTabButtonText]}>
           Assigned ({assignedDeliveries.length})
@@ -234,134 +331,219 @@ const DeliveriesScreen = ({ navigation }) => {
     </View>
   );
 
+  const isLoading = () => {
+    if (tabChanging) return true;
+    if (activeTab === 'available' && loadingAvailable) return true;
+    if (activeTab === 'assigned' && loadingAssigned) return true;
+    return false;
+  };
 
+  const renderDeliveryCard = (delivery) => {
+    const isThisDeliveryAssigning = isDeliveryAssigning(delivery.id);
 
-  const renderDeliveryCard = (delivery) => (
-    <TouchableOpacity
-      key={delivery.id}
-      style={styles.deliveryCard}
-      onPress={() => handleDeliveryPress(delivery)}
-      activeOpacity={0.7}
-    >
-      {/* Card Header with Gradient Background */}
-      <View style={styles.cardHeader}>
-        <View style={styles.orderInfo}>
-          <View style={styles.orderIdContainer}>
-            <Icon name="hashtag" size={p(12)} color="#2563eb" />
-            <Text style={styles.orderId}>{delivery.id}</Text>
-          </View>
-          <Text style={styles.customerName}>{delivery.customer_name}</Text>
-        </View>
-        <View style={[styles.statusBadge, { backgroundColor: getStatusColor(delivery) }]}>
-          <View style={styles.statusDot} />
-          <Text style={styles.statusText}>{getStatusText(delivery)}</Text>
-        </View>
-      </View>
-
-      {/* Card Content */}
-      <View style={styles.cardContent}>
-        <View style={styles.deliveryDetails}>
-          <View style={styles.detailRow}>
-            <View style={styles.detailIconContainer}>
-              <Icon name="calendar" size={p(14)} color="#6b7280" />
+    return (
+      <TouchableOpacity
+        key={delivery.id}
+        style={styles.deliveryCard}
+        onPress={() => handleDeliveryPress(delivery)}
+        activeOpacity={0.7}
+      >
+        {/* Card Header with Gradient Background */}
+        <View style={styles.cardHeader}>
+          <View style={styles.orderInfo}>
+            <View style={styles.orderIdContainer}>
+              <Icon name="hashtag" size={p(12)} color="#2563eb" />
+              <Text style={styles.orderId}>{delivery.id}</Text>
             </View>
-            <Text style={styles.detailText}>Ordered: {delivery.ordered_date}</Text>
+            <Text style={styles.customerName}>{delivery.customer_name}</Text>
           </View>
-          
-          {delivery.payment_method && (
+          <View style={[styles.statusBadge, { backgroundColor: getStatusColor(delivery) }]}>
+            <View style={styles.statusDot} />
+            <Text style={styles.statusText}>{getStatusText(delivery)}</Text>
+          </View>
+        </View>
+
+        {/* Card Content */}
+        <View style={styles.cardContent}>
+          <View style={styles.deliveryDetails}>
             <View style={styles.detailRow}>
               <View style={styles.detailIconContainer}>
-                <Icon name="credit-card" size={p(14)} color="#6b7280" />
+                <Icon name="calendar" size={p(14)} color="#6b7280" />
               </View>
-              <Text style={styles.detailText}>
-                {delivery.payment_method} • {delivery.payment_status}
-              </Text>
+              <Text style={styles.detailText}>Ordered: {delivery.ordered_date}</Text>
             </View>
-          )}
-          
-          {delivery.assignment_status && (
-            <View style={styles.detailRow}>
-              <View style={styles.detailIconContainer}>
-                <Icon name="handshake-o" size={p(14)} color="#6b7280" />
+
+            {delivery.payment_method && (
+              <View style={styles.detailRow}>
+                <View style={styles.detailIconContainer}>
+                  <Icon name="credit-card" size={p(14)} color="#6b7280" />
+                </View>
+                <Text style={styles.detailText}>
+                  {delivery.payment_method} • {delivery.payment_status}
+                </Text>
               </View>
-              <Text style={styles.detailText}>
-                {delivery.assignment_status}
-              </Text>
-            </View>
-          )}
-        </View>
-
-        {/* Amount Section */}
-        <View style={styles.amountSection}>
-          <View style={styles.amountContainer}>
-            <Text style={styles.amountLabel}>Total Amount</Text>
-            <Text style={styles.totalAmount}>{delivery.total_amount}</Text>
-          </View>
-          <View style={styles.deliveryIconContainer}>
-            <Icon name="truck" size={p(20)} color="#2563eb" />
-          </View>
-        </View>
-      </View>
-
-      {/* Action Buttons */}
-      {activeTab === 'available' && (
-        <View style={styles.actionButtons}>
-          <TouchableOpacity
-            style={[styles.actionButton, styles.assignButton, assigningDelivery && styles.disabledButton]}
-            onPress={() => handleStatusChange(delivery.id, 'assign')}
-            disabled={assigningDelivery}
-          >
-            {assigningDelivery ? (
-              <Icon name="spinner" size={p(16)} color="#fff" />
-            ) : (
-              <Icon name="plus" size={p(16)} color="#fff" />
             )}
-            <Text style={styles.actionButtonText}>
-              {assigningDelivery ? 'Assigning...' : 'Assign to Me'}
-            </Text>
-          </TouchableOpacity>
+
+            {delivery.assignment_status && (
+              <View style={styles.detailRow}>
+                <View style={styles.detailIconContainer}>
+                  <Icon name="handshake-o" size={p(14)} color="#6b7280" />
+                </View>
+                <Text style={styles.detailText}>
+                  {delivery.assignment_status}
+                </Text>
+              </View>
+            )}
+          </View>
+
+          {/* Amount Section */}
+          <View style={styles.amountSection}>
+            <View style={styles.amountContainer}>
+              <Text style={styles.amountLabel}>Total Amount</Text>
+              <Text style={styles.totalAmount}>{delivery.total_amount}</Text>
+            </View>
+            <View style={styles.deliveryIconContainer}>
+              <Icon name="truck" size={p(20)} color="#2563eb" />
+            </View>
+          </View>
+        </View>
+
+        {/* Action Buttons - UPDATED */}
+        {activeTab === 'available' && (
+          <View style={styles.actionButtons}>
+            <TouchableOpacity
+              style={[
+                styles.actionButton,
+                styles.assignButton,
+                isThisDeliveryAssigning && styles.disabledButton
+              ]}
+              onPress={() => handleStatusChange(delivery.id, 'assign')}
+              disabled={isThisDeliveryAssigning}
+            >
+              {isThisDeliveryAssigning ? (
+                <Icon name="spinner" size={p(16)} color="#fff" />
+              ) : (
+                <Icon name="plus" size={p(16)} color="#fff" />
+              )}
+              <Text style={styles.actionButtonText}>
+                {isThisDeliveryAssigning ? 'Assigning...' : 'Assign to Me'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* ... rest of your action buttons remain the same */}
+        {/* {activeTab === 'assigned' && getDeliveryStatus(delivery) === 'pending' && (
+          <View style={styles.actionButtons}>
+            <TouchableOpacity
+              style={[styles.actionButton, styles.startButton]}
+              onPress={() => handleStatusChange(delivery.id, 'in_progress')}
+            >
+              <Icon name="play" size={p(16)} color="#fff" />
+              <Text style={styles.actionButtonText}>Start Delivery</Text>
+            </TouchableOpacity>
+          </View>
+        )} */}
+        {activeTab === 'assigned' && getDeliveryStatus(delivery) === 'pending' && (
+          <View style={styles.actionButtons}>
+            <TouchableOpacity
+              style={[
+                styles.actionButton,
+                styles.startButton,
+                startingDeliveries[delivery.id] && styles.disabledButton
+              ]}
+              onPress={() => handleStatusChange(delivery.id, 'in_progress')}
+              disabled={startingDeliveries[delivery.id]}
+            >
+              {startingDeliveries[delivery.id] ? (
+                <>
+                  <Icon name="spinner" size={p(16)} color="#fff" />
+                  <Text style={styles.actionButtonText}>Starting...</Text>
+                </>
+              ) : (
+                <>
+                  <Icon name="play" size={p(16)} color="#fff" />
+                  <Text style={styles.actionButtonText}>Start Delivery</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {activeTab === 'assigned' && getDeliveryStatus(delivery) === 'in_progress' && delivery.payment_status === 'pending' && (
+          <View style={styles.actionButtons}>
+            <TouchableOpacity
+              style={[styles.actionButton, styles.paymentButton]}
+              onPress={() => handleUpdatePaymentStatus(delivery.id, 'paid')}
+            >
+              <Icon name="credit-card" size={p(16)} color="#fff" />
+              <Text style={styles.actionButtonText}>Mark Payment Paid</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {activeTab === 'assigned' && getDeliveryStatus(delivery) === 'in_progress' && delivery.payment_status === 'paid' && (
+          <View style={styles.actionButtons}>
+            <TouchableOpacity
+              style={[styles.actionButton, styles.completeButton]}
+              onPress={() => handleStatusChange(delivery.id, 'delivered')}
+            >
+              <Icon name="check" size={p(16)} color="#fff" />
+              <Text style={styles.actionButtonText}>Mark Complete</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Card Footer with subtle border */}
+        <View style={styles.cardFooter} />
+      </TouchableOpacity>
+    );
+  };
+
+  const renderDeliveriesList = () => (
+    <ScrollView
+      style={styles.deliveriesList}
+      showsVerticalScrollIndicator={false}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          colors={['#019a34']}
+          tintColor="#019a34"
+        />
+      }
+    >
+      {filteredDeliveries.length > 0 ? (
+        filteredDeliveries.map(renderDeliveryCard)
+      ) : (
+        <View style={styles.emptyContainer}>
+          <View style={styles.emptyIconContainer}>
+            <Icon name="truck" size={p(48)} color="#6b7280" />
+          </View>
+          <Text style={styles.emptyText}>
+            {searchQuery ? 'No deliveries found' :
+              activeTab === 'available' ? 'No available deliveries' : 'No assigned deliveries'}
+          </Text>
+          <Text style={styles.emptySubtext}>
+            {searchQuery ? 'Try adjusting your search terms' :
+              activeTab === 'available' ? 'Check back later for new delivery opportunities' : 'You haven\'t been assigned any deliveries yet'}
+          </Text>
         </View>
       )}
+    </ScrollView>
+  );
 
-      {activeTab === 'assigned' && getDeliveryStatus(delivery) === 'pending' && (
-        <View style={styles.actionButtons}>
-          <TouchableOpacity
-            style={[styles.actionButton, styles.startButton]}
-            onPress={() => handleStatusChange(delivery.id, 'in_progress')}
-          >
-            <Icon name="play" size={p(16)} color="#fff" />
-            <Text style={styles.actionButtonText}>Start Delivery</Text>
-          </TouchableOpacity>
+  const renderLoadingState = () => (
+    <View style={styles.loadingContainer}>
+      <View style={styles.loadingContent}>
+        <View style={styles.loadingSpinner}>
+          <Icon name="spinner" size={p(30)} color="#019a34" />
         </View>
-      )}
-
-      {activeTab === 'assigned' && getDeliveryStatus(delivery) === 'in_progress' && delivery.payment_status === 'pending' && (
-        <View style={styles.actionButtons}>
-          <TouchableOpacity
-            style={[styles.actionButton, styles.paymentButton]}
-            onPress={() => handleUpdatePaymentStatus(delivery.id, 'paid')}
-          >
-            <Icon name="credit-card" size={p(16)} color="#fff" />
-            <Text style={styles.actionButtonText}>Mark Payment Paid</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {activeTab === 'assigned' && getDeliveryStatus(delivery) === 'in_progress' && delivery.payment_status === 'paid' && (
-        <View style={styles.actionButtons}>
-          <TouchableOpacity
-            style={[styles.actionButton, styles.completeButton]}
-            onPress={() => handleStatusChange(delivery.id, 'delivered')}
-          >
-            <Icon name="check" size={p(16)} color="#fff" />
-            <Text style={styles.actionButtonText}>Mark Complete</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {/* Card Footer with subtle border */}
-      <View style={styles.cardFooter} />
-    </TouchableOpacity>
+        <Text style={styles.loadingText}>
+          Loading {activeTab === 'available' ? 'available' : 'assigned'} deliveries...
+        </Text>
+      </View>
+    </View>
   );
 
   return (
@@ -376,39 +558,13 @@ const DeliveriesScreen = ({ navigation }) => {
 
       <View style={styles.content}>
         {renderSearchBar()}
+
         {renderTabs()}
 
-        {(loadingAvailable || loadingAssigned) ? (
-          <View style={styles.loadingContainer}>
-            {[1, 2, 3].map((index) => (
-              <View key={index} style={styles.skeletonCard}>
-                <SkeletonLoader height={p(20)} width="60%" borderRadius={p(4)} />
-                <SkeletonLoader height={p(16)} width="40%" borderRadius={p(4)} />
-                <SkeletonLoader height={p(14)} width="80%" borderRadius={p(4)} />
-                <SkeletonLoader height={p(14)} width="70%" borderRadius={p(4)} />
-              </View>
-            ))}
-          </View>
+        {isLoading() ? (
+          renderLoadingState()
         ) : (
-          <ScrollView style={styles.deliveriesList} showsVerticalScrollIndicator={false}>
-            {filteredDeliveries.length > 0 ? (
-              filteredDeliveries.map(renderDeliveryCard)
-            ) : (
-              <View style={styles.emptyContainer}>
-                <View style={styles.emptyIconContainer}>
-                  <Icon name="truck" size={p(48)} color="#6b7280" />
-                </View>
-                <Text style={styles.emptyText}>
-                  {searchQuery ? 'No deliveries found' : 
-                   activeTab === 'available' ? 'No available deliveries' : 'No assigned deliveries'}
-                </Text>
-                <Text style={styles.emptySubtext}>
-                  {searchQuery ? 'Try adjusting your search terms' : 
-                   activeTab === 'available' ? 'Check back later for new delivery opportunities' : 'You haven\'t been assigned any deliveries yet'}
-                </Text>
-              </View>
-            )}
-          </ScrollView>
+          renderDeliveriesList()
         )}
       </View>
 
@@ -443,6 +599,9 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     padding: p(12),
+  },
+  disabledButton: {
+    opacity: 0.6,
   },
   tabContainer: {
     flexDirection: 'row',
@@ -718,7 +877,28 @@ const styles = StyleSheet.create({
   },
   loadingContainer: {
     flex: 1,
-    paddingTop: p(12),
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: p(60),
+  },
+  loadingContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingSpinner: {
+    width: p(60),
+    height: p(60),
+    borderRadius: p(30),
+    backgroundColor: '#f0f9f0',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: p(16),
+  },
+  loadingText: {
+    fontSize: fontSizes.base,
+    fontFamily: 'Poppins-Medium',
+    color: '#6b7280',
+    textAlign: 'center',
   },
   skeletonCard: {
     backgroundColor: '#fff',

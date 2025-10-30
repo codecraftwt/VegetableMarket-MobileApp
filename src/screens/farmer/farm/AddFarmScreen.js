@@ -11,6 +11,7 @@ import {
   Image,
   Alert,
   Platform,
+  KeyboardAvoidingView
 } from 'react-native';
 import CommonHeader from '../../../components/CommonHeader';
 import { SkeletonLoader } from '../../../components';
@@ -424,39 +425,43 @@ const AddFarmScreen = ({ navigation }) => {
         onNotificationPress={handleNotificationPress}
         navigation={navigation}
       />
+      <KeyboardAvoidingView
+        style={styles.keyboardAvoidingView}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      >
+        {loading ? (
+          renderSkeletonLoader()
+        ) : (
+          <ScrollView style={styles.content} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollViewContent}>
+            <View style={styles.header}>
+              <Text style={styles.headerTitle}>Add New Farm</Text>
+              <Text style={styles.headerSubtitle}>
+                Create a new farm location to manage your agricultural operations
+              </Text>
+            </View>
 
-      {loading ? (
-        renderSkeletonLoader()
-      ) : (
-        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-          <View style={styles.header}>
-            <Text style={styles.headerTitle}>Add New Farm</Text>
-            <Text style={styles.headerSubtitle}>
-              Create a new farm location to manage your agricultural operations
-            </Text>
-          </View>
+            {renderForm()}
 
-          {renderForm()}
-
-          <View style={styles.submitContainer}>
-            <TouchableOpacity
-              style={[styles.submitButton, loading && styles.submitButtonDisabled]}
-              onPress={handleSubmit}
-              disabled={loading}
-            >
-              {loading ? (
-                <SkeletonLoader height={p(20)} width="60%" borderRadius={p(4)} />
-              ) : (
-                <>
-                  <Icon name="plus" size={20} color="#fff" />
-                  <Text style={styles.submitButtonText}>Add Farm</Text>
-                </>
-              )}
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
-      )}
-
+            <View style={styles.submitContainer}>
+              <TouchableOpacity
+                style={[styles.submitButton, loading && styles.submitButtonDisabled]}
+                onPress={handleSubmit}
+                disabled={loading}
+              >
+                {loading ? (
+                  <SkeletonLoader height={p(20)} width="60%" borderRadius={p(4)} />
+                ) : (
+                  <>
+                    <Icon name="plus" size={20} color="#fff" />
+                    <Text style={styles.submitButtonText}>Add Farm</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+        )}
+      </KeyboardAvoidingView>
       {/* Success Modal */}
       <SuccessModal
         visible={showSuccessModal}
@@ -486,6 +491,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f6fbf7',
+  },
+  keyboardAvoidingView: {
+    flex: 1,
+  },
+  scrollViewContent: {
+    flexGrow: 1,
+    padding: p(12),
+    paddingBottom: p(20),
   },
   content: {
     flex: 1,
