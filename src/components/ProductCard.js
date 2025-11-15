@@ -201,35 +201,35 @@ const ProductCard = ({
     }
   };
 
-  const StarRating = ({ rating }) => {
-    const stars = [];
-    const fullStars = Math.floor(rating);
-    const hasHalfStar = rating % 1 !== 0;
+  // const StarRating = ({ rating }) => {
+  //   const stars = [];
+  //   const fullStars = Math.floor(rating);
+  //   const hasHalfStar = rating % 1 !== 0;
 
-    // Add full stars
-    for (let i = 0; i < fullStars; i++) {
-      stars.push(
-        <Icon key={`full-${i}`} name="star" size={12} color="#FF9800" />,
-      );
-    }
+  //   // Add full stars
+  //   for (let i = 0; i < fullStars; i++) {
+  //     stars.push(
+  //       <Icon key={`full-${i}`} name="star" size={12} color="#FF9800" />,
+  //     );
+  //   }
 
-    // Add half star if needed
-    if (hasHalfStar) {
-      stars.push(
-        <Icon key={`half`} name="star-half-o" size={12} color="#FF9800" />,
-      );
-    }
+  //   // Add half star if needed
+  //   if (hasHalfStar) {
+  //     stars.push(
+  //       <Icon key={`half`} name="star-half-o" size={12} color="#FF9800" />,
+  //     );
+  //   }
 
-    // Add empty stars to complete 5 stars
-    const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
-    for (let i = 0; i < emptyStars; i++) {
-      stars.push(
-        <Icon key={`empty-${i}`} name="star-o" size={12} color="#FF9800" />,
-      );
-    }
+  //   // Add empty stars to complete 5 stars
+  //   const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+  //   for (let i = 0; i < emptyStars; i++) {
+  //     stars.push(
+  //       <Icon key={`empty-${i}`} name="star-o" size={12} color="#FF9800" />,
+  //     );
+  //   }
 
-    return <View style={styles.starRating}>{stars}</View>;
-  };
+  //   return <View style={styles.starRating}>{stars}</View>;
+  // };
 
   const getCardStyles = () => {
     switch (size) {
@@ -327,7 +327,7 @@ const ProductCard = ({
               </TouchableOpacity>
             )}
           </View>
-          <StarRating rating={item?.rating || 0} />
+          {/* <StarRating rating={item?.rating || 0} /> */}
           <Text style={styles.productPrice}>
             {getPriceDisplay()}/{getProductUnit()}
           </Text>
@@ -439,11 +439,11 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-Bold',
     flex: 1,
   },
-  starRating: {
-    flexDirection: 'row',
-    marginBottom: p(4),
-    gap: p(2),
-  },
+  // starRating: {
+  //   flexDirection: 'row',
+  //   marginBottom: p(4),
+  //   gap: p(2),
+  // },
   productPrice: {
     fontSize: fontSizes.sm,
     color: '#019a34',
