@@ -65,14 +65,17 @@ const vegetablesSlice = createSlice({
     categories: [],
     farmerProducts: [],
     searchResults: [],
+    farmerProfile: null,
     loading: false,
     categoriesLoading: false,
     farmerProductsLoading: false,
     searchLoading: false,
+    farmerProfileLoading: false,
     error: null,
     categoriesError: null,
     farmerProductsError: null,
-    searchError: null
+    searchError: null,
+    farmerProfileError: null
   },
   reducers: {
     clearVegetables: (state) => {
@@ -151,6 +154,7 @@ export const {
   clearFarmerProducts,
   clearSearchResults,
   clearErrors,
+  clearFarmerProfile,
   setVegetables,
   setCategories
 } = vegetablesSlice.actions;

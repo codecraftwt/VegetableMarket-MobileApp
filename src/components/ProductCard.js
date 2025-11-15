@@ -246,7 +246,7 @@ const ProductCard = ({
       default: // medium
         return {
           width: p(160),
-          height: p(240),
+          height: p(210),
         };
     }
   };
