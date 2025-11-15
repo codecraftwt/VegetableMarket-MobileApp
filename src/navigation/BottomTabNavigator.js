@@ -16,10 +16,8 @@ const Tab = createBottomTabNavigator();
 // Custom Cart Icon with Badge
 const CartIconWithBadge = ({ focused, color, size }) => {
   const cartItems = useSelector(state => state.cart.cartItems);
-  const cartCount = cartItems.reduce((total, item) => total + (item.quantity_kg || item.quantity || 0), 0);
-  
-  // Calculate display count - show badge if there are items in cart
-  const displayCount = cartCount > 0 ? cartCount : (cartItems.length > 0 ? 1 : 0);
+  // Count the number of items in cart, not the total quantity
+  const displayCount = cartItems.length;
 
   return (
     <View style={styles.iconContainer}>
