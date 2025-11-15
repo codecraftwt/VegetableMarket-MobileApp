@@ -5,7 +5,8 @@ require Pod::Executable.execute_command('node', ['-p',
     {paths: [process.argv[1]]},
   )', __dir__]).strip
 
-platform :ios, min_ios_version_supported
+# platform :ios, min_ios_version_supported
+platform :ios, '15.1'
 prepare_react_native_project!
 
 linkage = ENV['USE_FRAMEWORKS']
@@ -15,6 +16,12 @@ if linkage != nil
 end
 
 target 'VegetableMarket' do
+
+  pod 'Firebase/Messaging', '12.4.0'
+  pod 'Firebase/CoreOnly', '12.4.0'
+
+  use_frameworks! :linkage => :static
+  $RNFirebaseAsStaticFramework = true
   config = use_native_modules!
 
   use_react_native!(
@@ -31,5 +38,24 @@ target 'VegetableMarket' do
       :mac_catalyst_enabled => false,
       # :ccache_enabled => true
     )
+    
+    # Set minimum deployment target for all pods
+    installer.pods_project.targets.each do |target|
+      target.build_configurations.each do |config|
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.1'
+        
+        # Fix architecture issues for simulator builds
+        # Exclude arm64 for simulator to avoid architecture conflicts
+        # This is needed when building for x86_64 simulator on Intel Macs
+        config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'arm64'
+        config.build_settings['ONLY_ACTIVE_ARCH'] = 'NO'
+      end
+    end
+    
+    # Also update the main project's build settings
+    installer.pods_project.build_configurations.each do |config|
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.1'
+      config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'arm64'
+    end
   end
 end
