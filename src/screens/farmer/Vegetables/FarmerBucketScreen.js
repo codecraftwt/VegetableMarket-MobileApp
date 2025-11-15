@@ -252,11 +252,21 @@ const FarmerBucketScreen = ({ navigation }) => {
               onPress={() => handleStatusPress(vegetable)}
               activeOpacity={0.7}
             >
-              <Text style={[
-                styles.statusText, 
+              {/* <Text style={[
+                styles.statusText,
                 vegetable.status === 'active' ? styles.activeText : styles.pausedText
               ]}>
                 {vegetable.status}
+              </Text> */}
+              <Text style={[
+                styles.statusText,
+                vegetable.quantity_available === 0
+                  ? { color: 'red', fontWeight: 'bold' }
+                  : vegetable.status === 'active'
+                    ? styles.activeText
+                    : styles.pausedText
+              ]}>
+                {vegetable.quantity_available === 0 ? 'Out of Stock' : vegetable.status}
               </Text>
             </TouchableOpacity>
           </View>
@@ -271,10 +281,22 @@ const FarmerBucketScreen = ({ navigation }) => {
               <Icon name="dollar" size={14} color="#666" />
               <Text style={styles.infoText}>₹{vegetable.price_per_kg} per {vegetable.unit_type}</Text>
             </View>
-            
-            <View style={styles.infoRow}>
+
+            {/* <View style={styles.infoRow}>
               <Icon name="cube" size={14} color="#666" />
               <Text style={styles.infoText}>Stock: {vegetable.quantity_available} {vegetable.unit_type}</Text>
+            </View> */}
+            <View style={styles.infoRow}>
+              <Icon name="cube" size={14} color="#666" />
+              {vegetable.quantity_available > 0 ? (
+                <Text style={styles.infoText}>
+                  Stock: {vegetable.quantity_available} {vegetable.unit_type}
+                </Text>
+              ) : (
+                <Text style={[styles.infoText, { color: 'red', fontWeight: 'bold' }]}>
+                  Out of Stock
+                </Text>
+              )}
             </View>
             
             {vegetable.grade && (

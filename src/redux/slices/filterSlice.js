@@ -9,8 +9,8 @@ export const fetchFilteredVegetables = createAsyncThunk(
       console.log('Fetching filtered vegetables with filters:', filters);
       
       // Get the current state to access the token
-      const state = getState();
-      const token = state.auth.token;
+      // const state = getState();
+      // const token = state.auth.token;
       
       // Build query parameters
       const queryParams = new URLSearchParams();

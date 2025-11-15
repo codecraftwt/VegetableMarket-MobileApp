@@ -179,7 +179,8 @@ const CartScreen = ({ navigation }) => {
     } catch (error) {
       console.error('CartScreen: Quantity update error:', error);
       // Show specific error message from API
-      const errorMsg = error.message || error.error || 'Failed to update quantity. Please try again.';
+      // const errorMsg = error.message || error.error || 'Failed to update quantity. Please try again.';
+      const errorMsg = 'This product is temporarily out of stock. Please check back later..'
       setErrorMessage(errorMsg);
       setShowErrorModal(true);
     }

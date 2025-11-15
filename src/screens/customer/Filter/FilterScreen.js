@@ -373,7 +373,7 @@ const FilterScreen = ({ navigation }) => {
         keyboardDismissMode="none"
       >
         {/* Search */}
-        <View style={styles.filterSection}>
+        <View style={[styles.filterSection, { marginTop: p(12) }]}>
           <Text style={styles.filterSectionTitle}>Search</Text>
           <View style={styles.searchContainer}>
             <Icon name="search" size={20} color="#019a34" style={styles.searchIcon} />

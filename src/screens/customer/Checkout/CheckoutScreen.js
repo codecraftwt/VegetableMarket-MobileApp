@@ -651,7 +651,7 @@ const CheckoutScreen = ({ navigation }) => {
       case 'UPI_AT_DOOR':
         return 'mobile';
       case 'RAZORPAY':
-        return 'credit-card';
+        return 'rupee';
       default:
         return 'credit-card';
     }
@@ -677,7 +677,7 @@ const CheckoutScreen = ({ navigation }) => {
       case 'UPI_AT_DOOR':
         return 'UPI at Door';
       case 'RAZORPAY':
-        return 'Razorpay';
+        return 'Online Payment';
       default:
         return paymentMethod;
     }

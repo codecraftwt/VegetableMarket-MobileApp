@@ -334,6 +334,10 @@ const ProductDetailScreen = ({ navigation, route }) => {
     return completeProduct?.description || 'No description available for this product.';
   };
 
+  const isOutOfStock = () => {
+    return completeProduct?.quantity_available == 0;
+  };
+
   const handlePhonePress = () => {
     if (completeProduct?.farmer?.phone) {
       const phoneNumber = `tel:${completeProduct.farmer.phone}`;
@@ -439,7 +443,7 @@ const ProductDetailScreen = ({ navigation, route }) => {
             <View style={styles.imageSection}>
               <Image source={getProductImage()} style={styles.productImage} />
               {/* Wishlist Heart Icon */}
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.wishlistButton}
                 onPress={handleWishlistToggle}
                 disabled={wishlistLoading}
@@ -456,7 +460,7 @@ const ProductDetailScreen = ({ navigation, route }) => {
             <View style={styles.productCard}>
               {/* Product Name and Rating */}
               <Text style={styles.productName}>{completeProduct?.name || 'Unknown Product'}</Text>
-              <StarRating rating={completeProduct?.rating || 0} />
+              {/* <StarRating rating={completeProduct?.rating || 0} /> */}
 
               {/* Price and Quantity Selector */}
               <View style={styles.priceQuantityRow}>
@@ -484,6 +488,9 @@ const ProductDetailScreen = ({ navigation, route }) => {
                 <Text style={styles.detailsText}>
                   {getProductDescription()}
                 </Text>
+                {isOutOfStock() && (
+                  <Text style={styles.outOfStockText}>Out of Stock</Text>
+                )}
               </View>
 
               {/* Farmer Information */}
@@ -872,6 +879,21 @@ const styles = StyleSheet.create({
   skeletonRelatedPrice: {
     marginTop: p(4),
   },
+  outOfStockText: {
+    color: '#f44336',
+    fontWeight: 'bold',
+    marginTop: 8,
+  },
+  inStockText: {
+    color: '#4caf50',
+    fontWeight: 'bold',
+    marginTop: 8,
+  },
+  stockStatusText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginTop: 8,
+  }
 });
 
 export default ProductDetailScreen;

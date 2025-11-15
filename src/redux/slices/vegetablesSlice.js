@@ -1,15 +1,31 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import api from '../../api/axiosInstance';
 
-// Async thunk for fetching all vegetables
+// Async thunk for fetching all vegetables with pagination
 export const fetchVegetables = createAsyncThunk(
   'vegetables/fetchVegetables',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await api.get('/vegetables');
-      return response.data;
+      let allVegetables = [];
+      let currentPage = 1;
+      let lastPage = 1;
+
+      do {
+        const response = await api.get(`/vegetables?page=${currentPage}`);
+
+        // Access the nested data structure correctly
+        if (response.data && response.data.data && Array.isArray(response.data.data.data)) {
+          const pageVegetables = response.data.data.data;
+          allVegetables = [...allVegetables, ...pageVegetables];
+          lastPage = response.data.data.last_page;
+        }
+
+        currentPage++;
+      } while (currentPage <= lastPage);
+
+      return allVegetables;
+
     } catch (error) {
-      console.warn('Failed to fetch vegetables:', error);
       return rejectWithValue(error.response?.data || 'Failed to fetch vegetables');
     }
   }
@@ -21,9 +37,8 @@ export const fetchVegetableCategories = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await api.get('/vegetable-category');
-      return response.data;
+      return response.data.data;
     } catch (error) {
-      console.warn('Failed to fetch categories:', error);
       return rejectWithValue(error.response?.data || 'Failed to fetch categories');
     }
   }
@@ -43,21 +58,22 @@ export const fetchFarmerProfile = createAsyncThunk(
   }
 );
 
-const initialState = {
-  vegetables: [],
-  categories: [],
-  farmerProfile: null,
-  loading: false,
-  categoriesLoading: false,
-  farmerProfileLoading: false,
-  error: null,
-  categoriesError: null,
-  farmerProfileError: null,
-};
-
 const vegetablesSlice = createSlice({
   name: 'vegetables',
-  initialState,
+  initialState: {
+    vegetables: [],
+    categories: [],
+    farmerProducts: [],
+    searchResults: [],
+    loading: false,
+    categoriesLoading: false,
+    farmerProductsLoading: false,
+    searchLoading: false,
+    error: null,
+    categoriesError: null,
+    farmerProductsError: null,
+    searchError: null
+  },
   reducers: {
     clearVegetables: (state) => {
       state.vegetables = [];
@@ -90,23 +106,20 @@ const vegetablesSlice = createSlice({
       })
       .addCase(fetchVegetables.fulfilled, (state, action) => {
         state.loading = false;
-        state.vegetables = action.payload.data.data || [];
+        state.vegetables = action.payload;
         state.error = null;
       })
       .addCase(fetchVegetables.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
-      });
-
-    // Fetch Categories
-    builder
-      .addCase(fetchVegetableCategories.pending, (state) => {
+        state.vegetables = [];
+      }).addCase(fetchVegetableCategories.pending, (state) => {
         state.categoriesLoading = true;
         state.categoriesError = null;
       })
       .addCase(fetchVegetableCategories.fulfilled, (state, action) => {
         state.categoriesLoading = false;
-        state.categories = action.payload.data || [];
+        state.categories = action.payload;
         state.categoriesError = null;
       })
       .addCase(fetchVegetableCategories.rejected, (state, action) => {
@@ -132,7 +145,17 @@ const vegetablesSlice = createSlice({
   },
 });
 
-// Selectors
+export const {
+  clearVegetables,
+  clearCategories,
+  clearFarmerProducts,
+  clearSearchResults,
+  clearErrors,
+  setVegetables,
+  setCategories
+} = vegetablesSlice.actions;
+
+
 export const selectVegetables = (state) => state.vegetables.vegetables;
 export const selectCategories = (state) => state.vegetables.categories;
 export const selectFarmerProfile = (state) => state.vegetables.farmerProfile;
@@ -155,5 +178,5 @@ export const selectProductsByCategory = (state, categoryId) => {
   );
 };
 
-export const { clearVegetables, setVegetables, setCategories, clearErrors, clearFarmerProfile } = vegetablesSlice.actions;
+// export const { clearVegetables, setVegetables, setCategories, clearErrors, clearFarmerProfile } = vegetablesSlice.actions;
 export default vegetablesSlice.reducer;

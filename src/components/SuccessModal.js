@@ -64,7 +64,7 @@ const SuccessModal = ({
           <View style={styles.buttonsContainer}>
             {showSecondaryButton && (
               <TouchableOpacity 
-                style={[styles.button, styles.secondaryButton]} 
+                style={[styles.button, styles.secondaryButton, { paddingVertical: p(9.8), paddingHorizontal: p(15),}]} 
                 onPress={handleSecondaryButtonPress}
                 activeOpacity={0.8}
               >
