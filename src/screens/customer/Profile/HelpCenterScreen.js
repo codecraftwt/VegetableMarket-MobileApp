@@ -69,7 +69,7 @@ const HelpCenterScreen = ({ navigation }) => {
   };
 
   const handleWhatsAppSupport = () => {
-    const phoneNumber = '919623448771'; // Updated WhatsApp number
+    const phoneNumber = '+91 9623448771'; // Updated WhatsApp number
     const message = 'Hi, I need help with the Vegetable Market app.';
     const whatsappUrl = `whatsapp://send?phone=${phoneNumber}&text=${encodeURIComponent(message)}`;
     
@@ -167,7 +167,7 @@ const HelpCenterScreen = ({ navigation }) => {
           <ContactMethod
             icon="envelope"
             title="Email Support"
-            subtitle="vegetablemarket@gmail.com"
+            subtitle="info@kisancart.in"
             onPress={handleEmailSupport}
             color="#2196F3"
           />
