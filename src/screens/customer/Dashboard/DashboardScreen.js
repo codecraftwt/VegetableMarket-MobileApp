@@ -24,7 +24,7 @@ import {
   fetchVegetables,
   fetchVegetableCategories,
 } from '../../../redux/slices/vegetablesSlice';
-import { fetchPopularItems } from '../../../redux/slices/wishlistSlice';
+import { fetchPopularItems, fetchWishlist } from '../../../redux/slices/wishlistSlice'; // Add fetchWishlist
 import { addToCart, fetchCart, addItemToCart } from '../../../redux/slices/cartSlice';
 import SuccessModal from '../../../components/SuccessModal';
 import ErrorModal from '../../../components/ErrorModal';
@@ -99,7 +99,16 @@ const Categories = memo(
 
 // Memoized Popular Items Component
 const PopularItems = memo(
-  ({ loading, popularItems, onProductPress, onAddToCart, navigation }) => {
+  ({ loading, popularItems, onProductPress, onAddToCart, navigation, wishlistItems }) => {
+
+    // Function to check if an item is in wishlist
+    const isItemInWishlist = (item) => {
+      return wishlistItems?.some(wishlistItem =>
+        wishlistItem.id === item.id ||
+        wishlistItem.vegetable_id === item.id
+      ) || false;
+    };
+
     if (loading) {
       return (
         <View style={styles.popularContainer}>
@@ -153,6 +162,7 @@ const PopularItems = memo(
                 onAddToCart={onAddToCart}
                 size="medium"
                 navigation={navigation}
+                isInWishlist={isItemInWishlist(item)} // Pass wishlist status
               />
             ))}
           </ScrollView>
@@ -175,7 +185,9 @@ const DashboardScreen = ({ navigation }) => {
   const { popularItems, popularLoading, popularError } = useSelector(
     state => state.wishlist,
   );
-  const { addError } = useSelector(state => state.cart);
+
+  // Add wishlist items from Redux store
+  const { items: wishlistItems } = useSelector(state => state.wishlist);
 
   // Modal states
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -192,23 +204,16 @@ const DashboardScreen = ({ navigation }) => {
     dispatch(fetchVegetableCategories());
     dispatch(fetchPopularItems());
     dispatch(fetchCart()); // Fetch cart to show accurate badge count
+    dispatch(fetchWishlist()); // Fetch wishlist to show accurate heart icons
   }, [dispatch]);
-
-  // Monitor cart errors and show error modal automatically
-  useEffect(() => {
-    if (addError) {
-      setErrorMessage(
-        addError.message || addError.error || 'Failed to add item to cart',
-      );
-      setShowErrorModal(true);
-    }
-  }, [addError]);
 
   // Clear search query when user comes back to DashboardScreen
   useFocusEffect(
     useCallback(() => {
       setSearchQuery('');
-    }, []),
+      // Optionally refresh wishlist data when screen comes into focus
+      dispatch(fetchWishlist());
+    }, [dispatch]),
   );
 
   // Transform popular items data to match ProductCard format
@@ -220,7 +225,7 @@ const DashboardScreen = ({ navigation }) => {
       hasCategory: !!vegetable.category,
       hasFarmer: !!vegetable.farmer
     });
-    
+
     // Try to find complete vegetable data from the vegetables list
     const completeVegetable = vegetables.find(v => v.id === vegetable.id);
     if (completeVegetable) {
@@ -367,6 +372,7 @@ const DashboardScreen = ({ navigation }) => {
           onProductPress={handleProductPress}
           onAddToCart={handleAddToCart}
           navigation={navigation}
+          wishlistItems={wishlistItems} // Pass wishlist items to PopularItems
         />
       </ScrollView>
 
@@ -428,6 +434,7 @@ const styles = StyleSheet.create({
       paddingVertical: p(12),
       minHeight: p(48),
     }),
+    marginVertical: p(10)
   },
   searchInput: {
     flex: 1,

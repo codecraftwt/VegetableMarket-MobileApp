@@ -10,6 +10,7 @@ import {
   Image,
   Platform,
   PermissionsAndroid,
+  Alert
 } from 'react-native';
 import { SkeletonLoader } from '../../../components';
 import CommonHeader from '../../../components/CommonHeader';
@@ -55,6 +56,37 @@ const DeliveryProfileScreen = ({ navigation }) => {
 
   const handleHelpCenterPress = () => {
     navigation.navigate('HelpCenter');
+  };
+
+  //temporary delete account
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      "Confirm Delete Account",
+      "Are you sure you want to delete your account?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel"
+        },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: handleConfirmDelete
+        }
+      ]
+    );
+  };
+
+  const handleConfirmDelete = () => {
+    dispatch(logout());
+    navigation.reset({
+      index: 0,
+      routes: [{ name: 'Login' }],
+    });
+    // Show success alert after navigation
+    setTimeout(() => {
+      Alert.alert("Success", "Account deleted successfully");
+    }, 500);
   };
 
   const handleLogout = () => {
@@ -136,12 +168,12 @@ const DeliveryProfileScreen = ({ navigation }) => {
     try {
       setIsProcessingImage(true);
       console.log('Starting profile picture upload for URI:', imageUri);
-      
+
       // Validate image URI
       if (!imageUri) {
         throw new Error('Invalid image URI');
       }
-      
+
       // Validate image URI format
       if (!imageUri.startsWith('file://') && !imageUri.startsWith('content://') && !imageUri.startsWith('http')) {
         throw new Error('Invalid image URI format');
@@ -160,7 +192,7 @@ const DeliveryProfileScreen = ({ navigation }) => {
       if (user?.name) updateData.name = user.name;
       if (user?.phone) updateData.phone = user.phone;
       if (profile?.bio || user?.bio) updateData.bio = profile?.bio || user?.bio;
-      
+
       // Add address fields - always include them (like ProfileEditScreen does)
       updateData.address_label = address?.address_label || '';
       updateData.address_line = address?.address_line || '';
@@ -174,11 +206,11 @@ const DeliveryProfileScreen = ({ navigation }) => {
       console.log('Update data prepared, dispatching updateProfile...');
       const result = await dispatch(updateProfile(updateData)).unwrap();
       console.log('Update profile result:', result);
-      
+
       console.log('Profile picture updated successfully, refreshing profile...');
       // Refresh profile data to get the new image
       dispatch(fetchProfile());
-      
+
       // Show success modal
       setSuccessMessage('Profile picture updated successfully!');
       setShowSuccessModal(true);
@@ -186,7 +218,7 @@ const DeliveryProfileScreen = ({ navigation }) => {
       console.error('Upload error:', error);
       // Show error modal with more specific error message
       let errorMessage = 'Failed to upload profile picture. Please try again.';
-      
+
       if (error?.message) {
         errorMessage = error.message;
       } else if (error?.error) {
@@ -194,7 +226,7 @@ const DeliveryProfileScreen = ({ navigation }) => {
       } else if (typeof error === 'string') {
         errorMessage = error;
       }
-      
+
       setErrorMessage(errorMessage);
       setShowErrorModal(true);
     } finally {
@@ -247,7 +279,7 @@ const DeliveryProfileScreen = ({ navigation }) => {
       if (response.assets && response.assets.length > 0) {
         const asset = response.assets[0];
         console.log('Camera asset:', asset);
-        
+
         if (asset.uri) {
           console.log('Processing image URI:', asset.uri);
           await uploadProfilePicture(asset.uri);
@@ -312,7 +344,7 @@ const DeliveryProfileScreen = ({ navigation }) => {
       if (response.assets && response.assets.length > 0) {
         const asset = response.assets[0];
         console.log('Gallery asset:', asset);
-        
+
         if (asset.uri) {
           console.log('Processing image URI:', asset.uri);
           await uploadProfilePicture(asset.uri);
@@ -338,9 +370,9 @@ const DeliveryProfileScreen = ({ navigation }) => {
       <View style={styles.avatarContainer}>
         <TouchableOpacity style={styles.avatar} onPress={handleCameraPress}>
           {(profile?.profile_picture || user?.profile_picture) ? (
-            <Image  
-              source={{ uri: `https://kisancart.in/storage/${profile?.profile_picture || user?.profile_picture}` }} 
-              style={styles.profileImage} 
+            <Image
+              source={{ uri: `https://kisancart.in/storage/${profile?.profile_picture || user?.profile_picture}` }}
+              style={styles.profileImage}
             />
           ) : (
             <Icon name="user" size={40} color="#019a34" />
@@ -414,6 +446,19 @@ const DeliveryProfileScreen = ({ navigation }) => {
         <View style={styles.actionContent}>
           <Text style={styles.actionTitle}>Help Center</Text>
           <Text style={styles.actionSubtitle}>Get support and help</Text>
+        </View>
+        <Icon name="chevron-right" size={16} color="#999" />
+      </TouchableOpacity>
+      {/* temporary delete account */}
+      <TouchableOpacity style={styles.actionItem} onPress={handleDeleteAccount}>
+        <View style={styles.actionIcon}>
+          <Icon name="trash" size={20} color="#dc3545" />
+        </View>
+        <View style={styles.actionContent}>
+          <Text style={[styles.actionTitle, styles.logoutTitle]}>Delete Account</Text>
+          <Text style={[styles.actionSubtitle]}>
+            Delete your account
+          </Text>
         </View>
         <Icon name="chevron-right" size={16} color="#999" />
       </TouchableOpacity>

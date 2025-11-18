@@ -57,33 +57,20 @@ const ProductDetailScreen = ({ navigation, route }) => {
     }
   };
 
-  // Debug logging to see what product data we're receiving
-  console.log('ProductDetailScreen: Received product data:', {
-    product: product,
-    hasCategory: !!product.category,
-    hasFarmer: !!product.farmer,
-    categoryName: product.category?.name,
-    farmerName: product.farmer?.name,
-    farmerData: product.farmer
-  });
-
   // Try to find complete product data from vegetables list if current product is incomplete
   const completeProduct = React.useMemo(() => {
     // Always try to find the complete product from vegetables list first
     const foundProduct = vegetables.find(item => item.id === product.id);
     if (foundProduct) {
-      console.log('ProductDetailScreen: Found complete product data from vegetables list:', foundProduct);
       return foundProduct;
     }
     
     // If not found in vegetables list, check if current product has complete data
     if (product.category && product.farmer) {
-      console.log('ProductDetailScreen: Using current product data (complete):', product);
       return product;
     }
     
     // If current product is incomplete, enhance it with better fallbacks
-    console.log('ProductDetailScreen: Using enhanced product data with fallbacks:', product);
     return {
       ...product,
       category: product.category || { id: 1, name: 'General' },
@@ -100,7 +87,6 @@ const ProductDetailScreen = ({ navigation, route }) => {
   // Force re-render when vegetables are loaded to update completeProduct
   useEffect(() => {
     if (vegetables.length > 0 && (!product.category || !product.farmer)) {
-      console.log('ProductDetailScreen: Vegetables loaded, checking for complete product data');
     }
   }, [vegetables, product]);
 
@@ -109,7 +95,6 @@ const ProductDetailScreen = ({ navigation, route }) => {
   };
 
   const handleNotificationPress = () => {
-    console.log('Product detail notification pressed');
   };
 
   const handleQuantityChange = (type) => {
@@ -138,7 +123,6 @@ const ProductDetailScreen = ({ navigation, route }) => {
         vegetable_id: completeProduct.id, 
         quantity: quantity 
       })).unwrap().then(() => {
-        console.log('ProductDetailScreen: Add to cart API successful');
       }).catch((error) => {
         console.error('ProductDetailScreen: Add to cart API error:', error);
       });
@@ -154,7 +138,6 @@ const ProductDetailScreen = ({ navigation, route }) => {
 
   const handleWishlistToggle = async () => {
     try {
-      // Use toggleWishlistItem which handles both add and remove
       const result = await dispatch(toggleWishlistItem(completeProduct.id)).unwrap();
 
       if (result.wishlisted) {
@@ -184,52 +167,15 @@ const ProductDetailScreen = ({ navigation, route }) => {
 
   const handleViewCart = () => {
     setShowSuccessModal(false);
-    // Navigate to App (BottomTabNavigator) and then to CartTab
     navigation.navigate('App', { screen: 'CartTab' });
   };
 
   const handleViewWishlist = () => {
     setShowWishlistSuccessModal(false);
-    // Navigate to Wishlist screen
     navigation.navigate('Wishlist');
   };
 
-  const StarRating = ({ rating }) => {
-    const stars = [];
-    const fullStars = Math.floor(rating);
-    const hasHalfStar = rating % 1 !== 0;
-    
-    // Add full stars
-    for (let i = 0; i < fullStars; i++) {
-      stars.push(
-        <Icon key={`full-${i}`} name="star" size={16} color="#FF9800" />
-      );
-    }
-    
-    // Add half star if needed
-    if (hasHalfStar) {
-      stars.push(
-        <Icon key={`half`} name="star-half-o" size={16} color="#FF9800" />
-      );
-    }
-    
-    // Add empty stars to complete 5 stars
-    const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
-    for (let i = 0; i < emptyStars; i++) {
-      stars.push(
-        <Icon key={`empty-${i}`} name="star-o" size={16} color="#FF9800" />
-      );
-    }
-    
-    return (
-      <View style={styles.starRating}>
-        {stars}
-      </View>
-    );
-  };
-
   const RelatedProducts = () => {
-    // Get related products from the same category (7-8 products)
     const relatedItems = vegetables
       .filter(item => 
         item.id !== completeProduct.id && 
@@ -239,16 +185,12 @@ const ProductDetailScreen = ({ navigation, route }) => {
       .slice(0, 8);
 
     const handleRelatedProductPress = (item) => {
-      console.log('Navigating to product detail:', item.name);
       navigation.navigate('ProductDetail', { product: item });
     };
 
     const handleRelatedAddToCart = async (item) => {
       try {
-        console.log('Adding related product to cart:', item.name);
-        
-        // Update cart state immediately for badge
-        dispatch(addItemToCart({
+          dispatch(addItemToCart({
           vegetable_id: item.id,
           quantity: 1,
           vegetable: item
@@ -263,7 +205,6 @@ const ProductDetailScreen = ({ navigation, route }) => {
           vegetable_id: item.id, 
           quantity: 1 
         })).unwrap().then(() => {
-          console.log('Related product add to cart API successful');
         }).catch((error) => {
           console.error('Related product add to cart API error:', error);
         });
@@ -458,11 +399,7 @@ const ProductDetailScreen = ({ navigation, route }) => {
             
             {/* Product Information Card */}
             <View style={styles.productCard}>
-              {/* Product Name and Rating */}
               <Text style={styles.productName}>{completeProduct?.name || 'Unknown Product'}</Text>
-              {/* <StarRating rating={completeProduct?.rating || 0} /> */}
-
-              {/* Price and Quantity Selector */}
               <View style={styles.priceQuantityRow}>
                 <Text style={styles.productPrice}>{getPriceDisplay()}/{getProductUnit()}</Text>
                 <View style={styles.quantitySelector}>

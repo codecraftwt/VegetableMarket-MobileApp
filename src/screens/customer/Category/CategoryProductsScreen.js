@@ -8,6 +8,7 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
+  Platform
 } from 'react-native';
 import SkeletonLoader from '../../../components/SkeletonLoader';
 import CommonHeader from '../../../components/CommonHeader';
@@ -261,7 +262,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: p(8),
     paddingHorizontal: p(16),
-    paddingVertical: p(2),
+    paddingVertical: Platform.OS === 'ios' ? p(12) : p(2),
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,

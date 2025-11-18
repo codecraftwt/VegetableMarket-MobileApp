@@ -6,16 +6,38 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 const { width } = Dimensions.get('window');
 
-const ErrorModal = ({ 
-  visible, 
-  onClose, 
-  title = 'Error!', 
+const ErrorModal = ({
+  visible,
+  onClose,
+  title = 'Error!',
   message = 'Something went wrong. Please try again.',
   buttonText = 'OK',
   onButtonPress,
   showRetry = false,
-  onRetry 
+  onRetry
 }) => {
+
+  //  Safely extract message as string to prevent React rendering errors
+  const getSafeMessage = () => {
+    if (!message) {
+      return 'Something went wrong. Please try again.';
+    }
+    if (typeof message === 'string') {
+      return message;
+    }
+    if (typeof message === 'object') {
+      if (message.message && typeof message.message === 'string') {
+        return message.message;
+      }
+      if (message.error && typeof message.error === 'string') {
+        return message.error;
+      }
+      return 'Something went wrong. Please try again.';
+    }
+    return String(message);
+  };
+  const safeMessage = getSafeMessage();
+
   const handleButtonPress = () => {
     if (onButtonPress) {
       onButtonPress();
@@ -38,15 +60,15 @@ const ErrorModal = ({
       animationType="fade"
       onRequestClose={onClose}
     >
-      <TouchableOpacity 
-        style={styles.overlay} 
-        activeOpacity={1} 
+      <TouchableOpacity
+        style={styles.overlay}
+        activeOpacity={1}
         onPress={onClose}
       >
-        <TouchableOpacity 
-          style={styles.modalContainer} 
+        <TouchableOpacity
+          style={styles.modalContainer}
           activeOpacity={1}
-          onPress={() => {}}
+          onPress={() => { }}
         >
           {/* Error Icon */}
           <View style={styles.iconContainer}>
@@ -57,22 +79,22 @@ const ErrorModal = ({
           <Text style={styles.title}>{title}</Text>
 
           {/* Message */}
-          <Text style={styles.message}>{message}</Text>
+          <Text style={styles.message}>{safeMessage}</Text>
 
           {/* Buttons Container */}
           <View style={styles.buttonsContainer}>
             {showRetry && (
-              <TouchableOpacity 
-                style={[styles.button, styles.retryButton]} 
+              <TouchableOpacity
+                style={[styles.button, styles.retryButton]}
                 onPress={handleRetry}
                 activeOpacity={0.8}
               >
                 <Text style={styles.retryButtonText}>Retry</Text>
               </TouchableOpacity>
             )}
-            
-            <TouchableOpacity 
-              style={[styles.button, styles.primaryButton]} 
+
+            <TouchableOpacity
+              style={[styles.button, styles.primaryButton]}
               onPress={handleButtonPress}
               activeOpacity={0.8}
             >

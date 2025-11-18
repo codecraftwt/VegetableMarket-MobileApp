@@ -10,6 +10,7 @@ import {
   Image,
   Platform,
   PermissionsAndroid,
+  Alert
 } from 'react-native';
 import CommonHeader from '../../../components/CommonHeader';
 import { CustomModal, SuccessModal, ErrorModal, ConfirmationModal, SkeletonLoader } from '../../../components';
@@ -72,6 +73,35 @@ const ProfileScreen = ({ navigation }) => {
     navigation.navigate('HelpCenter');
   };
 
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      "Confirm Delete Account",
+      "Are you sure you want to delete your account?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel"
+        },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: handleConfirmDelete
+        }
+      ]
+    );
+  };
+
+  const handleConfirmDelete = () => {
+    dispatch(logout());
+    navigation.reset({
+      index: 0,
+      routes: [{ name: 'Login' }],
+    });
+    // Show success alert after navigation
+    setTimeout(() => {
+      Alert.alert("Success", "Account deleted successfully");
+    }, 500);
+  };
   const handleLogout = () => {
     setShowLogoutModal(true);
   };
@@ -108,17 +138,17 @@ const ProfileScreen = ({ navigation }) => {
   const requestStoragePermissionAndroid = async () => {
     try {
       console.log('Requesting storage permission...');
-      
+
       // For Android 13+ (API level 33+), we need READ_MEDIA_IMAGES instead of READ_EXTERNAL_STORAGE
       const androidVersion = Platform.Version;
       let permission;
-      
+
       if (androidVersion >= 33) {
         permission = PermissionsAndroid.PERMISSIONS.READ_MEDIA_IMAGES;
       } else {
         permission = PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE;
       }
-      
+
       const granted = await PermissionsAndroid.request(
         permission,
         {
@@ -162,12 +192,12 @@ const ProfileScreen = ({ navigation }) => {
     try {
       setIsProcessingImage(true);
       console.log('Starting profile picture upload for URI:', imageUri);
-      
+
       // Validate image URI
       if (!imageUri) {
         throw new Error('Invalid image URI');
       }
-      
+
       // Validate image URI format
       if (!imageUri.startsWith('file://') && !imageUri.startsWith('content://') && !imageUri.startsWith('http')) {
         throw new Error('Invalid image URI format');
@@ -186,7 +216,7 @@ const ProfileScreen = ({ navigation }) => {
       if (user?.name) updateData.name = user.name;
       if (user?.phone) updateData.phone = user.phone;
       if (profile?.bio) updateData.bio = profile.bio;
-      
+
       // Add address fields - always include them (like ProfileEditScreen does)
       updateData.address_label = address?.address_label || '';
       updateData.address_line = address?.address_line || '';
@@ -200,11 +230,11 @@ const ProfileScreen = ({ navigation }) => {
       console.log('Update data prepared, dispatching updateProfile...');
       const result = await dispatch(updateProfile(updateData)).unwrap();
       console.log('Update profile result:', result);
-      
+
       console.log('Profile picture updated successfully, refreshing profile...');
       // Refresh profile data to get the new image
       dispatch(fetchProfile());
-      
+
       // Show success modal
       setSuccessMessage('Profile picture updated successfully!');
       setShowSuccessModal(true);
@@ -212,7 +242,7 @@ const ProfileScreen = ({ navigation }) => {
       console.error('Upload error:', error);
       // Show error modal with more specific error message
       let errorMessage = 'Failed to upload profile picture. Please try again.';
-      
+
       if (error?.message) {
         errorMessage = error.message;
       } else if (error?.error) {
@@ -220,7 +250,7 @@ const ProfileScreen = ({ navigation }) => {
       } else if (typeof error === 'string') {
         errorMessage = error;
       }
-      
+
       setErrorMessage(errorMessage);
       setShowErrorModal(true);
     } finally {
@@ -273,7 +303,7 @@ const ProfileScreen = ({ navigation }) => {
       if (response.assets && response.assets.length > 0) {
         const asset = response.assets[0];
         console.log('Camera asset:', asset);
-        
+
         if (asset.uri) {
           console.log('Processing image URI:', asset.uri);
           await uploadProfilePicture(asset.uri);
@@ -331,22 +361,22 @@ const ProfileScreen = ({ navigation }) => {
 
       if (response.errorCode) {
         console.log('Gallery error:', response.errorMessage);
-        
+
         // If it's the intent error, try with different options
         if (response.errorMessage?.includes('No Activity found to handle Intent')) {
           console.log('Trying alternative gallery options...');
           await tryAlternativeGallery();
           return;
         }
-        
+
         let errorMsg = 'Failed to access gallery. ';
-        
+
         if (response.errorMessage?.includes('permission')) {
           errorMsg += 'Please grant photo access permission in your device settings.';
         } else {
           errorMsg += response.errorMessage || 'Please try again.';
         }
-        
+
         setErrorMessage(errorMsg);
         setShowErrorModal(true);
         return;
@@ -355,7 +385,7 @@ const ProfileScreen = ({ navigation }) => {
       if (response.assets && response.assets.length > 0) {
         const asset = response.assets[0];
         console.log('Gallery asset:', asset);
-        
+
         if (asset.uri) {
           console.log('Processing image URI:', asset.uri);
           await uploadProfilePicture(asset.uri);
@@ -371,22 +401,22 @@ const ProfileScreen = ({ navigation }) => {
       }
     } catch (error) {
       console.error('Gallery error:', error);
-      
+
       // If it's the intent error, try alternative method
       if (error.message?.includes('No Activity found to handle Intent')) {
         console.log('Trying alternative gallery method...');
         await tryAlternativeGallery();
         return;
       }
-      
+
       let errorMsg = 'Failed to access gallery. ';
-      
+
       if (error.message?.includes('permission')) {
         errorMsg += 'Please grant photo access permission in your device settings.';
       } else {
         errorMsg += error.message || 'Please try again.';
       }
-      
+
       setErrorMessage(errorMsg);
       setShowErrorModal(true);
     }
@@ -395,7 +425,7 @@ const ProfileScreen = ({ navigation }) => {
   const tryAlternativeGallery = async () => {
     try {
       console.log('Trying alternative gallery method...');
-      
+
       const alternativeOptions = {
         mediaType: 'photo',
         quality: 0.7,
@@ -429,7 +459,7 @@ const ProfileScreen = ({ navigation }) => {
       if (response.assets && response.assets.length > 0) {
         const asset = response.assets[0];
         console.log('Alternative gallery asset:', asset);
-        
+
         if (asset.uri) {
           console.log('Processing alternative image URI:', asset.uri);
           await uploadProfilePicture(asset.uri);
@@ -455,9 +485,9 @@ const ProfileScreen = ({ navigation }) => {
       <View style={styles.avatarContainer}>
         <TouchableOpacity style={styles.avatar} onPress={handleCameraPress}>
           {profile?.profile_picture ? (
-            <Image 
-              source={{ uri: `https://kisancart.in/storage/${profile.profile_picture}` }} 
-              style={styles.profileImage} 
+            <Image
+              source={{ uri: `https://kisancart.in/storage/${profile.profile_picture}` }}
+              style={styles.profileImage}
             />
           ) : (
             <Icon name="user" size={40} color="#019a34" />
@@ -559,6 +589,20 @@ const ProfileScreen = ({ navigation }) => {
         <View style={styles.actionContent}>
           <Text style={styles.actionTitle}>Help Center</Text>
           <Text style={styles.actionSubtitle}>Get support and help</Text>
+        </View>
+        <Icon name="chevron-right" size={16} color="#999" />
+      </TouchableOpacity>
+
+      {/* temporary delete account */}
+      <TouchableOpacity style={styles.actionItem} onPress={handleDeleteAccount}>
+        <View style={styles.actionIcon}>
+          <Icon name="trash" size={20} color="#dc3545" />
+        </View>
+        <View style={styles.actionContent}>
+          <Text style={[styles.actionTitle, styles.logoutTitle]}>Delete Account</Text>
+          <Text style={[styles.actionSubtitle]}>
+            Delete your account
+          </Text>
         </View>
         <Icon name="chevron-right" size={16} color="#999" />
       </TouchableOpacity>

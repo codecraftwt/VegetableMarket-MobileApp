@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   Image,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import SkeletonLoader from './SkeletonLoader';
 import Icon from 'react-native-vector-icons/FontAwesome';
@@ -113,14 +114,49 @@ const ProductCard = ({
         setShowSuccessModal(true);
       }
     } catch (error) {
-      console.log('ProductCard: Wishlist toggle error:', error.message);
-      setErrorMessage(
-        error.message || 'Failed to update wishlist. Please try again.'
-      );
+      console.log('ProductCard: Wishlist toggle error:', error);
+      const errorMsg = extractErrorMessage(error);
+      setErrorMessage(errorMsg);
       setShowErrorModal(true);
     } finally {
       setIsTogglingWishlist(false);
     }
+  };
+
+  // Helper function to extract error message from various error structures
+  const extractErrorMessage = (error) => {
+    if (!error) {
+      return 'Failed to add item to cart. Please try again.';
+    }
+
+    // If it's a string, return it directly
+    if (typeof error === 'string') {
+      return error;
+    }
+
+    // If it's an object, try to extract message
+    if (typeof error === 'object') {
+      // Check for message property (most common)
+      if (error.message && typeof error.message === 'string') {
+        return error.message;
+      }
+
+      // Check for error property
+      if (error.error && typeof error.error === 'string') {
+        return error.error;
+      }
+
+      // Check for data.message (nested structure)
+      if (error.data && error.data.message && typeof error.data.message === 'string') {
+        return error.data.message;
+      }
+
+      // If it's an object but no clear message, return default
+      return 'This product is temporarily out of stock. Please check back later.';
+    }
+
+    // Fallback
+    return 'This product is temporarily out of stock. Please check back later.';
   };
 
   const handleAddToCart = async e => {
@@ -133,10 +169,18 @@ const ProductCard = ({
         // The parent component will handle the success modal
       } catch (error) {
         // Handle error if onAddToCart throws
-        setErrorMessage(
-          error.message || 'Failed to add item to cart. Please try again.',
+        console.error('ProductCard: Add to cart error:', error);
+        console.error('ProductCard: Error type:', typeof error);
+        console.error('ProductCard: Error keys:', error ? Object.keys(error) : 'null');
+
+        const errorMsg = extractErrorMessage(error);
+
+        // Show alert instead of modal for out of stock errors
+        Alert.alert(
+          'Product Unavailable',
+          errorMsg,
+          [{ text: 'OK', style: 'default' }]
         );
-        setShowErrorModal(true);
       } finally {
         setIsAddingToCart(false); // Stop individual loading
       }
@@ -156,11 +200,19 @@ const ProductCard = ({
         setSuccessMessage(`${item.name} added to cart successfully!`);
         setShowSuccessModal(true);
       } catch (error) {
-        // Show error modal
-        setErrorMessage(
-          error.message || 'Failed to add item to cart. Please try again.',
+        // Show error alert
+        console.error('ProductCard: Add to cart error:', error);
+        console.error('ProductCard: Error type:', typeof error);
+        console.error('ProductCard: Error keys:', error ? Object.keys(error) : 'null');
+
+        const errorMsg = extractErrorMessage(error);
+
+        // Show alert instead of modal for out of stock errors
+        Alert.alert(
+          'Product Unavailable',
+          errorMsg,
+          [{ text: 'OK', style: 'default' }]
         );
-        setShowErrorModal(true);
       } finally {
         setIsAddingToCart(false); // Stop individual loading
       }
@@ -269,7 +321,7 @@ const ProductCard = ({
     <>
       <TouchableOpacity
         style={[
-          styles.productCard, 
+          styles.productCard,
           cardStyles,
           isHighlighted && styles.highlightedCard
         ]}
@@ -283,7 +335,7 @@ const ProductCard = ({
             style={styles.productImage}
             defaultSource={require('../assets/vegebg.png')}
           />
-          
+
           {/* Wishlist Heart Icon */}
           {showWishlist && (
             <TouchableOpacity
@@ -294,10 +346,10 @@ const ProductCard = ({
               {isTogglingWishlist ? (
                 <SkeletonLoader type="category" width={16} height={16} borderRadius={8} />
               ) : (
-                <Icon 
-                  name={isInWishlist() ? "heart" : "heart-o"} 
-                  size={16} 
-                  color={isInWishlist() ? "#dc3545" : "#666"} 
+                <Icon
+                  name={isInWishlist() ? "heart" : "heart-o"}
+                  size={16}
+                  color={isInWishlist() ? "#dc3545" : "#666"}
                 />
               )}
             </TouchableOpacity>

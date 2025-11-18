@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  SafeAreaView, 
-  StatusBar, 
-  ScrollView, 
-  TouchableOpacity, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  SafeAreaView,
+  StatusBar,
+  ScrollView,
+  TouchableOpacity,
   TextInput,
   Image,
 } from 'react-native';
@@ -24,12 +24,12 @@ import ConfirmationModal from '../../../components/ConfirmationModal';
 
 const CartScreen = ({ navigation }) => {
   const dispatch = useDispatch();
-  const { 
-    cartItems: reduxCartItems, 
-    totalAmount: reduxTotalAmount, 
-    loading, 
-    error, 
-    updateLoading, 
+  const {
+    cartItems: reduxCartItems,
+    totalAmount: reduxTotalAmount,
+    loading,
+    error,
+    updateLoading,
     updateError,
     removeLoading,
     removeError
@@ -57,7 +57,7 @@ const CartScreen = ({ navigation }) => {
       console.log('CartScreen: Screen focused, fetching cart...');
       dispatch(fetchCart());
       dispatch(clearCartErrors());
-      
+
       // Reset local state to ensure fresh data
       setLocalCartItems([]);
       setLocalTotalAmount(0);
@@ -92,12 +92,12 @@ const CartScreen = ({ navigation }) => {
     setLocalCartItems([...reduxCartItems]); // Create new array reference
     setLocalTotalAmount(reduxTotalAmount);
     setForceUpdate(prev => prev + 1); // Force re-render
-    
+
     // Reset refreshing state when data is updated
     if (isRefreshing) {
       setIsRefreshing(false);
     }
-    
+
     if (reduxCartItems.length > 0 || reduxTotalAmount > 0) {
       setIsInitialized(true); // Mark as initialized
     } else if (!loading && reduxCartItems.length === 0 && reduxTotalAmount === 0) {
@@ -131,53 +131,66 @@ const CartScreen = ({ navigation }) => {
     const currentQuantity = currentItem.quantity_kg || currentItem.quantity || 0;
     const newQuantity = Math.max(1, currentQuantity + change);
     console.log('CartScreen: Updating quantity for item:', currentItem.name, 'from', currentQuantity, 'to', newQuantity);
-    
+
     // Don't allow quantity less than 1
     if (newQuantity < 1) {
       setErrorMessage('Quantity cannot be less than 1');
       setShowErrorModal(true);
       return;
     }
-    
+
     // Don't allow quantity more than 99 (reasonable limit)
     if (newQuantity > 99) {
       setErrorMessage('Quantity cannot be more than 99');
       setShowErrorModal(true);
       return;
     }
-    
+
+    // Store previous quantity and state for rollback in case of error
+    const previousQuantity = currentQuantity;
+    const previousLocalCartItems = [...localCartItems];
+    const previousLocalTotalAmount = localTotalAmount;
+
     // Update Redux state immediately for badge update
     dispatch(updateItemQuantity({ itemId, quantity: newQuantity }));
-    
+
     // Update local state immediately for instant feedback (optimistic update)
-    const updatedLocalCartItems = localCartItems.map(item => 
-      item.id === itemId 
+    const updatedLocalCartItems = localCartItems.map(item =>
+      item.id === itemId
         ? { ...item, quantity_kg: newQuantity }
         : item
     );
-    
+
     // Calculate new total amount
-    const newLocalTotalAmount = updatedLocalCartItems.reduce((sum, item) => 
+    const newLocalTotalAmount = updatedLocalCartItems.reduce((sum, item) =>
       sum + (parseFloat(item.price_per_kg) * (item.quantity_kg || item.quantity || 0)), 0
     );
-    
+
     console.log('CartScreen: Updating local state - new quantity:', newQuantity, 'new total:', newLocalTotalAmount);
-    
+
     // Update local state immediately - this will trigger re-render
     setLocalCartItems([...updatedLocalCartItems]); // Create new array reference
     setLocalTotalAmount(newLocalTotalAmount);
     setForceUpdate(prev => prev + 1); // Force re-render
-    
+
     // Add small delay to prevent rapid successive clicks
     await new Promise(resolve => setTimeout(resolve, 25));
-    
+
     try {
       console.log('CartScreen: Making API call to update quantity');
       await dispatch(updateCartQuantity({ id: itemId, quantity: newQuantity })).unwrap();
       console.log('CartScreen: API call successful, quantity updated');
-      
+
     } catch (error) {
       console.error('CartScreen: Quantity update error:', error);
+
+      // Revert Redux state to previous quantity
+      dispatch(updateItemQuantity({ itemId, quantity: previousQuantity }));
+
+      // Revert local state to previous values
+      setLocalCartItems([...previousLocalCartItems]);
+      setLocalTotalAmount(previousLocalTotalAmount);
+      setForceUpdate(prev => prev + 1);
       // Show specific error message from API
       // const errorMsg = error.message || error.error || 'Failed to update quantity. Please try again.';
       const errorMsg = 'This product is temporarily out of stock. Please check back later..'
@@ -194,41 +207,41 @@ const CartScreen = ({ navigation }) => {
 
   const confirmRemoveItem = async () => {
     if (!itemToRemove) return;
-    
+
     console.log('CartScreen: confirmRemoveItem called for item:', itemToRemove);
-    
+
     // Mark this item as being removed
     setRemovingItems(prev => new Set(prev).add(itemToRemove.id));
-    
+
     // Update Redux state immediately for badge update
     dispatch(removeItemFromCart(itemToRemove.id));
-    
+
     // Update local state immediately for instant feedback (optimistic update)
     const updatedLocalCartItems = localCartItems.filter(item => item.id !== itemToRemove.id);
-    const newLocalTotalAmount = updatedLocalCartItems.reduce((sum, item) => 
+    const newLocalTotalAmount = updatedLocalCartItems.reduce((sum, item) =>
       sum + (parseFloat(item.price_per_kg) * (item.quantity_kg || item.quantity || 0)), 0
     );
-    
+
     console.log('CartScreen: Optimistically removing item, new total:', newLocalTotalAmount);
-    
+
     // Update local state immediately
     setLocalCartItems([...updatedLocalCartItems]);
     setLocalTotalAmount(newLocalTotalAmount);
     setForceUpdate(prev => prev + 1);
-    
+
     // Clear the item to remove and close modal
     setItemToRemove(null);
     setShowConfirmationModal(false);
-    
+
     // Show success modal immediately
     setSuccessMessage(`${itemToRemove.name} removed from cart successfully!`);
     setShowSuccessModal(true);
-    
+
     try {
       // Make API call in background
       await dispatch(removeFromCart(itemToRemove.id)).unwrap();
       console.log('CartScreen: Item removed successfully from API');
-      
+
     } catch (error) {
       console.error('CartScreen: Remove from cart API error:', error);
       // Optionally show error modal for API failures
@@ -274,8 +287,8 @@ const CartScreen = ({ navigation }) => {
     return (
       <View style={styles.cartItemCard}>
         <View style={styles.itemLeft}>
-          <Image 
-            source={getProductImage()} 
+          <Image
+            source={getProductImage()}
             style={styles.itemImage}
           />
           <View style={styles.itemInfo}>
@@ -284,32 +297,32 @@ const CartScreen = ({ navigation }) => {
             <Text style={styles.itemPrice}>₹{parseFloat(item.price_per_kg).toFixed(2)}/{item.unit_type}</Text>
           </View>
         </View>
-        
+
         <View style={styles.itemRight}>
           <View style={styles.quantitySelector}>
-            <TouchableOpacity 
-              style={styles.quantityButton} 
+            <TouchableOpacity
+              style={styles.quantityButton}
               onPress={() => handleQuantityChange(item.id, -1)}
               disabled={(item.quantity_kg || item.quantity || 0) <= 1}
             >
               <Icon name="minus" size={16} color={(item.quantity_kg || item.quantity || 0) <= 1 ? "#ccc" : "#666"} />
             </TouchableOpacity>
             <Text style={[
-              styles.quantityText, 
+              styles.quantityText,
               ((item.quantity_kg || item.quantity || 0) <= 1 || (item.quantity_kg || item.quantity || 0) >= 99) && styles.quantityTextLimit
             ]}>
               {item.quantity_kg || item.quantity || 0} {item.unit_type || 'kg'}
             </Text>
-            <TouchableOpacity 
-              style={styles.quantityButton} 
+            <TouchableOpacity
+              style={styles.quantityButton}
               onPress={() => handleQuantityChange(item.id, 1)}
               disabled={(item.quantity_kg || item.quantity || 0) >= 99}
             >
               <Icon name="plus" size={16} color={(item.quantity_kg || item.quantity || 0) >= 99 ? "#ccc" : "#019a34"} />
             </TouchableOpacity>
           </View>
-          
-          <TouchableOpacity 
+
+          <TouchableOpacity
             style={styles.removeButton}
             onPress={() => handleRemoveItem(item)}
             disabled={isItemRemoving}
@@ -333,7 +346,7 @@ const CartScreen = ({ navigation }) => {
       <Text style={styles.emptyCartSubtitle}>
         Add some items to your cart to get started
       </Text>
-      
+
       <TouchableOpacity style={styles.shopNowButton} onPress={() => navigation.navigate('App', { screen: 'BucketTab' })}>
         <Text style={styles.shopNowText}>Start Shopping</Text>
       </TouchableOpacity>
@@ -394,7 +407,7 @@ const CartScreen = ({ navigation }) => {
     return (
       <SafeAreaView style={styles.container}>
         <StatusBar backgroundColor="#019a34" barStyle="light-content" />
-        <CommonHeader 
+        <CommonHeader
           screenName="Cart"
           showBackButton={false}
           onBackPress={handleBackPress}
@@ -446,8 +459,8 @@ const CartScreen = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar backgroundColor="#019a34" barStyle="light-content" />
-      
-      <CommonHeader 
+
+      <CommonHeader
         screenName="Cart"
         showBackButton={true}
         onBackPress={handleBackPress}
@@ -455,7 +468,7 @@ const CartScreen = ({ navigation }) => {
         onNotificationPress={handleNotificationPress}
         navigation={navigation}
       />
-      
+
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {localCartItems.length === 0 ? <EmptyCart /> : <CartWithItems />}
       </ScrollView>

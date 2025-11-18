@@ -8,7 +8,7 @@ import { p } from '../../../utils/Responsive';
 import { fontSizes } from '../../../utils/fonts';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchWishlist, removeWishlistItem } from '../../../redux/slices/wishlistSlice';
-import { addToCart, addItemToCart, clearCartErrors } from '../../../redux/slices/cartSlice';
+import { addToCart, addItemToCart, clearCartErrors, fetchCart } from '../../../redux/slices/cartSlice';
 import { useFocusEffect } from '@react-navigation/native';
 
 const WishlistScreen = ({ navigation }) => {
@@ -26,6 +26,42 @@ const WishlistScreen = ({ navigation }) => {
   const [errorMessage, setErrorMessage] = useState('');
   const [itemToRemove, setItemToRemove] = useState(null);
   
+  // Helper function to extract error message from various error structures
+  const extractErrorMessage = useCallback((error) => {
+    if (!error) {
+      return 'Failed to add item to cart. Please try again.';
+    }
+    
+    // If it's a string, return it directly
+    if (typeof error === 'string') {
+      return error;
+    }
+    
+    // If it's an object, try to extract message
+    if (typeof error === 'object') {
+      // Check for message property (most common)
+      if (error.message && typeof error.message === 'string') {
+        return error.message;
+      }
+      
+      // Check for error property
+      if (error.error && typeof error.error === 'string') {
+        return error.error;
+      }
+      
+      // Check for data.message (nested structure)
+      if (error.data && error.data.message && typeof error.data.message === 'string') {
+        return error.data.message;
+      }
+      
+      // If it's an object but no clear message, return default
+      return 'This product is temporarily out of stock. Please check back later.';
+    }
+    
+    // Fallback
+    return 'This product is temporarily out of stock. Please check back later.';
+  }, []);
+  
   // Fetch wishlist only once when component mounts
   useEffect(() => {
     console.log('Component mounted, fetching wishlist');
@@ -35,16 +71,17 @@ const WishlistScreen = ({ navigation }) => {
   // Handle remove error
   useEffect(() => {
     if (removeError) {
-      setErrorMessage(removeError);
+      const errorMsg = extractErrorMessage(removeError);
+      setErrorMessage(errorMsg);
       setShowErrorModal(true);
     }
-  }, [removeError]);
+  }, [removeError, extractErrorMessage]);
 
   // Handle cart add error
   useEffect(() => {
     if (addError) {
-      setErrorMessage(addError);
-      setShowErrorModal(true);
+      // Clear the error immediately to prevent it from showing in Dashboard or other screens
+      // We've already shown an Alert in handleAddToCart, so we don't need to show ErrorModal here
       dispatch(clearCartErrors());
     }
   }, [addError, dispatch]);
@@ -75,10 +112,11 @@ const WishlistScreen = ({ navigation }) => {
       setShowSuccessModal(true);
     } catch (error) {
       console.error('Remove wishlist item error:', error);
-      setErrorMessage(error.message || 'Failed to remove item from wishlist');
+      const errorMsg = extractErrorMessage(error);
+      setErrorMessage(errorMsg);
       setShowErrorModal(true);
     }
-  }, [itemToRemove, dispatch, items]);
+  }, [itemToRemove, dispatch, items, extractErrorMessage]);
 
   const handleCancelRemove = useCallback(() => {
     setShowConfirmModal(false);
@@ -112,11 +150,28 @@ const WishlistScreen = ({ navigation }) => {
       setSuccessMessage(`${item.name} added to cart!`);
       setShowSuccessModal(true);
     } catch (error) {
-      console.error('Add to cart error:', error);
-      setErrorMessage(error.message || 'Failed to add item to cart');
-      setShowErrorModal(true);
+      // console.error('Add to cart error:', error);
+      // console.error('Add to cart error type:', typeof error);
+      // console.error('Add to cart error keys:', error ? Object.keys(error) : 'null');
+      
+      // Extract error message using helper function
+      const errorMsg = extractErrorMessage(error);
+      
+      // Revert the optimistic update by fetching fresh cart data from server
+      // This will sync the cart state and remove any optimistically added items
+      dispatch(fetchCart());
+      
+      // Clear cart error immediately to prevent it from showing in other screens
+      dispatch(clearCartErrors());
+      
+      // Show alert instead of modal for out of stock errors
+      Alert.alert(
+        'The product is out of stock.',
+        errorMsg,
+        [{ text: 'OK', style: 'default' }]
+      );
     }
-  }, [dispatch]);
+  }, [dispatch, extractErrorMessage]);
 
   const handleRemoveFromWishlist = useCallback((item) => {
     handleRemoveItem(item);

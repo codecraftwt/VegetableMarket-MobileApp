@@ -14,7 +14,7 @@ import { checkAuthStatus } from '../../redux/slices/authSlice';
 const SplashScreen = () => {
   const navigation = useNavigation();
   const dispatch = useDispatch();
-  
+
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.5)).current;
@@ -164,7 +164,13 @@ const SplashScreen = () => {
           ]}
         >
           <Animated.Image
-            source={require('../../assets/logo1.png')}
+            source={require('../../assets/logo_color.png')}
+            style={styles.logo1}
+            resizeMode="contain"
+          />
+          <Animated.Image
+            // source={require('../../assets/logo1.png')}
+            source={require('../../assets/name_logo.png')}
             style={styles.logo}
             resizeMode="contain"
           />
@@ -179,7 +185,6 @@ const SplashScreen = () => {
             },
           ]}
         >
-          <Text style={styles.appName}>Vegetable Market</Text>
           <Text style={styles.tagline}>Fresh Produce, Delivered Fresh</Text>
         </Animated.View>
 
@@ -232,15 +237,21 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   logo: {
-    width: 300,
-    height: 100,
+    width: 280,
+    height: 90,
     tintColor: '#ffffff',
+  },
+  logo1: {
+    width: 100,
+    height: 100,
+    borderRadius: 50
   },
   // Text container
   textContainer: {
     alignItems: 'center',
     marginBottom: 50,
     zIndex: 10,
+    marginTop: -24
   },
   appName: {
     fontSize: 32,
