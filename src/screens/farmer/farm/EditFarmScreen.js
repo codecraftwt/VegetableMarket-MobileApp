@@ -133,19 +133,18 @@ const EditFarmScreen = ({ navigation, route }) => {
     if (Platform.OS === 'android') {
       try {
         console.log('Requesting storage permission...');
-        
-        // For Android 13+ (API level 33+), we need READ_MEDIA_IMAGES instead of READ_EXTERNAL_STORAGE
+
+        // For Android 13+ (API level 33+), no permission needed for photo picker
         const androidVersion = Platform.Version;
-        let permission;
-        
+
         if (androidVersion >= 33) {
-          permission = PermissionsAndroid.PERMISSIONS.READ_MEDIA_IMAGES;
-        } else {
-          permission = PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE;
+          console.log('Android 13+: No storage permission required for photo picker');
+          return true; // No permission needed for Android 13+
         }
-        
+
+        // For older Android versions, use READ_EXTERNAL_STORAGE
         const granted = await PermissionsAndroid.request(
-          permission,
+          PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
           {
             title: 'Storage Permission',
             message: 'This app needs access to your photos to select images.',
@@ -198,13 +197,19 @@ const EditFarmScreen = ({ navigation, route }) => {
     console.log('Opening gallery...');
 
     try {
-      // Check permissions first
+      // Check permissions first - only for Android versions below 13
       if (Platform.OS === 'android') {
-        const hasStoragePermission = await requestStoragePermission();
-        if (!hasStoragePermission) {
-          Alert.alert('Permission Denied', 'Photo access permission is required to select images from your gallery.');
-          return;
+        const androidVersion = Platform.Version;
+
+        // For Android 13+, no permission check needed
+        if (androidVersion < 33) {
+          const hasStoragePermission = await requestStoragePermission();
+          if (!hasStoragePermission) {
+            Alert.alert('Permission Denied', 'Photo access permission is required to select images from your gallery.');
+            return;
+          }
         }
+        // Android 13+ doesn't need permission for photo picker
       }
 
       // Try with basic options first
@@ -212,7 +217,7 @@ const EditFarmScreen = ({ navigation, route }) => {
         mediaType: 'photo',
         quality: 0.8,
         includeBase64: false,
-        selectionLimit: 5 - images.length, // Allow up to 5 images total
+        selectionLimit: 5 - images.length,
         maxWidth: 1000,
         maxHeight: 1000,
         presentationStyle: 'fullScreen',

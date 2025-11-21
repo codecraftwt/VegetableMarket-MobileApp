@@ -137,30 +137,27 @@ const ProfileScreen = ({ navigation }) => {
 
   const requestStoragePermissionAndroid = async () => {
     try {
-      console.log('Requesting storage permission...');
-
-      // For Android 13+ (API level 33+), we need READ_MEDIA_IMAGES instead of READ_EXTERNAL_STORAGE
-      const androidVersion = Platform.Version;
-      let permission;
+     const androidVersion = Platform.Version;
+      // let permission;
 
       if (androidVersion >= 33) {
-        permission = PermissionsAndroid.PERMISSIONS.READ_MEDIA_IMAGES;
+        console.log('Android 13+: No storage permission required for photo picker');
+        return true; // No permission needed for Android 13+
       } else {
-        permission = PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE;
+        // For older Android versions, use READ_EXTERNAL_STORAGE
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
+          {
+            title: 'Photo Access',
+            message: 'This app needs access to your photos to select images.',
+            buttonNeutral: 'Ask Me Later',
+            buttonNegative: 'Cancel',
+            buttonPositive: 'OK',
+          }
+        );
+        console.log('Storage permission result:', granted);
+        return granted === PermissionsAndroid.RESULTS.GRANTED;
       }
-
-      const granted = await PermissionsAndroid.request(
-        permission,
-        {
-          title: 'Storage Permission',
-          message: 'This app needs access to your photos to select images.',
-          buttonNeutral: 'Ask Me Later',
-          buttonNegative: 'Cancel',
-          buttonPositive: 'OK',
-        },
-      );
-      console.log('Storage permission result:', granted);
-      return granted === PermissionsAndroid.RESULTS.GRANTED;
     } catch (err) {
       console.error('Storage permission error:', err);
       return false;
@@ -330,11 +327,15 @@ const ProfileScreen = ({ navigation }) => {
     try {
       // Check permissions first
       if (Platform.OS === 'android') {
-        const hasStoragePermission = await requestStoragePermissionAndroid();
-        if (!hasStoragePermission) {
-          setErrorMessage('Photo access permission is required to select images from your gallery.');
-          setShowErrorModal(true);
-          return;
+        const androidVersion = Platform.Version;
+
+        if (androidVersion < 33) {
+          const hasStoragePermission = await requestStoragePermissionAndroid();
+          if (!hasStoragePermission) {
+            setErrorMessage('Photo access permission is required to select images from your gallery.');
+            setShowErrorModal(true);
+            return;
+          }
         }
       }
 
@@ -346,8 +347,8 @@ const ProfileScreen = ({ navigation }) => {
         selectionLimit: 1,
         maxWidth: 800,
         maxHeight: 800,
-        presentationStyle: 'fullScreen',
-        includeExtra: false,
+        // presentationStyle: 'fullScreen',
+        // includeExtra: false,
       };
 
       console.log('Launching gallery with options:', options);
@@ -363,11 +364,11 @@ const ProfileScreen = ({ navigation }) => {
         console.log('Gallery error:', response.errorMessage);
 
         // If it's the intent error, try with different options
-        if (response.errorMessage?.includes('No Activity found to handle Intent')) {
-          console.log('Trying alternative gallery options...');
-          await tryAlternativeGallery();
-          return;
-        }
+        // if (response.errorMessage?.includes('No Activity found to handle Intent')) {
+        //   console.log('Trying alternative gallery options...');
+        //   await tryAlternativeGallery();
+        //   return;
+        // }
 
         let errorMsg = 'Failed to access gallery. ';
 
@@ -403,11 +404,11 @@ const ProfileScreen = ({ navigation }) => {
       console.error('Gallery error:', error);
 
       // If it's the intent error, try alternative method
-      if (error.message?.includes('No Activity found to handle Intent')) {
-        console.log('Trying alternative gallery method...');
-        await tryAlternativeGallery();
-        return;
-      }
+      // if (error.message?.includes('No Activity found to handle Intent')) {
+      //   console.log('Trying alternative gallery method...');
+      //   await tryAlternativeGallery();
+      //   return;
+      // }
 
       let errorMsg = 'Failed to access gallery. ';
 

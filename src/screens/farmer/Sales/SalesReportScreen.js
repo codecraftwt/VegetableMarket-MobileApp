@@ -172,7 +172,7 @@ const SalesReportScreen = ({ navigation }) => {
           // Try MANAGE_EXTERNAL_STORAGE first
           try {
             const manageStorageGranted = await PermissionsAndroid.request(
-              PermissionsAndroid.PERMISSIONS.MANAGE_EXTERNAL_STORAGE,
+              PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
               {
                 title: 'Storage Permission',
                 message: 'This app needs access to storage to save PDF and Excel files to your Downloads folder.',

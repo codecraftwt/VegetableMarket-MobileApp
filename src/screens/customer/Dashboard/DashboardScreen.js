@@ -346,7 +346,7 @@ const DashboardScreen = ({ navigation }) => {
       <StatusBar backgroundColor="#019a34" barStyle="light-content" />
 
       <CommonHeader
-        screenName="Walstar VeggieMart"
+        screenName="Kissan Cart"
         showBackButton={false}
         showNotification={true}
         onNotificationPress={handleNotificationPress}

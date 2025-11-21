@@ -116,7 +116,11 @@ const FarmerProfileScreen = ({ navigation }) => {
 
   const requestStoragePermissionAndroid = async () => {
     try {
-      console.log('Requesting storage permission...');
+      const androidVersion = Platform.Version;
+
+      if (androidVersion >= 33) {
+        return true;
+      }
       const granted = await PermissionsAndroid.request(
         PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
         {
@@ -300,11 +304,15 @@ const FarmerProfileScreen = ({ navigation }) => {
     try {
       // Check permissions first
       if (Platform.OS === 'android') {
-        const hasStoragePermission = await requestStoragePermissionAndroid();
-        if (!hasStoragePermission) {
-          setErrorMessage('Storage permission is required to select photos.');
-          setShowErrorModal(true);
-          return;
+        const androidVersion = Platform.Version;
+
+        if (androidVersion < 33) {
+          const hasStoragePermission = await requestStoragePermissionAndroid();
+          if (!hasStoragePermission) {
+            setErrorMessage('Storage permission is required to select photos.');
+            setShowErrorModal(true);
+            return;
+          }
         }
       }
 

@@ -339,52 +339,82 @@ const OrderDetailsScreen = ({ navigation, route }) => {
   };
 
   // Request storage permissions for file operations
+  // const requestStoragePermission = async () => {
+  //   if (Platform.OS === 'android') {
+  //     try {
+  //       const androidVersion = Platform.Version;
+  //       console.log('Android version:', androidVersion);
+
+  //       // For Android 13+ (API 33+)
+  //       if (androidVersion >= 33) {
+  //         // Try MANAGE_EXTERNAL_STORAGE first
+  //         try {
+  //           const manageStorageGranted = await PermissionsAndroid.request(
+  //             PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
+  //             {
+  //               title: 'Storage Permission',
+  //               message: 'This app needs access to storage to save invoice PDF files to your Downloads folder.',
+  //               buttonNeutral: 'Ask Me Later',
+  //               buttonNegative: 'Cancel',
+  //               buttonPositive: 'OK',
+  //             },
+  //           );
+  //           console.log('MANAGE_EXTERNAL_STORAGE permission result:', manageStorageGranted);
+  //           if (manageStorageGranted === PermissionsAndroid.RESULTS.GRANTED) {
+  //             return true;
+  //           }
+  //         } catch (error) {
+  //           console.log('MANAGE_EXTERNAL_STORAGE not available, trying other permissions');
+  //         }
+
+  //         // Request media permissions for Android 13+
+  //         const mediaPermissions = [
+  //           PermissionsAndroid.PERMISSIONS.READ_MEDIA_IMAGES,
+  //           PermissionsAndroid.PERMISSIONS.READ_MEDIA_VIDEO,
+  //           PermissionsAndroid.PERMISSIONS.READ_MEDIA_AUDIO,
+  //         ];
+
+  //         const mediaResults = await PermissionsAndroid.requestMultiple(mediaPermissions);
+  //         console.log('Media permission results:', mediaResults);
+
+  //         // Check if at least one media permission is granted
+  //         const hasMediaPermission = Object.values(mediaResults).some(
+  //           result => result === PermissionsAndroid.RESULTS.GRANTED
+  //         );
+
+  //         return hasMediaPermission;
+  //       } else {
+  //         // For Android 12 and below, request WRITE_EXTERNAL_STORAGE
+  //         const writeStorageGranted = await PermissionsAndroid.request(
+  //           PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
+  //           {
+  //             title: 'Storage Permission',
+  //             message: 'This app needs access to storage to save invoice PDF files to your Downloads folder.',
+  //             buttonNeutral: 'Ask Me Later',
+  //             buttonNegative: 'Cancel',
+  //             buttonPositive: 'OK',
+  //           },
+  //         );
+  //         console.log('WRITE_EXTERNAL_STORAGE permission result:', writeStorageGranted);
+  //         return writeStorageGranted === PermissionsAndroid.RESULTS.GRANTED;
+  //       }
+  //     } catch (err) {
+  //       console.error('Storage permission error:', err);
+  //       return false;
+  //     }
+  //   }
+  //   return true; // iOS doesn't need this permission
+  // };
+
+  // Request storage permissions for file operations
   const requestStoragePermission = async () => {
     if (Platform.OS === 'android') {
       try {
         const androidVersion = Platform.Version;
         console.log('Android version:', androidVersion);
-        
-        // For Android 13+ (API 33+)
-        if (androidVersion >= 33) {
-          // Try MANAGE_EXTERNAL_STORAGE first
-          try {
-            const manageStorageGranted = await PermissionsAndroid.request(
-              PermissionsAndroid.PERMISSIONS.MANAGE_EXTERNAL_STORAGE,
-              {
-                title: 'Storage Permission',
-                message: 'This app needs access to storage to save invoice PDF files to your Downloads folder.',
-                buttonNeutral: 'Ask Me Later',
-                buttonNegative: 'Cancel',
-                buttonPositive: 'OK',
-              },
-            );
-            console.log('MANAGE_EXTERNAL_STORAGE permission result:', manageStorageGranted);
-            if (manageStorageGranted === PermissionsAndroid.RESULTS.GRANTED) {
-              return true;
-            }
-          } catch (error) {
-            console.log('MANAGE_EXTERNAL_STORAGE not available, trying other permissions');
-          }
-          
-          // Request media permissions for Android 13+
-          const mediaPermissions = [
-            PermissionsAndroid.PERMISSIONS.READ_MEDIA_IMAGES,
-            PermissionsAndroid.PERMISSIONS.READ_MEDIA_VIDEO,
-            PermissionsAndroid.PERMISSIONS.READ_MEDIA_AUDIO,
-          ];
-          
-          const mediaResults = await PermissionsAndroid.requestMultiple(mediaPermissions);
-          console.log('Media permission results:', mediaResults);
-          
-          // Check if at least one media permission is granted
-          const hasMediaPermission = Object.values(mediaResults).some(
-            result => result === PermissionsAndroid.RESULTS.GRANTED
-          );
-          
-          return hasMediaPermission;
-        } else {
-          // For Android 12 and below, request WRITE_EXTERNAL_STORAGE
+
+        // For Android 10 and below (API < 29)
+        if (androidVersion < 29) {
           const writeStorageGranted = await PermissionsAndroid.request(
             PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
             {
@@ -398,6 +428,12 @@ const OrderDetailsScreen = ({ navigation, route }) => {
           console.log('WRITE_EXTERNAL_STORAGE permission result:', writeStorageGranted);
           return writeStorageGranted === PermissionsAndroid.RESULTS.GRANTED;
         }
+
+        // For Android 11+ (API 30+), we don't need WRITE_EXTERNAL_STORAGE
+        // We can use MediaStore or DocumentFile for Downloads access
+        console.log('Android 11+: No storage permission required for Downloads');
+        return true;
+
       } catch (err) {
         console.error('Storage permission error:', err);
         return false;
@@ -648,7 +684,7 @@ const OrderDetailsScreen = ({ navigation, route }) => {
           <View style={styles.otpStatusCard}>
             <View style={styles.otpStatusHeader}>
               <Text style={styles.sectionTitle}>Delivery Verification</Text>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.refreshOTPButton}
                 onPress={() => {
                   console.log('🔄 Manual OTP Status Refresh:', { orderId: order.order_id });
