@@ -189,8 +189,6 @@ const OnboardingScreen = () => {
                 {/* Image Section */}
                 <View style={styles.imageContainer}>
                     {/* Decorative Circle Background */}
-                    <View style={styles.circleDecoration} />
-
                     <Animated.Image
                         source={item.image}
                         style={[
@@ -271,10 +269,6 @@ const OnboardingScreen = () => {
                         <Text style={styles.nextButtonText}>
                             {currentIndex === ONBOARDING_DATA.length - 1 ? 'Get Started' : 'Next'}
                         </Text>
-                        {currentIndex !== ONBOARDING_DATA.length - 1 && (
-                            // Simple arrow icon visualization using text or replace with Icon component
-                            <Text style={styles.arrowIcon}>→</Text>
-                        )}
                     </TouchableOpacity>
                 </Animated.View>
             </View>
@@ -336,20 +330,6 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         marginTop: scale(-16),
-    },
-    circleDecoration: {
-        position: 'absolute',
-        width: SCREEN_WIDTH * 0.85,
-        height: SCREEN_WIDTH * 0.85,
-        backgroundColor: '#FFFFFF',
-        borderRadius: (SCREEN_WIDTH * 0.85) / 2,
-        opacity: 0.6,
-        // Subtle shadow for depth
-        shadowColor: THEME_COLOR,
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.1,
-        shadowRadius: 20,
-        elevation: 5,
     },
     image: {
         width: SCREEN_WIDTH * 0.75,
