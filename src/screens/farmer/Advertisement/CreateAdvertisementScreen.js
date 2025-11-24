@@ -139,8 +139,6 @@ const CreateAdvertisementScreen = ({ navigation }) => {
         from: formatDateForAPI(fromDate),
         to: formatDateForAPI(toDate),
       };
-
-      console.log('Creating advertisement with data:', advertisementData);
       dispatch(createAdvertisement(advertisementData));
     }
   };

@@ -46,17 +46,14 @@ const BucketScreen = ({ navigation, route }) => {
 
   // Handle route parameters for search
   useEffect(() => {
-    console.log('BucketScreen: Route params changed:', route?.params);
     if (route?.params) {
       if (route.params.searchQuery) {
-        console.log('BucketScreen: Setting search query:', route.params.searchQuery);
         // Use setTimeout to ensure this runs after useFocusEffect
         setTimeout(() => {
           setSearchQuery(route.params.searchQuery);
         }, 50);
       }
       if (route.params.selectedCategory) {
-        console.log('BucketScreen: Setting selected category:', route.params.selectedCategory);
         setTimeout(() => {
           setSelectedCategory(route.params.selectedCategory);
         }, 50);
@@ -69,7 +66,6 @@ const BucketScreen = ({ navigation, route }) => {
     React.useCallback(() => {
       // Always clear search state when screen comes into focus
       // The route params useEffect will set it again if there's a search query
-      console.log('BucketScreen: useFocusEffect triggered, clearing search state');
       setSelectedCategory('all');
       setSearchQuery('');
       
@@ -94,9 +90,7 @@ const BucketScreen = ({ navigation, route }) => {
   };
 
   const handleAddToCart = async (item) => {
-    try {
-      console.log('BucketScreen: Adding to cart:', item.name);
-      
+    try {      
       // Update cart state immediately for badge
       dispatch(addItemToCart({
         vegetable_id: item.id,
@@ -120,7 +114,6 @@ const BucketScreen = ({ navigation, route }) => {
         // Optionally show error modal for API failures
       });
     } catch (error) {
-      console.log('BucketScreen: Add to cart failed:', error.message);
       // Show error modal
       setErrorMessage(error.message || 'Failed to add item to cart. Please try again.');
       setShowErrorModal(true);
@@ -152,11 +145,6 @@ const BucketScreen = ({ navigation, route }) => {
     
     return categoryMatch;
   });
-
-  // Debug logs
-  console.log('BucketScreen: Current search query:', searchQuery);
-  console.log('BucketScreen: Filtered vegetables count:', filteredVegetables.length);
-  console.log('BucketScreen: Wishlist state:', wishlistState);
 
   const CategoriesSection = () => {
     if (categoriesLoading) {
@@ -310,10 +298,7 @@ const BucketScreen = ({ navigation, route }) => {
   };
 
   const handleViewCart = () => {
-    console.log('BucketScreen: handleViewCart called');
-    console.log('BucketScreen: navigation prop:', navigation);
     setShowSuccessModal(false);
-    console.log('BucketScreen: Navigating to Cart screen');
     // Navigate to App (BottomTabNavigator) and then to CartTab
     navigation.navigate('App', { screen: 'CartTab' });
   };

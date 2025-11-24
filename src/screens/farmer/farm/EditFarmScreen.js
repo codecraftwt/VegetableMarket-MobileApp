@@ -132,13 +132,10 @@ const EditFarmScreen = ({ navigation, route }) => {
   const requestStoragePermission = async () => {
     if (Platform.OS === 'android') {
       try {
-        console.log('Requesting storage permission...');
-
         // For Android 13+ (API level 33+), no permission needed for photo picker
         const androidVersion = Platform.Version;
 
         if (androidVersion >= 33) {
-          console.log('Android 13+: No storage permission required for photo picker');
           return true; // No permission needed for Android 13+
         }
 
@@ -153,7 +150,6 @@ const EditFarmScreen = ({ navigation, route }) => {
             buttonPositive: 'OK',
           },
         );
-        console.log('Storage permission result:', granted);
         return granted === PermissionsAndroid.RESULTS.GRANTED;
       } catch (err) {
         console.error('Storage permission error:', err);
@@ -194,8 +190,6 @@ const EditFarmScreen = ({ navigation, route }) => {
   };
 
   const handleSelectFromGallery = async () => {
-    console.log('Opening gallery...');
-
     try {
       // Check permissions first - only for Android versions below 13
       if (Platform.OS === 'android') {
@@ -223,22 +217,16 @@ const EditFarmScreen = ({ navigation, route }) => {
         presentationStyle: 'fullScreen',
         includeExtra: false,
       };
-
-      console.log('Launching gallery with options:', options);
       const response = await launchImageLibrary(options);
-      console.log('Gallery response:', response);
 
       if (response.didCancel) {
-        console.log('User cancelled gallery');
         return;
       }
 
       if (response.errorCode) {
-        console.log('Gallery error:', response.errorMessage);
         
         // If it's the intent error, try with different options
         if (response.errorMessage?.includes('No Activity found to handle Intent')) {
-          console.log('Trying alternative gallery options...');
           await tryAlternativeGallery();
           return;
         }
@@ -271,7 +259,6 @@ const EditFarmScreen = ({ navigation, route }) => {
       
       // If it's the intent error, try alternative method
       if (error.message?.includes('No Activity found to handle Intent')) {
-        console.log('Trying alternative gallery method...');
         await tryAlternativeGallery();
         return;
       }
@@ -289,9 +276,7 @@ const EditFarmScreen = ({ navigation, route }) => {
   };
 
   const tryAlternativeGallery = async () => {
-    try {
-      console.log('Trying alternative gallery method...');
-      
+    try {      
       const alternativeOptions = {
         mediaType: 'photo',
         quality: 0.7,
@@ -308,15 +293,12 @@ const EditFarmScreen = ({ navigation, route }) => {
       };
 
       const response = await launchImageLibrary(alternativeOptions);
-      console.log('Alternative gallery response:', response);
 
       if (response.didCancel) {
-        console.log('User cancelled alternative gallery');
         return;
       }
 
       if (response.errorCode) {
-        console.log('Alternative gallery error:', response.errorMessage);
         Alert.alert('Gallery Error', 'No gallery app found on your device. Please install a gallery app or use the camera instead.');
         return;
       }

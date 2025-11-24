@@ -23,9 +23,9 @@ import Icon from 'react-native-vector-icons/FontAwesome';
 import { p } from '../../../utils/Responsive';
 import { fontSizes } from '../../../utils/fonts';
 import { useDispatch, useSelector } from 'react-redux';
-import { 
-  fetchSalesReport, 
-  clearSalesReportError, 
+import {
+  fetchSalesReport,
+  clearSalesReportError,
   clearSalesReport,
   exportSalesReportPDF,
   exportSalesReportExcel
@@ -40,7 +40,7 @@ const { width } = Dimensions.get('window');
 const SalesReportScreen = ({ navigation }) => {
   const dispatch = useDispatch();
   const { salesReport, loading, error, exportingPDF, exportingExcel } = useSelector(state => state.salesReport);
-  
+
   const [showDateModal, setShowDateModal] = useState(false);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -62,15 +62,15 @@ const SalesReportScreen = ({ navigation }) => {
     const today = new Date();
     const thirtyDaysAgo = new Date(today);
     thirtyDaysAgo.setDate(today.getDate() - 30);
-    
+
     const startDateStr = thirtyDaysAgo.toISOString().split('T')[0];
     const endDateStr = today.toISOString().split('T')[0];
-    
+
     setStartDate(startDateStr);
     setEndDate(endDateStr);
     setTempStartDate(thirtyDaysAgo);
     setTempEndDate(today);
-    
+
     // Fetch initial data with proper date format
     fetchReportData(startDateStr, endDateStr);
   }, []);
@@ -95,7 +95,7 @@ const SalesReportScreen = ({ navigation }) => {
   const fetchReportData = (start, end) => {
     const formattedStart = formatDateForAPI(start);
     const formattedEnd = formatDateForAPI(end);
-    
+
     dispatch(clearSalesReport());
     dispatch(fetchSalesReport({ start_date: formattedStart, end_date: formattedEnd }));
   };
@@ -117,10 +117,8 @@ const SalesReportScreen = ({ navigation }) => {
       // Always try Downloads first for better user experience
       try {
         const downloadPath = `${RNFS.DownloadDirectoryPath}/${fileName}`;
-        console.log('Trying Downloads path:', downloadPath);
         return downloadPath;
       } catch (error) {
-        console.log('Downloads path failed, using Documents:', error);
         return `${RNFS.DocumentDirectoryPath}/${fileName}`;
       }
     } else {
@@ -136,10 +134,8 @@ const SalesReportScreen = ({ navigation }) => {
       const exists = await RNFS.exists(directory);
       if (!exists) {
         await RNFS.mkdir(directory);
-        console.log('Created directory:', directory);
       }
     } catch (error) {
-      console.log('Directory creation error:', error);
       throw new Error(`Failed to create directory: ${error.message}`);
     }
   };
@@ -148,14 +144,10 @@ const SalesReportScreen = ({ navigation }) => {
   const checkDownloadsAccess = async () => {
     try {
       const downloadPath = RNFS.DownloadDirectoryPath;
-      console.log('Downloads path:', downloadPath);
-      
       // Try to list contents to check access
       const contents = await RNFS.readDir(downloadPath);
-      console.log('Downloads directory accessible, contents:', contents.length, 'items');
       return true;
     } catch (error) {
-      console.log('Downloads directory not accessible:', error);
       return false;
     }
   };
@@ -165,8 +157,6 @@ const SalesReportScreen = ({ navigation }) => {
     if (Platform.OS === 'android') {
       try {
         const androidVersion = Platform.Version;
-        console.log('Android version:', androidVersion);
-        
         // For Android 13+ (API 33+)
         if (androidVersion >= 33) {
           // Try MANAGE_EXTERNAL_STORAGE first
@@ -181,29 +171,26 @@ const SalesReportScreen = ({ navigation }) => {
                 buttonPositive: 'OK',
               },
             );
-            console.log('MANAGE_EXTERNAL_STORAGE permission result:', manageStorageGranted);
             if (manageStorageGranted === PermissionsAndroid.RESULTS.GRANTED) {
               return true;
             }
           } catch (error) {
             console.log('MANAGE_EXTERNAL_STORAGE not available, trying other permissions');
           }
-          
+
           // Request media permissions for Android 13+
           const mediaPermissions = [
             PermissionsAndroid.PERMISSIONS.READ_MEDIA_IMAGES,
             PermissionsAndroid.PERMISSIONS.READ_MEDIA_VIDEO,
             PermissionsAndroid.PERMISSIONS.READ_MEDIA_AUDIO,
           ];
-          
+
           const mediaResults = await PermissionsAndroid.requestMultiple(mediaPermissions);
-          console.log('Media permission results:', mediaResults);
-          
           // Check if at least one media permission is granted
           const hasMediaPermission = Object.values(mediaResults).some(
             result => result === PermissionsAndroid.RESULTS.GRANTED
           );
-          
+
           return hasMediaPermission;
         } else {
           // For Android 12 and below, request WRITE_EXTERNAL_STORAGE
@@ -217,7 +204,6 @@ const SalesReportScreen = ({ navigation }) => {
               buttonPositive: 'OK',
             },
           );
-          console.log('WRITE_EXTERNAL_STORAGE permission result:', writeStorageGranted);
           return writeStorageGranted === PermissionsAndroid.RESULTS.GRANTED;
         }
       } catch (err) {
@@ -234,7 +220,7 @@ const SalesReportScreen = ({ navigation }) => {
   const generatePDFContent = () => {
     const totalOrders = salesReport?.total_orders || 0;
     const totalRevenue = salesReport?.total_revenue || 0;
-    
+
     let content = `
       <div style="font-family: Arial, sans-serif; padding: 20px;">
         <h1 style="color: #019a34; text-align: center; margin-bottom: 30px;">Sales Report</h1>
@@ -272,7 +258,7 @@ const SalesReportScreen = ({ navigation }) => {
               <th style="padding: 10px; border: 1px solid #ddd;">Total Earnings</th>
             </tr>
       `;
-      
+
       salesReport.top_vegetables.forEach((vegetable, index) => {
         content += `
           <tr style="background-color: ${index % 2 === 0 ? '#f8f9fa' : 'white'};">
@@ -282,7 +268,7 @@ const SalesReportScreen = ({ navigation }) => {
           </tr>
         `;
       });
-      
+
       content += `</table></div>`;
     }
 
@@ -300,7 +286,7 @@ const SalesReportScreen = ({ navigation }) => {
   const generateExcelData = () => {
     const totalOrders = salesReport?.total_orders || 0;
     const totalRevenue = salesReport?.total_revenue || 0;
-    
+
     // Summary sheet
     const summaryData = [
       ['Sales Report Summary'],
@@ -341,30 +327,25 @@ const SalesReportScreen = ({ navigation }) => {
 
     try {
       setIsExportingPDF(true);
-      
+
       // Check current permission status first
       if (Platform.OS === 'android') {
         const androidVersion = Platform.Version;
-        console.log('Checking permissions for Android version:', androidVersion);
-        
         // Check basic storage permission
         try {
           const hasReadStorage = await PermissionsAndroid.check(
             PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE
           );
-          console.log('READ_EXTERNAL_STORAGE granted:', hasReadStorage);
-          
           if (androidVersion < 33) {
             const hasWriteStorage = await PermissionsAndroid.check(
               PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE
             );
-            console.log('WRITE_EXTERNAL_STORAGE granted:', hasWriteStorage);
           }
         } catch (error) {
           console.log('Error checking permissions:', error);
         }
       }
-      
+
       // Request storage permission
       const hasPermission = await requestStoragePermission();
       if (!hasPermission) {
@@ -383,22 +364,22 @@ const SalesReportScreen = ({ navigation }) => {
       // Generate PDF
       const pdf = new jsPDF();
       const content = generatePDFContent();
-      
+
       // Create a simple PDF with text content
       pdf.setFontSize(20);
       pdf.setTextColor(1, 154, 52); // Green color
       pdf.text('Sales Report', 105, 20, { align: 'center' });
-      
+
       pdf.setFontSize(12);
       pdf.setTextColor(0, 0, 0);
       pdf.text(`Report Period: ${formatDate(startDate)} to ${formatDate(endDate)}`, 20, 40);
-      
+
       const totalOrders = salesReport?.total_orders || 0;
       const totalRevenue = salesReport?.total_revenue || 0;
-      
+
       pdf.text(`Total Orders: ${totalOrders}`, 20, 60);
       pdf.text(`Total Revenue: ₹${totalRevenue}`, 20, 80);
-      
+
       // Add top vegetables if available
       if (salesReport?.top_vegetables && salesReport.top_vegetables.length > 0) {
         pdf.text('Top Vegetables Sold:', 20, 110);
@@ -412,35 +393,32 @@ const SalesReportScreen = ({ navigation }) => {
           yPosition += 15;
         });
       }
-      
+
       // Save PDF
       const fileName = `SalesReport_${startDate}_to_${endDate}.pdf`;
       const filePath = await getFileSavePath(fileName);
-      
-      console.log('Saving PDF to:', filePath);
-      
+
       // Ensure directory exists
       await ensureDirectoryExists(filePath);
-      
+
       const pdfData = pdf.output('datauristring');
       const base64Data = pdfData.split(',')[1];
-      
+
       await RNFS.writeFile(filePath, base64Data, 'base64');
-      console.log('PDF saved successfully to:', filePath);
-      
+
       setIsExportingPDF(false);
       setLastGeneratedFile({ path: filePath, name: fileName });
-      
-      const saveLocation = filePath.includes('DownloadDirectoryPath') 
-        ? 'Downloads folder' 
+
+      const saveLocation = filePath.includes('DownloadDirectoryPath')
+        ? 'Downloads folder'
         : 'Documents folder';
       setSuccessMessage(`PDF report saved to ${saveLocation}: ${fileName}\n\nYou can find it in your ${saveLocation} or use the Share button to send it.`);
       setShowSuccessModal(true);
-      
+
     } catch (error) {
       console.error('PDF export error:', error);
       setIsExportingPDF(false);
-      
+
       let errorMessage = 'Failed to export PDF. ';
       if (error.message?.includes('permission')) {
         errorMessage += 'Please grant storage permission in your device settings and try again.';
@@ -449,7 +427,7 @@ const SalesReportScreen = ({ navigation }) => {
       } else {
         errorMessage += 'Please try again or contact support if the issue persists.';
       }
-      
+
       setErrorMessage(errorMessage);
       setShowErrorModal(true);
     }
@@ -464,7 +442,7 @@ const SalesReportScreen = ({ navigation }) => {
 
     try {
       setIsExportingExcel(true);
-      
+
       // Request storage permission
       const hasPermission = await requestStoragePermission();
       if (!hasPermission) {
@@ -482,46 +460,43 @@ const SalesReportScreen = ({ navigation }) => {
 
       // Generate Excel data
       const { summaryData, vegetablesData } = generateExcelData();
-      
+
       // Create workbook
       const workbook = XLSX.utils.book_new();
-      
+
       // Add summary sheet
       const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
       XLSX.utils.book_append_sheet(workbook, summarySheet, 'Summary');
-      
+
       // Add vegetables sheet
       const vegetablesSheet = XLSX.utils.aoa_to_sheet(vegetablesData);
       XLSX.utils.book_append_sheet(workbook, vegetablesSheet, 'Top Vegetables');
-      
+
       // Generate Excel file
       const excelBuffer = XLSX.write(workbook, { type: 'base64', bookType: 'xlsx' });
-      
+
       // Save Excel file
       const fileName = `SalesReport_${startDate}_to_${endDate}.xlsx`;
       const filePath = await getFileSavePath(fileName);
-      
-      console.log('Saving Excel to:', filePath);
-      
+
       // Ensure directory exists
       await ensureDirectoryExists(filePath);
-      
+
       await RNFS.writeFile(filePath, excelBuffer, 'base64');
-      console.log('Excel saved successfully to:', filePath);
-      
+
       setIsExportingExcel(false);
       setLastGeneratedFile({ path: filePath, name: fileName });
-      
-      const saveLocation = filePath.includes('DownloadDirectoryPath') 
-        ? 'Downloads folder' 
+
+      const saveLocation = filePath.includes('DownloadDirectoryPath')
+        ? 'Downloads folder'
         : 'Documents folder';
       setSuccessMessage(`Excel report saved to ${saveLocation}: ${fileName}\n\nYou can find it in your ${saveLocation} or use the Share button to send it.`);
       setShowSuccessModal(true);
-      
+
     } catch (error) {
       console.error('Excel export error:', error);
       setIsExportingExcel(false);
-      
+
       let errorMessage = 'Failed to export Excel. ';
       if (error.message?.includes('permission')) {
         errorMessage += 'Please grant storage permission in your device settings and try again.';
@@ -530,7 +505,7 @@ const SalesReportScreen = ({ navigation }) => {
       } else {
         errorMessage += 'Please try again or contact support if the issue persists.';
       }
-      
+
       setErrorMessage(errorMessage);
       setShowErrorModal(true);
     }
@@ -539,28 +514,22 @@ const SalesReportScreen = ({ navigation }) => {
   // Share generated file
   const shareFile = async (filePath, fileName) => {
     try {
-      console.log('Sharing file:', filePath);
-      
       // Check if file exists
       const fileExists = await RNFS.exists(filePath);
-      console.log('File exists:', fileExists);
-      
+
       if (!fileExists) {
         Alert.alert('Error', 'File not found. Please try generating the report again.');
         return;
       }
-      
+
       const shareOptions = {
         title: 'Sales Report',
         message: `Here's the sales report: ${fileName}`,
         url: `file://${filePath}`,
         type: fileName.endsWith('.pdf') ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       };
-      
-      console.log('Share options:', shareOptions);
       await Share.open(shareOptions);
     } catch (error) {
-      console.log('Share cancelled or failed:', error);
       Alert.alert('Share Error', 'Failed to share the file. Please try again.');
     }
   };
@@ -568,7 +537,7 @@ const SalesReportScreen = ({ navigation }) => {
   const handleDateRangeSelect = (range) => {
     const today = new Date();
     let start, end;
-    
+
     switch (range) {
       case 'Last 7 Days':
         start = new Date(today);
@@ -586,13 +555,13 @@ const SalesReportScreen = ({ navigation }) => {
         start = new Date(today);
         start.setDate(today.getDate() - 30);
     }
-    
+
     end = today;
     setStartDate(start.toISOString().split('T')[0]);
     setEndDate(end.toISOString().split('T')[0]);
     setSelectedRange(range);
     setShowDateModal(false);
-    
+
     fetchReportData(start.toISOString().split('T')[0], end.toISOString().split('T')[0]);
   };
 
@@ -613,7 +582,7 @@ const SalesReportScreen = ({ navigation }) => {
   const handleCustomDateSubmit = () => {
     const startDateStr = tempStartDate.toISOString().split('T')[0];
     const endDateStr = tempEndDate.toISOString().split('T')[0];
-    
+
     setStartDate(startDateStr);
     setEndDate(endDateStr);
     setSelectedRange('Custom Range');
@@ -633,7 +602,7 @@ const SalesReportScreen = ({ navigation }) => {
   const renderDateSelector = () => (
     <View style={styles.topSection}>
       <View style={styles.dateAndExportRow}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.dateRangeButton}
           onPress={() => setShowDateModal(true)}
         >
@@ -643,10 +612,10 @@ const SalesReportScreen = ({ navigation }) => {
           </Text>
           <Icon name="chevron-down" size={12} color="#666" />
         </TouchableOpacity>
-        
+
         <View style={styles.exportButtons}>
-          <TouchableOpacity 
-            style={[styles.pdfButton, isExportingPDF && styles.exportButtonDisabled]} 
+          <TouchableOpacity
+            style={[styles.pdfButton, isExportingPDF && styles.exportButtonDisabled]}
             onPress={handleExportPDF}
             disabled={isExportingPDF || isExportingExcel}
           >
@@ -656,9 +625,9 @@ const SalesReportScreen = ({ navigation }) => {
               <Icon name="file-pdf-o" size={16} color="#dc3545" />
             )}
           </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={[styles.excelButton, isExportingExcel && styles.exportButtonDisabled]} 
+
+          <TouchableOpacity
+            style={[styles.excelButton, isExportingExcel && styles.exportButtonDisabled]}
             onPress={handleExportExcel}
             disabled={isExportingPDF || isExportingExcel}
           >
@@ -676,7 +645,7 @@ const SalesReportScreen = ({ navigation }) => {
   const renderStatsCards = () => {
     const totalOrders = salesReport?.total_orders || 0;
     const totalRevenue = salesReport?.total_revenue || 0;
-    
+
     return (
       <View style={styles.statsContainer}>
         <View style={styles.statCard}>
@@ -686,7 +655,7 @@ const SalesReportScreen = ({ navigation }) => {
           <Text style={styles.statValue}>{totalOrders}</Text>
           <Text style={styles.statLabel}>Total Orders</Text>
         </View>
-        
+
         <View style={styles.statCard}>
           <View style={styles.statIcon}>
             <Icon name="rupee" size={20} color="#019a34" />
@@ -705,7 +674,7 @@ const SalesReportScreen = ({ navigation }) => {
       Object.values(salesReport.daily_revenue).some(val => Number(val) > 0) ||
       Object.values(salesReport.daily_orders).some(val => Number(val) > 0)
     );
-    
+
     if (!hasData || !hasNonZeroData) {
       return (
         <View style={styles.chartContainer}>
@@ -720,12 +689,12 @@ const SalesReportScreen = ({ navigation }) => {
 
     const revenueData = Object.entries(salesReport.daily_revenue);
     const ordersData = Object.entries(salesReport.daily_orders);
-    
+
     const labels = revenueData.map(([date]) => {
       const d = new Date(date);
       return `${d.getMonth() + 1}/${d.getDate()}`;
     });
-    
+
     const revenueValues = revenueData.map(([, value]) => Number(value) || 0);
     const orderValues = ordersData.map(([, value]) => Number(value) || 0);
 
@@ -766,12 +735,12 @@ const SalesReportScreen = ({ navigation }) => {
     const minWidth = Dimensions.get('window').width - 80;
     const dataPoints = labels.length;
     const chartWidth = Math.max(minWidth, dataPoints * 60); // 60px per data point minimum
-    
+
     return (
       <View style={styles.chartContainer}>
         <Text style={styles.chartTitle}>Sales Trend</Text>
-        <ScrollView 
-          horizontal 
+        <ScrollView
+          horizontal
           showsHorizontalScrollIndicator={true}
           contentContainerStyle={styles.chartScrollContainer}
           style={styles.chartScrollView}
@@ -813,14 +782,14 @@ const SalesReportScreen = ({ navigation }) => {
 
   const renderTopVegetables = () => {
     const hasVegetableData = salesReport?.top_vegetables && salesReport.top_vegetables.length > 0;
-    
+
     return (
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <Icon name="star" size={20} color="#019a34" />
           <Text style={styles.sectionTitle}>Top Vegetables Sold</Text>
         </View>
-        
+
         {hasVegetableData ? (
           <>
             <View style={styles.tableHeader}>
@@ -828,7 +797,7 @@ const SalesReportScreen = ({ navigation }) => {
               <Text style={styles.tableHeaderText}>Quantity Sold</Text>
               <Text style={styles.tableHeaderText}>Total Earnings</Text>
             </View>
-            
+
             {salesReport.top_vegetables.map((vegetable, index) => (
               <View key={index} style={styles.tableRow}>
                 <Text style={styles.vegetableName}>{vegetable.name}</Text>
@@ -864,7 +833,7 @@ const SalesReportScreen = ({ navigation }) => {
               <Icon name="times" size={20} color="#666" />
             </TouchableOpacity>
           </View>
-          
+
           <View style={styles.quickRanges}>
             <Text style={styles.quickRangeTitle}>Quick Range</Text>
             {['Last 7 Days', 'Last 30 Days', 'Last 90 Days'].map((range) => (
@@ -879,13 +848,13 @@ const SalesReportScreen = ({ navigation }) => {
               </TouchableOpacity>
             ))}
           </View>
-          
+
           <View style={styles.customRange}>
             <Text style={styles.customRangeTitle}>Custom Range</Text>
             <View style={styles.dateInputs}>
               <View style={styles.dateInputContainer}>
                 <Text style={styles.dateInputLabel}>Start Date</Text>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.datePickerButton}
                   onPress={() => setShowStartDatePicker(true)}
                 >
@@ -901,7 +870,7 @@ const SalesReportScreen = ({ navigation }) => {
               </View>
               <View style={styles.dateInputContainer}>
                 <Text style={styles.dateInputLabel}>End Date</Text>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.datePickerButton}
                   onPress={() => setShowEndDatePicker(true)}
                 >
@@ -941,12 +910,12 @@ const SalesReportScreen = ({ navigation }) => {
           ))}
         </View>
       </View>
-      
+
       <View style={styles.skeletonSection}>
         <SkeletonLoader height={p(20)} width="30%" borderRadius={p(4)} />
         <SkeletonLoader height={p(200)} width="100%" borderRadius={p(8)} />
       </View>
-      
+
       <View style={styles.skeletonSection}>
         <SkeletonLoader height={p(20)} width="50%" borderRadius={p(4)} />
         {[1, 2, 3].map((index) => (
@@ -995,7 +964,7 @@ const SalesReportScreen = ({ navigation }) => {
           maximumDate={new Date()}
         />
       )}
-      
+
       {showEndDatePicker && (
         <DateTimePicker
           value={tempEndDate}

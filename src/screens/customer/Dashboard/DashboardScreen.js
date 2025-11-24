@@ -219,17 +219,9 @@ const DashboardScreen = ({ navigation }) => {
   // Transform popular items data to match ProductCard format
   const transformedPopularItems = popularItems.map(item => {
     const vegetable = item.vegetable || item;
-    console.log('DashboardScreen: Transforming popular item:', {
-      original: item,
-      vegetable: vegetable,
-      hasCategory: !!vegetable.category,
-      hasFarmer: !!vegetable.farmer
-    });
-
     // Try to find complete vegetable data from the vegetables list
     const completeVegetable = vegetables.find(v => v.id === vegetable.id);
     if (completeVegetable) {
-      console.log('DashboardScreen: Found complete vegetable data:', completeVegetable);
       return completeVegetable;
     }
     
@@ -263,7 +255,6 @@ const DashboardScreen = ({ navigation }) => {
   // Handle category press
   const handleCategoryPress = useCallback(
     category => {
-      console.log('Category pressed:', category.name);
       navigation.navigate('CategoryProducts', { category });
     },
     [navigation],
@@ -272,13 +263,6 @@ const DashboardScreen = ({ navigation }) => {
   // Handle product press
   const handleProductPress = useCallback(
     item => {
-      console.log('DashboardScreen: Navigating to product detail with item:', {
-        item: item,
-        hasCategory: !!item.category,
-        hasFarmer: !!item.farmer,
-        categoryName: item.category?.name,
-        farmerName: item.farmer?.name
-      });
       navigation.navigate('ProductDetail', { product: item });
     },
     [navigation],
@@ -287,9 +271,7 @@ const DashboardScreen = ({ navigation }) => {
   // Handle add to cart
   const handleAddToCart = useCallback(
     async item => {
-      try {
-        console.log('Adding to cart:', item.name);
-        
+      try {  
         // Update cart state immediately for badge
         dispatch(addItemToCart({
           vegetable_id: item.id,

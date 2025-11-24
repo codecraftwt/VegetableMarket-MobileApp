@@ -46,6 +46,7 @@ import TodaysTaskDetailsScreen from '../screens/delivery/TodaysTaskDetails/Today
 import AdvertisementManagementScreen from '../screens/farmer/Advertisement/AdvertisementManagementScreen';
 import CreateAdvertisementScreen from '../screens/farmer/Advertisement/CreateAdvertisementScreen';
 import EditAdvertisementScreen from '../screens/farmer/Advertisement/EditAdvertisementScreen';
+import OnboardingScreen from '../screens/onbording/onbordingScreen';
 
 const Stack = createStackNavigator();
 
@@ -140,6 +141,7 @@ const AppNavigator = () => {
     { name: 'AdvertisementManagement', component: AdvertisementManagementScreen, transition: slideFromRight },
     { name: 'CreateAdvertisement', component: CreateAdvertisementScreen, transition: slideFromRight },
     { name: 'EditAdvertisement', component: EditAdvertisementScreen, transition: slideFromRight },
+    { name: 'Onboarding', component: OnboardingScreen, transition: slideFromRight },
   ];
 
   return (

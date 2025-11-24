@@ -165,8 +165,6 @@ const EditAdvertisementScreen = ({ navigation, route }) => {
         from: formatDateForAPI(fromDate),
         to: formatDateForAPI(toDate),
       };
-
-      console.log('Updating advertisement with data:', advertisementData);
       dispatch(updateAdvertisement({ 
         advertisementId: advertisement.id, 
         advertisementData 

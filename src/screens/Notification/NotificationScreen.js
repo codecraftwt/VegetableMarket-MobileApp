@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  SafeAreaView, 
-  StatusBar, 
-  ScrollView, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  SafeAreaView,
+  StatusBar,
+  ScrollView,
   TouchableOpacity,
   Alert,
   RefreshControl
@@ -16,9 +16,9 @@ import { p } from '../../utils/Responsive';
 import { fontSizes } from '../../utils/fonts';
 import useNotification from '../../hooks/useNotification';
 import { useSelector, useDispatch } from 'react-redux';
-import { 
-  fetchNotifications, 
-  markNotificationAsRead, 
+import {
+  fetchNotifications,
+  markNotificationAsRead,
   markAllNotificationsAsRead,
   clearNotificationsError,
   addNotification,
@@ -28,15 +28,15 @@ import {
 const NotificationScreen = ({ navigation }) => {
   const dispatch = useDispatch();
   const [refreshing, setRefreshing] = useState(false);
-  
-  const { 
-    notifications, 
-    notificationsLoading, 
+
+  const {
+    notifications,
+    notificationsLoading,
     notificationsError,
     markAsReadLoading,
     markAllAsReadLoading
   } = useSelector(state => state.notification);
-  
+
   const {
     fcmToken,
     isInitialized,
@@ -70,7 +70,6 @@ const NotificationScreen = ({ navigation }) => {
       dispatch(clearNotificationsError());
     } else if (notificationsError && notificationsError.includes('could not be found')) {
       // Don't show error for missing API route, just log it
-      console.log('📱 Notifications API route not found, using local notifications only');
       dispatch(clearNotificationsError());
     }
   }, [notificationsError, dispatch]);
@@ -115,7 +114,6 @@ const NotificationScreen = ({ navigation }) => {
   };
 
   const handleNotificationPress = (notification) => {
-    console.log('📱 Notification pressed:', notification);
     // Mark as read when pressed if not already read
     if (!notification.is_read) {
       dispatch(markNotificationAsRead(notification.id));
@@ -133,8 +131,6 @@ const NotificationScreen = ({ navigation }) => {
       type: 'otp',
       order_id: 44
     };
-    
-    console.log('📱 Sending test notification:', testNotification);
     dispatch(sendTestNotification(testNotification));
   };
 
@@ -145,17 +141,17 @@ const NotificationScreen = ({ navigation }) => {
   // Format notification time
   const formatNotificationTime = (createdAt) => {
     if (!createdAt) return 'Just now';
-    
+
     const now = new Date();
     const notificationTime = new Date(createdAt);
     const diffInMinutes = Math.floor((now - notificationTime) / (1000 * 60));
-    
+
     if (diffInMinutes < 1) return 'Just now';
     if (diffInMinutes < 60) return `${diffInMinutes} minute${diffInMinutes > 1 ? 's' : ''} ago`;
-    
+
     const diffInHours = Math.floor(diffInMinutes / 60);
     if (diffInHours < 24) return `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`;
-    
+
     const diffInDays = Math.floor(diffInHours / 24);
     return `${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`;
   };
@@ -169,39 +165,39 @@ const NotificationScreen = ({ navigation }) => {
         color: '#6f42c1'
       };
     }
-    
+
     // Check notification type or title for other icons
     const type = notification.type || '';
     const title = notification.title || '';
-    
+
     if (type.includes('order') || title.includes('Order')) {
       return {
         icon: 'shopping-cart',
         color: '#4CAF50'
       };
     }
-    
+
     if (type.includes('delivery') || title.includes('Delivery') || title.includes('delivery')) {
       return {
         icon: 'truck',
         color: '#2196F3'
       };
     }
-    
+
     if (type.includes('payment') || title.includes('Payment')) {
       return {
         icon: 'credit-card',
         color: '#4CAF50'
       };
     }
-    
+
     if (type.includes('promo') || title.includes('Offer') || title.includes('Discount')) {
       return {
         icon: 'gift',
         color: '#FF9800'
       };
     }
-    
+
     // Default icon
     return {
       icon: 'bell',
@@ -212,7 +208,7 @@ const NotificationScreen = ({ navigation }) => {
   // Notification Item Component
   const NotificationItem = ({ notification }) => {
     const iconInfo = getNotificationIcon(notification);
-    
+
     return (
       <TouchableOpacity
         style={[
@@ -226,10 +222,10 @@ const NotificationScreen = ({ navigation }) => {
             styles.iconContainer,
             { backgroundColor: iconInfo.color + '20' }
           ]}>
-            <Icon 
-              name={iconInfo.icon} 
-              size={16} 
-              color={iconInfo.color} 
+            <Icon
+              name={iconInfo.icon}
+              size={16}
+              color={iconInfo.color}
             />
           </View>
           <View style={styles.notificationContent}>
@@ -247,7 +243,7 @@ const NotificationScreen = ({ navigation }) => {
             </Text>
           </View>
         </View>
-        
+
         {!notification.is_read && (
           <View style={styles.unreadDot} />
         )}
@@ -258,14 +254,14 @@ const NotificationScreen = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar backgroundColor="#019a34" barStyle="light-content" />
-      
-      <CommonHeader 
+
+      <CommonHeader
         screenName="Notifications"
         showBackButton={true}
         onBackPress={handleBackPress}
         showNotification={false}
       />
-      
+
       {/* Header Actions */}
       {/* <View style={styles.headerActions}>
         <View style={styles.notificationCount}>
@@ -294,8 +290,8 @@ const NotificationScreen = ({ navigation }) => {
         </View>
       </View> */}
 
-      <ScrollView 
-        style={styles.content} 
+      <ScrollView
+        style={styles.content}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl

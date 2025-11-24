@@ -54,7 +54,6 @@ const AdvertisementManagementScreen = ({ navigation }) => {
 
   useEffect(() => {
     if (error) {
-      console.log('Advertisement error:', error);
       // Only show error modal if it's not a "no advertisements" case
       if (!error.includes('FarmerAdvertisementController') || !error.includes('does not exist')) {
         setShowErrorModal(true);
@@ -86,7 +85,6 @@ const AdvertisementManagementScreen = ({ navigation }) => {
 
   const confirmDeleteAdvertisement = () => {
     if (advertisementToDelete) {
-      console.log('Deleting advertisement:', advertisementToDelete.id);
       dispatch(deleteAdvertisement(advertisementToDelete.id));
       setShowDeleteConfirmationModal(false);
       setAdvertisementToDelete(null);
