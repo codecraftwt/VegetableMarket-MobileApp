@@ -34,7 +34,7 @@ const CustomModal = ({
           activeOpacity={1} 
           onPress={onClose}
         >
-          <View style={styles.modalContainer}>
+          <View style={styles.modalContainer} onStartShouldSetResponder={() => true}>
             {/* Header */}
             <View style={styles.header}>
               <Text style={styles.title}>{title}</Text>

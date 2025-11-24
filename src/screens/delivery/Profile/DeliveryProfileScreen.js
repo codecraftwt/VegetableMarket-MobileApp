@@ -155,13 +155,17 @@ const DeliveryProfileScreen = ({ navigation }) => {
   const handleCameraOption = () => {
     console.log('Camera option selected');
     setShowPhotoModal(false);
-    openCamera();
+    setTimeout(() => {
+      openCamera();
+    }, Platform.OS === 'ios' ? 300 : 100);
   };
 
   const handleGalleryOption = () => {
     console.log('Gallery option selected');
     setShowPhotoModal(false);
-    openGallery();
+    setTimeout(() => {
+      openGallery();
+    }, Platform.OS === 'ios' ? 300 : 100);
   };
 
   const uploadProfilePicture = async (imageUri) => {
@@ -248,7 +252,16 @@ const DeliveryProfileScreen = ({ navigation }) => {
         }
       }
 
-      const options = {
+      const options = Platform.OS === 'ios' ? {
+        mediaType: 'photo',
+        quality: 0.8,
+        includeBase64: false,
+        saveToPhotos: false,
+        cameraType: 'front',
+        maxWidth: 800,
+        maxHeight: 800,
+        presentationStyle: 'pageSheet',
+      } : {
         mediaType: 'photo',
         quality: 0.8,
         includeBase64: false,
@@ -314,7 +327,15 @@ const DeliveryProfileScreen = ({ navigation }) => {
         }
       }
 
-      const options = {
+      const options = Platform.OS === 'ios' ? {
+        mediaType: 'photo',
+        quality: 0.8,
+        includeBase64: false,
+        selectionLimit: 1,
+        maxWidth: 800,
+        maxHeight: 800,
+        presentationStyle: 'pageSheet',
+      } : {
         mediaType: 'photo',
         quality: 0.8,
         includeBase64: false,

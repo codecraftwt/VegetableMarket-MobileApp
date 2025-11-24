@@ -95,7 +95,6 @@ const FarmerProfileScreen = ({ navigation }) => {
 
   const requestCameraPermissionAndroid = async () => {
     try {
-      console.log('Requesting camera permission...');
       const granted = await PermissionsAndroid.request(
         PermissionsAndroid.PERMISSIONS.CAMERA,
         {
@@ -106,7 +105,6 @@ const FarmerProfileScreen = ({ navigation }) => {
           buttonPositive: 'OK',
         },
       );
-      console.log('Camera permission result:', granted);
       return granted === PermissionsAndroid.RESULTS.GRANTED;
     } catch (err) {
       console.error('Camera permission error:', err);
@@ -131,7 +129,6 @@ const FarmerProfileScreen = ({ navigation }) => {
           buttonPositive: 'OK',
         },
       );
-      console.log('Storage permission result:', granted);
       return granted === PermissionsAndroid.RESULTS.GRANTED;
     } catch (err) {
       console.error('Storage permission error:', err);
@@ -140,7 +137,6 @@ const FarmerProfileScreen = ({ navigation }) => {
   };
 
   const handleCameraPress = () => {
-    console.log('Camera button pressed!');
     setShowPhotoModal(true);
   };
 
@@ -149,21 +145,22 @@ const FarmerProfileScreen = ({ navigation }) => {
   };
 
   const handleCameraOption = () => {
-    console.log('Camera option selected');
     setShowPhotoModal(false);
-    openCamera();
+    setTimeout(() => {
+      openCamera();
+    }, Platform.OS === 'ios' ? 300 : 100);
   };
 
   const handleGalleryOption = () => {
-    console.log('Gallery option selected');
     setShowPhotoModal(false);
-    openGallery();
+    setTimeout(() => {
+      openGallery();
+    }, Platform.OS === 'ios' ? 300 : 100);
   };
 
   const uploadProfilePicture = async (imageUri) => {
     try {
       setIsProcessingImage(true);
-      console.log('Starting profile picture upload for URI:', imageUri);
 
       // Validate image URI
       if (!imageUri) {
@@ -201,11 +198,7 @@ const FarmerProfileScreen = ({ navigation }) => {
         if (address.pincode) updateData.pincode = address.pincode;
       }
 
-      console.log('Update data prepared, dispatching updateProfile...');
       const result = await dispatch(updateProfile(updateData)).unwrap();
-      console.log('Update profile result:', result);
-
-      console.log('Profile picture updated successfully, refreshing profile...');
       // Refresh profile data to get the new image
       dispatch(fetchProfile());
 
@@ -233,8 +226,6 @@ const FarmerProfileScreen = ({ navigation }) => {
   };
 
   const openCamera = async () => {
-    console.log('Opening camera...');
-
     try {
       // Check permissions first
       if (Platform.OS === 'android') {
@@ -246,7 +237,16 @@ const FarmerProfileScreen = ({ navigation }) => {
         }
       }
 
-      const options = {
+      const options = Platform.OS === 'ios' ? {
+        mediaType: 'photo',
+        quality: 0.8,
+        includeBase64: false,
+        saveToPhotos: false,
+        cameraType: 'front',
+        maxWidth: 800,
+        maxHeight: 800,
+        presentationStyle: 'pageSheet',
+      } : {
         mediaType: 'photo',
         quality: 0.8,
         includeBase64: false,
@@ -257,18 +257,13 @@ const FarmerProfileScreen = ({ navigation }) => {
         presentationStyle: 'fullScreen',
         includeExtra: false,
       };
-
-      console.log('Launching camera with options:', options);
       const response = await launchCamera(options);
-      console.log('Camera response:', response);
 
       if (response.didCancel) {
-        console.log('User cancelled camera');
         return;
       }
 
       if (response.errorCode) {
-        console.log('Camera error:', response.errorMessage);
         setErrorMessage(`Camera error: ${response.errorMessage}`);
         setShowErrorModal(true);
         return;
@@ -276,10 +271,8 @@ const FarmerProfileScreen = ({ navigation }) => {
 
       if (response.assets && response.assets.length > 0) {
         const asset = response.assets[0];
-        console.log('Camera asset:', asset);
 
         if (asset.uri) {
-          console.log('Processing image URI:', asset.uri);
           await uploadProfilePicture(asset.uri);
         } else {
           console.error('No URI in camera response');
@@ -299,8 +292,6 @@ const FarmerProfileScreen = ({ navigation }) => {
   };
 
   const openGallery = async () => {
-    console.log('Opening gallery...');
-
     try {
       // Check permissions first
       if (Platform.OS === 'android') {
@@ -316,7 +307,15 @@ const FarmerProfileScreen = ({ navigation }) => {
         }
       }
 
-      const options = {
+      const options = Platform.OS === 'ios' ? {
+        mediaType: 'photo',
+        quality: 0.8,
+        includeBase64: false,
+        selectionLimit: 1,
+        maxWidth: 800,
+        maxHeight: 800,
+        presentationStyle: 'pageSheet',
+      } : {
         mediaType: 'photo',
         quality: 0.8,
         includeBase64: false,
@@ -326,18 +325,13 @@ const FarmerProfileScreen = ({ navigation }) => {
         presentationStyle: 'fullScreen',
         includeExtra: false,
       };
-
-      console.log('Launching gallery with options:', options);
       const response = await launchImageLibrary(options);
-      console.log('Gallery response:', response);
 
       if (response.didCancel) {
-        console.log('User cancelled gallery');
         return;
       }
 
       if (response.errorCode) {
-        console.log('Gallery error:', response.errorMessage);
         setErrorMessage(`Gallery error: ${response.errorMessage}`);
         setShowErrorModal(true);
         return;
@@ -345,10 +339,8 @@ const FarmerProfileScreen = ({ navigation }) => {
 
       if (response.assets && response.assets.length > 0) {
         const asset = response.assets[0];
-        console.log('Gallery asset:', asset);
 
         if (asset.uri) {
-          console.log('Processing image URI:', asset.uri);
           await uploadProfilePicture(asset.uri);
         } else {
           console.error('No URI in gallery response');

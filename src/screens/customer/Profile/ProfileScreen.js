@@ -36,10 +36,6 @@ const ProfileScreen = ({ navigation }) => {
   const [errorMessage, setErrorMessage] = useState('');
   const [isProcessingImage, setIsProcessingImage] = useState(false);
 
-  // Debug logging
-  console.log('ProfileScreen - Redux State:', profileState);
-  console.log('ProfileScreen - Error:', profileState.error);
-
   useEffect(() => {
     dispatch(fetchProfile());
   }, [dispatch]);
@@ -116,7 +112,6 @@ const ProfileScreen = ({ navigation }) => {
 
   const requestCameraPermissionAndroid = async () => {
     try {
-      console.log('Requesting camera permission...');
       const granted = await PermissionsAndroid.request(
         PermissionsAndroid.PERMISSIONS.CAMERA,
         {
@@ -127,7 +122,6 @@ const ProfileScreen = ({ navigation }) => {
           buttonPositive: 'OK',
         },
       );
-      console.log('Camera permission result:', granted);
       return granted === PermissionsAndroid.RESULTS.GRANTED;
     } catch (err) {
       console.error('Camera permission error:', err);
@@ -141,7 +135,6 @@ const ProfileScreen = ({ navigation }) => {
       // let permission;
 
       if (androidVersion >= 33) {
-        console.log('Android 13+: No storage permission required for photo picker');
         return true; // No permission needed for Android 13+
       } else {
         // For older Android versions, use READ_EXTERNAL_STORAGE
@@ -155,7 +148,6 @@ const ProfileScreen = ({ navigation }) => {
             buttonPositive: 'OK',
           }
         );
-        console.log('Storage permission result:', granted);
         return granted === PermissionsAndroid.RESULTS.GRANTED;
       }
     } catch (err) {
@@ -165,7 +157,6 @@ const ProfileScreen = ({ navigation }) => {
   };
 
   const handleCameraPress = () => {
-    console.log('Camera button pressed!');
     setShowPhotoModal(true);
   };
 
@@ -174,21 +165,22 @@ const ProfileScreen = ({ navigation }) => {
   };
 
   const handleCameraOption = () => {
-    console.log('Camera option selected');
     setShowPhotoModal(false);
-    openCamera();
+    setTimeout(() => {
+      openCamera();
+    }, Platform.OS === 'ios' ? 300 : 100);
   };
 
   const handleGalleryOption = () => {
-    console.log('Gallery option selected');
     setShowPhotoModal(false);
-    openGallery();
+    setTimeout(() => {
+      openGallery();
+    }, Platform.OS === 'ios' ? 300 : 100);
   };
 
   const uploadProfilePicture = async (imageUri) => {
     try {
       setIsProcessingImage(true);
-      console.log('Starting profile picture upload for URI:', imageUri);
 
       // Validate image URI
       if (!imageUri) {
@@ -224,11 +216,7 @@ const ProfileScreen = ({ navigation }) => {
       updateData.country = address?.country || '';
       updateData.pincode = address?.pincode || '';
 
-      console.log('Update data prepared, dispatching updateProfile...');
       const result = await dispatch(updateProfile(updateData)).unwrap();
-      console.log('Update profile result:', result);
-
-      console.log('Profile picture updated successfully, refreshing profile...');
       // Refresh profile data to get the new image
       dispatch(fetchProfile());
 
@@ -256,8 +244,6 @@ const ProfileScreen = ({ navigation }) => {
   };
 
   const openCamera = async () => {
-    console.log('Opening camera...');
-
     try {
       // Check permissions first
       if (Platform.OS === 'android') {
@@ -269,7 +255,7 @@ const ProfileScreen = ({ navigation }) => {
         }
       }
 
-      const options = {
+      const options = Platform.OS === 'ios' ? {
         mediaType: 'photo',
         quality: 0.8,
         includeBase64: false,
@@ -277,21 +263,25 @@ const ProfileScreen = ({ navigation }) => {
         cameraType: 'front',
         maxWidth: 800,
         maxHeight: 800,
+        presentationStyle: 'pageSheet',
+      } : {
+        mediaType: 'photo',
+        quality: 0.8,
+        includeBase64: false,
+        saveToPhotos: false,
+        cameraType: 'back',
+        maxWidth: 800,
+        maxHeight: 800,
         presentationStyle: 'fullScreen',
         includeExtra: false,
       };
-
-      console.log('Launching camera with options:', options);
       const response = await launchCamera(options);
-      console.log('Camera response:', response);
 
       if (response.didCancel) {
-        console.log('User cancelled camera');
         return;
       }
 
       if (response.errorCode) {
-        console.log('Camera error:', response.errorMessage);
         setErrorMessage(`Camera error: ${response.errorMessage}`);
         setShowErrorModal(true);
         return;
@@ -299,10 +289,8 @@ const ProfileScreen = ({ navigation }) => {
 
       if (response.assets && response.assets.length > 0) {
         const asset = response.assets[0];
-        console.log('Camera asset:', asset);
 
         if (asset.uri) {
-          console.log('Processing image URI:', asset.uri);
           await uploadProfilePicture(asset.uri);
         } else {
           console.error('No URI in camera response');
@@ -322,8 +310,6 @@ const ProfileScreen = ({ navigation }) => {
   };
 
   const openGallery = async () => {
-    console.log('Opening gallery...');
-
     try {
       // Check permissions first
       if (Platform.OS === 'android') {
@@ -339,33 +325,35 @@ const ProfileScreen = ({ navigation }) => {
         }
       }
 
-      // Try with basic options first
-      const options = {
+      const options = Platform.OS === 'ios' ? {
         mediaType: 'photo',
         quality: 0.8,
         includeBase64: false,
         selectionLimit: 1,
         maxWidth: 800,
         maxHeight: 800,
-        // presentationStyle: 'fullScreen',
-        // includeExtra: false,
+        presentationStyle: 'pageSheet',
+      } : {
+        mediaType: 'photo',
+        quality: 0.8,
+        includeBase64: false,
+        selectionLimit: 1,
+        maxWidth: 800,
+        maxHeight: 800,
+        presentationStyle: 'fullScreen',
+        includeExtra: false,
       };
 
-      console.log('Launching gallery with options:', options);
       const response = await launchImageLibrary(options);
-      console.log('Gallery response:', response);
 
       if (response.didCancel) {
-        console.log('User cancelled gallery');
         return;
       }
 
       if (response.errorCode) {
-        console.log('Gallery error:', response.errorMessage);
 
         // If it's the intent error, try with different options
         // if (response.errorMessage?.includes('No Activity found to handle Intent')) {
-        //   console.log('Trying alternative gallery options...');
         //   await tryAlternativeGallery();
         //   return;
         // }
@@ -385,10 +373,7 @@ const ProfileScreen = ({ navigation }) => {
 
       if (response.assets && response.assets.length > 0) {
         const asset = response.assets[0];
-        console.log('Gallery asset:', asset);
-
         if (asset.uri) {
-          console.log('Processing image URI:', asset.uri);
           await uploadProfilePicture(asset.uri);
         } else {
           console.error('No URI in gallery response');
@@ -405,7 +390,6 @@ const ProfileScreen = ({ navigation }) => {
 
       // If it's the intent error, try alternative method
       // if (error.message?.includes('No Activity found to handle Intent')) {
-      //   console.log('Trying alternative gallery method...');
       //   await tryAlternativeGallery();
       //   return;
       // }
@@ -423,63 +407,56 @@ const ProfileScreen = ({ navigation }) => {
     }
   };
 
-  const tryAlternativeGallery = async () => {
-    try {
-      console.log('Trying alternative gallery method...');
+  // const tryAlternativeGallery = async () => {
+  //   try {
+  //     const alternativeOptions = {
+  //       mediaType: 'photo',
+  //       quality: 0.7,
+  //       includeBase64: false,
+  //       selectionLimit: 1,
+  //       maxWidth: 600,
+  //       maxHeight: 600,
+  //       presentationStyle: 'pageSheet',
+  //       includeExtra: false,
+  //       storageOptions: {
+  //         skipBackup: true,
+  //         path: 'images',
+  //       },
+  //     };
 
-      const alternativeOptions = {
-        mediaType: 'photo',
-        quality: 0.7,
-        includeBase64: false,
-        selectionLimit: 1,
-        maxWidth: 600,
-        maxHeight: 600,
-        presentationStyle: 'pageSheet',
-        includeExtra: false,
-        storageOptions: {
-          skipBackup: true,
-          path: 'images',
-        },
-      };
+  //     const response = await launchImageLibrary(alternativeOptions);
 
-      const response = await launchImageLibrary(alternativeOptions);
-      console.log('Alternative gallery response:', response);
+  //     if (response.didCancel) {
+  //       return;
+  //     }
 
-      if (response.didCancel) {
-        console.log('User cancelled alternative gallery');
-        return;
-      }
+  //     if (response.errorCode) {
+  //       setErrorMessage('No gallery app found on your device. Please install a gallery app or use the camera instead.');
+  //       setShowErrorModal(true);
+  //       return;
+  //     }
 
-      if (response.errorCode) {
-        console.log('Alternative gallery error:', response.errorMessage);
-        setErrorMessage('No gallery app found on your device. Please install a gallery app or use the camera instead.');
-        setShowErrorModal(true);
-        return;
-      }
+  //     if (response.assets && response.assets.length > 0) {
+  //       const asset = response.assets[0];
 
-      if (response.assets && response.assets.length > 0) {
-        const asset = response.assets[0];
-        console.log('Alternative gallery asset:', asset);
-
-        if (asset.uri) {
-          console.log('Processing alternative image URI:', asset.uri);
-          await uploadProfilePicture(asset.uri);
-        } else {
-          console.error('No URI in alternative gallery response');
-          setErrorMessage('Failed to select image. Please try again.');
-          setShowErrorModal(true);
-        }
-      } else {
-        console.error('No assets in alternative gallery response');
-        setErrorMessage('No image selected. Please try again.');
-        setShowErrorModal(true);
-      }
-    } catch (error) {
-      console.error('Alternative gallery error:', error);
-      setErrorMessage('No gallery app found on your device. Please install a gallery app or use the camera instead.');
-      setShowErrorModal(true);
-    }
-  };
+  //       if (asset.uri) {
+  //         await uploadProfilePicture(asset.uri);
+  //       } else {
+  //         console.error('No URI in alternative gallery response');
+  //         setErrorMessage('Failed to select image. Please try again.');
+  //         setShowErrorModal(true);
+  //       }
+  //     } else {
+  //       console.error('No assets in alternative gallery response');
+  //       setErrorMessage('No image selected. Please try again.');
+  //       setShowErrorModal(true);
+  //     }
+  //   } catch (error) {
+  //     console.error('Alternative gallery error:', error);
+  //     setErrorMessage('No gallery app found on your device. Please install a gallery app or use the camera instead.');
+  //     setShowErrorModal(true);
+  //   }
+  // };
 
   const ProfileHeader = () => (
     <View style={styles.profileHeader}>

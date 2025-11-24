@@ -108,13 +108,10 @@ const AddVegetableScreen = ({ navigation }) => {
   const requestStoragePermission = async () => {
     if (Platform.OS === 'android') {
       try {
-        console.log('Requesting storage permission...');
-
         // For Android 13+ (API level 33+), no permission needed for photo picker
         const androidVersion = Platform.Version;
 
         if (androidVersion >= 33) {
-          console.log('Android 13+: No storage permission required for photo picker');
           return true; // No permission needed for Android 13+
         }
 
@@ -129,7 +126,6 @@ const AddVegetableScreen = ({ navigation }) => {
             buttonPositive: 'OK',
           },
         );
-        console.log('Storage permission result:', granted);
         return granted === PermissionsAndroid.RESULTS.GRANTED;
       } catch (err) {
         console.error('Storage permission error:', err);
@@ -149,12 +145,16 @@ const AddVegetableScreen = ({ navigation }) => {
 
   const handleCameraOption = () => {
     setShowPhotoModal(false);
-    openCamera();
+    setTimeout(() => {
+      openCamera();
+    }, Platform.OS === 'ios' ? 300 : 100);
   };
 
   const handleGalleryOption = () => {
     setShowPhotoModal(false);
-    openImageLibrary();
+    setTimeout(() => {
+      openImageLibrary();
+    }, Platform.OS === 'ios' ? 300 : 100);
   };
 
   const openCamera = async () => {
@@ -164,7 +164,13 @@ const AddVegetableScreen = ({ navigation }) => {
       return;
     }
 
-    const options = {
+    const options = Platform.OS === 'ios' ? {
+      mediaType: 'photo',
+      quality: 0.8,
+      maxWidth: 1000,
+      maxHeight: 1000,
+      presentationStyle: 'pageSheet',
+    } : {
       mediaType: 'photo',
       quality: 0.8,
       maxWidth: 1000,
@@ -182,8 +188,6 @@ const AddVegetableScreen = ({ navigation }) => {
   };
 
   const openImageLibrary = async () => {
-    console.log('Opening gallery...');
-
     try {
       // Check permissions first - only for Android versions below 13
       if (Platform.OS === 'android') {
@@ -200,33 +204,34 @@ const AddVegetableScreen = ({ navigation }) => {
         // Android 13+ doesn't need permission for photo picker
       }
 
-      // Try with basic options first
-      const options = {
+      const options = Platform.OS === 'ios' ? {
         mediaType: 'photo',
         quality: 0.8,
         includeBase64: false,
-        selectionLimit: 5 - selectedImages.length, // Allow up to 5 images total
+        selectionLimit: 5 - selectedImages.length,
+        maxWidth: 1000,
+        maxHeight: 1000,
+        presentationStyle: 'pageSheet',
+      } : {
+        mediaType: 'photo',
+        quality: 0.8,
+        includeBase64: false,
+        selectionLimit: 5 - selectedImages.length,
         maxWidth: 1000,
         maxHeight: 1000,
         presentationStyle: 'fullScreen',
         includeExtra: false,
       };
 
-      console.log('Launching gallery with options:', options);
       const response = await launchImageLibrary(options);
-      console.log('Gallery response:', response);
 
       if (response.didCancel) {
-        console.log('User cancelled gallery');
         return;
       }
 
-      if (response.errorCode) {
-        console.log('Gallery error:', response.errorMessage);
-        
+      if (response.errorCode) {        
         // If it's the intent error, try with different options
         if (response.errorMessage?.includes('No Activity found to handle Intent')) {
-          console.log('Trying alternative gallery options...');
           await tryAlternativeGallery();
           return;
         }
@@ -254,7 +259,6 @@ const AddVegetableScreen = ({ navigation }) => {
       
       // If it's the intent error, try alternative method
       if (error.message?.includes('No Activity found to handle Intent')) {
-        console.log('Trying alternative gallery method...');
         await tryAlternativeGallery();
         return;
       }
@@ -272,9 +276,7 @@ const AddVegetableScreen = ({ navigation }) => {
   };
 
   const tryAlternativeGallery = async () => {
-    try {
-      console.log('Trying alternative gallery method...');
-      
+    try {      
       const alternativeOptions = {
         mediaType: 'photo',
         quality: 0.7,
@@ -291,15 +293,12 @@ const AddVegetableScreen = ({ navigation }) => {
       };
 
       const response = await launchImageLibrary(alternativeOptions);
-      console.log('Alternative gallery response:', response);
 
       if (response.didCancel) {
-        console.log('User cancelled alternative gallery');
         return;
       }
 
       if (response.errorCode) {
-        console.log('Alternative gallery error:', response.errorMessage);
         Alert.alert('Gallery Error', 'No gallery app found on your device. Please install a gallery app or use the camera instead.');
         return;
       }
@@ -409,10 +408,6 @@ const AddVegetableScreen = ({ navigation }) => {
         name: image.fileName || `vegetable_image_${index}.jpg`,
       });
     });
-    
-    // Debug: Log FormData structure
-    console.log('FormData _parts after adding images:', submitData._parts);
-    console.log('Number of images added:', selectedImages.length);
 
     dispatch(addVegetable(submitData));
   };
