@@ -8,7 +8,6 @@ import {
   ScrollView,
   TouchableOpacity,
   Linking,
-  Image,
   Alert,
   Platform,
 } from 'react-native';
@@ -19,7 +18,7 @@ import { SkeletonLoader } from '../../../components';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { p } from '../../../utils/Responsive';
 import { fontSizes } from '../../../utils/fonts';
-import { 
+import {
   fetchAssignedDeliveryDetails,
   clearDeliveryError
 } from '../../../redux/slices/deliverySlice';
@@ -33,17 +32,17 @@ import OTPModal from '../../../components/OTPModal';
 const AssignedDeliveryDetailsScreen = ({ navigation, route }) => {
   const dispatch = useDispatch();
   const { assignedDeliveryDetails, loadingAssignedDetails, error } = useSelector(state => state.delivery);
-  const { 
-    loading: updateOrderStatusLoading, 
-    error: updateOrderStatusError, 
-    success: updateOrderStatusSuccess, 
+  const {
+    loading: updateOrderStatusLoading,
+    error: updateOrderStatusError,
+    success: updateOrderStatusSuccess,
     message: updateOrderStatusMessage,
     loading: updatePaymentStatusLoading,
     error: updatePaymentStatusError,
     success: updatePaymentStatusSuccess,
     message: updatePaymentStatusMessage
   } = useSelector(state => state.todaysTask);
-  const { 
+  const {
     generateLoading: generateOTPLoading,
     verifyLoading: verifyOTPLoading,
     statusLoading: otpStatusLoading,
@@ -62,7 +61,7 @@ const AssignedDeliveryDetailsScreen = ({ navigation, route }) => {
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showOTPModal, setShowOTPModal] = useState(false);
-  
+
   // Local state to track current order and payment status for immediate UI updates
   const [currentDeliveryStatus, setCurrentDeliveryStatus] = useState(null);
   const [currentPaymentStatus, setCurrentPaymentStatus] = useState(null);
@@ -72,12 +71,6 @@ const AssignedDeliveryDetailsScreen = ({ navigation, route }) => {
       // Clear any lingering success state when screen comes into focus
       dispatch(clearTodaysTaskSuccess());
       dispatch(clearOTPSuccess());
-
-      //     if (orderId) {
-      //       dispatch(fetchAssignedDeliveryDetails(orderId));
-      //     }
-      //   }, [orderId, dispatch])
-      // );
       if (actualOrderId) {
         dispatch(fetchAssignedDeliveryDetails(actualOrderId));
       }
@@ -87,23 +80,15 @@ const AssignedDeliveryDetailsScreen = ({ navigation, route }) => {
   // Debug the API response structure and initialize local state
   useEffect(() => {
     if (assignedDeliveryDetails) {
-      console.log('Assigned delivery details received:', JSON.stringify(assignedDeliveryDetails, null, 2));
-      console.log('QR URL location:', assignedDeliveryDetails?.order?.upi_qr_url);
-      
       // Initialize local state with current values
       setCurrentDeliveryStatus(assignedDeliveryDetails.order?.delivery_status);
       setCurrentPaymentStatus(assignedDeliveryDetails.order?.payment_status);
-      
+
       // Check for existing OTP if order is out for delivery and payment is paid
       const deliveryStatus = assignedDeliveryDetails.order?.delivery_status;
       const paymentStatus = assignedDeliveryDetails.order?.payment_status;
-      
+
       if (deliveryStatus === 'out_for_delivery' && paymentStatus === 'paid') {
-        console.log('🔍 Checking for existing OTP:', {
-          orderId: assignedDeliveryDetails.order.id,
-          deliveryStatus,
-          paymentStatus
-        });
         dispatch(getOTPStatus(assignedDeliveryDetails.order.id));
       }
     }
@@ -119,7 +104,7 @@ const AssignedDeliveryDetailsScreen = ({ navigation, route }) => {
   useEffect(() => {
     if (updateOrderStatusSuccess && updateOrderStatusMessage) {
       setShowSuccessModal(true);
-      
+
       // Update local state immediately based on the action performed
       if (updateOrderStatusMessage.includes('out_for_delivery') || updateOrderStatusMessage.includes('started')) {
         setCurrentDeliveryStatus('out_for_delivery');
@@ -132,7 +117,7 @@ const AssignedDeliveryDetailsScreen = ({ navigation, route }) => {
   useEffect(() => {
     if (updateOrderStatusError || updatePaymentStatusError) {
       setShowErrorModal(true);
-      
+
       // Revert local state changes if API call failed
       if (updateOrderStatusError) {
         // Revert to original state from Redux
@@ -152,7 +137,7 @@ const AssignedDeliveryDetailsScreen = ({ navigation, route }) => {
   useEffect(() => {
     if (updatePaymentStatusSuccess && updatePaymentStatusMessage) {
       setShowSuccessModal(true);
-      
+
       // Update local payment status immediately
       if (updatePaymentStatusMessage.includes('paid') || updatePaymentStatusMessage.includes('payment')) {
         setCurrentPaymentStatus('paid');
@@ -163,7 +148,6 @@ const AssignedDeliveryDetailsScreen = ({ navigation, route }) => {
   // OTP related useEffect hooks
   useEffect(() => {
     if (otpError && !otpError.includes('OTP has already been sent and is still valid')) {
-      console.log('🚨 OTP Error Detected (Non-Exists):', otpError);
       setShowErrorModal(true);
       dispatch(clearOTPError());
     }
@@ -171,17 +155,10 @@ const AssignedDeliveryDetailsScreen = ({ navigation, route }) => {
 
   useEffect(() => {
     if (otpSuccess && otpMessage) {
-      console.log('🎉 OTP Success Effect Triggered:', {
-        message: otpMessage,
-        otpGenerated: otpGenerated,
-        otpVerified: otpVerified
-      });
-      
       if (otpMessage.includes('generated')) {
-        console.log('📱 OTP Generated - Opening Modal');
         setShowSuccessModal(true);
         setShowOTPModal(true);
-        
+
         // Add OTP notification to the notification list
         const otpNotification = {
           id: Date.now(),
@@ -192,12 +169,9 @@ const AssignedDeliveryDetailsScreen = ({ navigation, route }) => {
           created_at: new Date().toISOString(),
           order_id: assignedDeliveryDetails?.order?.id
         };
-        
-        console.log('📱 Adding OTP Notification:', otpNotification);
         dispatch(addNotification(otpNotification));
-        
+
       } else if (otpMessage.includes('verified')) {
-        console.log('✅ OTP Verified - Closing Modal and Enabling Mark Complete');
         setShowOTPModal(false);
         setShowSuccessModal(true);
         // After OTP verification, allow marking complete
@@ -209,11 +183,10 @@ const AssignedDeliveryDetailsScreen = ({ navigation, route }) => {
   // Handle OTP already exists scenario
   useEffect(() => {
     if (otpError && otpError.includes('OTP has already been sent and is still valid')) {
-      console.log('🔄 OTP Already Exists - Opening Verification Modal');
       setShowOTPModal(true);
       dispatch(setOTPGenerated(true)); // Mark as generated so button doesn't show
       dispatch(clearOTPError()); // Clear the error
-      
+
       // Add notification for existing OTP
       const existingOTPNotification = {
         id: Date.now(),
@@ -224,44 +197,23 @@ const AssignedDeliveryDetailsScreen = ({ navigation, route }) => {
         created_at: new Date().toISOString(),
         order_id: assignedDeliveryDetails?.order?.id
       };
-      
-      console.log('📱 Adding Existing OTP Notification:', existingOTPNotification);
       dispatch(addNotification(existingOTPNotification));
     }
   }, [otpError, assignedDeliveryDetails, dispatch]);
 
   // Handle OTP status received - automatically show modal if OTP exists and is not verified
   useEffect(() => {
-    console.log('🔍 OTP Status Effect Triggered:', {
-      otpStatus: otpStatus,
-      otpGenerated: otpGenerated,
-      otpVerified: otpVerified
-    });
-    
     if (otpStatus && otpStatus.exists && !otpStatus.verified) {
-      console.log('📱 Existing OTP Found - Opening Verification Modal:', {
-        exists: otpStatus.exists,
-        verified: otpStatus.verified,
-        created_at: otpStatus.created_at,
-        expires_at: otpStatus.expires_at
-      });
-      
+
       // Check if OTP is not expired
       const now = new Date();
       const expiresAt = new Date(otpStatus.expires_at);
       const isExpired = now > expiresAt;
-      
-      console.log('⏰ OTP Expiration Check:', {
-        now: now.toISOString(),
-        expiresAt: expiresAt.toISOString(),
-        isExpired: isExpired
-      });
-      
+
       if (!isExpired) {
-        console.log('✅ OTP is valid - Opening modal and marking as generated');
         setShowOTPModal(true);
         dispatch(setOTPGenerated(true)); // Mark as generated so button doesn't show
-        
+
         // Add notification for existing valid OTP
         const existingValidOTPNotification = {
           id: Date.now(),
@@ -272,16 +224,12 @@ const AssignedDeliveryDetailsScreen = ({ navigation, route }) => {
           created_at: new Date().toISOString(),
           order_id: assignedDeliveryDetails?.order?.id
         };
-        
-        console.log('📱 Adding Existing Valid OTP Notification:', existingValidOTPNotification);
         dispatch(addNotification(existingValidOTPNotification));
       } else {
         console.log('⏰ OTP is expired, will show Generate OTP button');
       }
     } else if (otpStatus) {
       console.log('📊 OTP Status Details:', {
-        exists: otpStatus.exists,
-        verified: otpStatus.verified,
         reason: !otpStatus.exists ? 'OTP does not exist' : 'OTP already verified'
       });
     }
@@ -302,11 +250,11 @@ const AssignedDeliveryDetailsScreen = ({ navigation, route }) => {
     }
 
     let mapsUrl;
-    
+
     // If we have coordinates, use them for more accurate location
     if (coordinates && coordinates.latitude && coordinates.longitude) {
       const { latitude, longitude } = coordinates;
-      
+
       if (Platform.OS === 'ios') {
         // For iOS, use Apple Maps with coordinates
         mapsUrl = `http://maps.apple.com/?ll=${latitude},${longitude}&q=${encodeURIComponent(address || 'Location')}`;
@@ -317,7 +265,7 @@ const AssignedDeliveryDetailsScreen = ({ navigation, route }) => {
     } else {
       // Fallback to address-based search with better formatting
       const encodedAddress = encodeURIComponent(address);
-      
+
       if (Platform.OS === 'ios') {
         // For iOS, use Apple Maps with address
         mapsUrl = `http://maps.apple.com/?q=${encodedAddress}`;
@@ -330,7 +278,7 @@ const AssignedDeliveryDetailsScreen = ({ navigation, route }) => {
     // Try to open the maps URL
     Linking.openURL(mapsUrl).catch(err => {
       console.error('Failed to open maps:', err);
-      
+
       // Enhanced fallback with coordinates if available
       let fallbackUrl;
       if (coordinates && coordinates.latitude && coordinates.longitude) {
@@ -338,7 +286,7 @@ const AssignedDeliveryDetailsScreen = ({ navigation, route }) => {
       } else {
         fallbackUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
       }
-      
+
       Linking.openURL(fallbackUrl).catch(fallbackErr => {
         console.error('Failed to open fallback maps:', fallbackErr);
         Alert.alert('Error', 'Unable to open maps. Please check your device settings.');
@@ -380,71 +328,31 @@ const AssignedDeliveryDetailsScreen = ({ navigation, route }) => {
 
   const handleGenerateOTP = () => {
     if (assignedDeliveryDetails?.order?.id) {
-      console.log('🎯 Generate OTP Button Clicked:', {
-        orderId: assignedDeliveryDetails.order.id,
-        orderIdType: typeof assignedDeliveryDetails.order.id,
-        orderStatus: currentDeliveryStatus || assignedDeliveryDetails.order.delivery_status,
-        paymentStatus: currentPaymentStatus || assignedDeliveryDetails.order.payment_status,
-        fullOrderData: assignedDeliveryDetails.order
-      });
-      
       // Ensure orderId is a number
       const orderId = parseInt(assignedDeliveryDetails.order.id);
-      console.log('🔢 Parsed Order ID:', {
-        original: assignedDeliveryDetails.order.id,
-        parsed: orderId,
-        isValid: !isNaN(orderId)
-      });
-      
+
       dispatch(generateOTP({ orderId: orderId }));
     } else {
       console.log('❌ Cannot generate OTP - Missing order data:', {
-        assignedDeliveryDetails: assignedDeliveryDetails,
         orderExists: !!assignedDeliveryDetails?.order,
-        orderIdExists: !!assignedDeliveryDetails?.order?.id
       });
     }
   };
 
   const handleVerifyOTP = async (otp) => {
     if (assignedDeliveryDetails?.order?.id) {
-      console.log('🔍 Verify OTP Button Clicked:', {
-        orderId: assignedDeliveryDetails.order.id,
-        otp: otp,
-        otpLength: otp.length
-      });
-      
-      // Check OTP status before verification
-      console.log('🔍 Current OTP Status Before Verification:', {
-        otpStatus: otpStatus,
-        otpGenerated: otpGenerated,
-        otpVerified: otpVerified
-      });
-      
       try {
         await dispatch(verifyOTP({ orderId: assignedDeliveryDetails.order.id, otp })).unwrap();
       } catch (error) {
-        console.log('🚨 Verify OTP failed:', error);
-        
         // Check if it's a 422 error (validation error)
         if (error.message && error.message.includes('422')) {
           console.log('🚨 OTP Validation Error - Possible causes:');
-          console.log('   - OTP is incorrect');
-          console.log('   - OTP has expired');
-          console.log('   - OTP has already been used');
-          console.log('   - Order ID mismatch');
-          
+
           // Check if OTP has expired
           if (otpStatus && otpStatus.expires_at) {
             const now = new Date();
             const expiresAt = new Date(otpStatus.expires_at);
             const isExpired = now > expiresAt;
-            console.log('🕐 OTP Expiration Check:', {
-              now: now.toISOString(),
-              expiresAt: expiresAt.toISOString(),
-              isExpired: isExpired,
-              timeRemaining: isExpired ? 'EXPIRED' : `${Math.floor((expiresAt - now) / 1000 / 60)} minutes`
-            });
           }
         }
       }
@@ -492,13 +400,13 @@ const AssignedDeliveryDetailsScreen = ({ navigation, route }) => {
 
   const renderOrderInfo = () => {
     if (!assignedDeliveryDetails?.order) return null;
-    
+
     const { order } = assignedDeliveryDetails;
-    
+
     // Use local state for immediate UI updates, fallback to Redux state
     const deliveryStatus = currentDeliveryStatus || order.delivery_status;
     const paymentStatus = currentPaymentStatus || order.payment_status;
-    
+
     return (
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Order Information</Text>
@@ -535,7 +443,7 @@ const AssignedDeliveryDetailsScreen = ({ navigation, route }) => {
 
   const renderCustomerInfo = () => {
     if (!assignedDeliveryDetails?.order?.customer_name) return null;
-    
+
     return (
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Customer Information</Text>
@@ -548,11 +456,11 @@ const AssignedDeliveryDetailsScreen = ({ navigation, route }) => {
           <View style={styles.infoRow}>
             <Icon name="map-marker" size={p(16)} color="#019a34" />
             <Text style={styles.infoLabel}>Address:</Text>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.addressContainer}
               onPress={() => handleOpenAddressInMaps(
                 assignedDeliveryDetails.order.customer_address,
-                assignedDeliveryDetails.order.customer_coordinates || 
+                assignedDeliveryDetails.order.customer_coordinates ||
                 assignedDeliveryDetails.order.coordinates
               )}
               activeOpacity={0.7}
@@ -570,26 +478,26 @@ const AssignedDeliveryDetailsScreen = ({ navigation, route }) => {
 
   const renderUPIQR = () => {
     // Check for QR URL in multiple possible locations
-    const qrUrl = assignedDeliveryDetails?.order?.upi_qr_url || 
-                  assignedDeliveryDetails?.upi_qr_url ||
-                  assignedDeliveryDetails?.data?.order?.upi_qr_url;
-    
+    const qrUrl = assignedDeliveryDetails?.order?.upi_qr_url ||
+      assignedDeliveryDetails?.upi_qr_url ||
+      assignedDeliveryDetails?.data?.order?.upi_qr_url;
+
     if (!qrUrl) {
       return null;
     }
-    
+
     const handleOpenQRUrl = () => {
       Linking.openURL(qrUrl).catch(err => {
         console.error('Failed to open QR URL:', err);
         Alert.alert('Error', 'Failed to open payment link');
       });
     };
-    
+
     return (
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Payment QR Code</Text>
         <View style={styles.infoCard}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.qrButton}
             onPress={handleOpenQRUrl}
             activeOpacity={0.7}
@@ -607,7 +515,7 @@ const AssignedDeliveryDetailsScreen = ({ navigation, route }) => {
 
   const renderFarmerAddresses = () => {
     if (!assignedDeliveryDetails?.order?.farmer_addresses) return null;
-    
+
     return (
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Farmer Addresses</Text>
@@ -624,7 +532,7 @@ const AssignedDeliveryDetailsScreen = ({ navigation, route }) => {
                 <Text style={styles.itemCountText}>{farmer.itemCount} item(s)</Text>
               </View>
             </View>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.farmerAddress}
               onPress={() => handleOpenAddressInMaps(
                 farmer.address,
@@ -660,22 +568,13 @@ const AssignedDeliveryDetailsScreen = ({ navigation, route }) => {
 
   const renderActionButtons = () => {
     if (!assignedDeliveryDetails?.order) return null;
-    
+
     const { order } = assignedDeliveryDetails;
-    
+
     // Use local state for immediate UI updates, fallback to Redux state
     const deliveryStatus = currentDeliveryStatus || order.delivery_status;
     const paymentStatus = currentPaymentStatus || order.payment_status;
-    
-    console.log('🎯 Action Buttons Render Check:', {
-      deliveryStatus,
-      paymentStatus,
-      otpGenerated,
-      otpVerified,
-      showGenerateOTP: deliveryStatus === 'out_for_delivery' && paymentStatus === 'paid' && !otpGenerated,
-      showMarkComplete: deliveryStatus === 'out_for_delivery' && paymentStatus === 'paid' && otpVerified
-    });
-    
+
     return (
       <View style={styles.section}>
         <View style={styles.actionButtonsContainer}>
@@ -696,7 +595,7 @@ const AssignedDeliveryDetailsScreen = ({ navigation, route }) => {
               </Text>
             </TouchableOpacity>
           )}
-          
+
           {/* Step 2: ONLY Mark Payment Paid button when out for delivery and payment is pending */}
           {deliveryStatus === 'out_for_delivery' && paymentStatus === 'pending' && (
             <TouchableOpacity

@@ -47,15 +47,7 @@ const LoadingComponent = () => (
 const ConditionalSafeArea = ({ children }) => {
   const insets = useSafeAreaInsets();
   
-  // Debug: Log the inset values to see what we're getting
-  console.log('Safe area insets:', { 
-    platform: Platform.OS, 
-    bottom: insets.bottom,
-    shouldApply: Platform.OS === 'android' && insets.bottom > 30
-  });
-  
   // Only apply bottom safe area on Android devices with system navigation buttons
-  // Bottom inset > 30 indicates system navigation buttons (not just gesture bar)
   const shouldApplySafeArea = Platform.OS === 'android' && insets.bottom > 47; // Try 40px threshold
   
   if (shouldApplySafeArea) {

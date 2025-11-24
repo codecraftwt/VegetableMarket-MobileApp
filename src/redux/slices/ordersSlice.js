@@ -5,9 +5,7 @@ import api from '../../api/axiosInstance';
 export const placeOrder = createAsyncThunk(
   'orders/placeOrder',
   async (orderData, { rejectWithValue }) => {
-    try {
-      console.log('API call: /place-order with data:', orderData);
-      
+    try {      
       // Validate order data before sending
       if (!orderData.address_id) {
         throw new Error('Address ID is required');
@@ -17,7 +15,6 @@ export const placeOrder = createAsyncThunk(
       }
       
       const response = await api.post('/place-order', orderData);
-      console.log('API response:', response.data);
       return response.data;
     } catch (error) {
       console.error('Failed to place order:', error);
@@ -44,9 +41,7 @@ export const verifyRazorpayPayment = createAsyncThunk(
   'orders/verifyRazorpayPayment',
   async (paymentData, { rejectWithValue }) => {
     try {
-      console.log('Verifying Razorpay payment with data:', paymentData);
       const response = await api.post('/verify-razorpay-payment', paymentData);
-      console.log('Payment verification response:', response.data);
       return response.data;
     } catch (error) {
       console.warn('Failed to verify payment:', error);
@@ -125,9 +120,7 @@ export const downloadOrderInvoice = createAsyncThunk(
   'orders/downloadOrderInvoice',
   async (orderId, { rejectWithValue }) => {
     try {
-      console.log('Downloading invoice for order ID:', orderId);
       const response = await api.get(`/order/${orderId}/invoice`);
-      console.log('Invoice download response:', response.data);
       return response.data;
     } catch (error) {
       console.error('Failed to download invoice:', error);
@@ -137,7 +130,6 @@ export const downloadOrderInvoice = createAsyncThunk(
 );
 
 const initialState = {
-  // New order placement and Razorpay data
   orderData: null,
   razorpayOrderId: null,
   razorpayKey: null,
@@ -264,16 +256,7 @@ const ordersSlice = createSlice({
         }
         
         state.success = true;
-        state.error = null;
-        
-        console.log('Order placed successfully, Razorpay data stored:', {
-          razorpayOrderId: state.razorpayOrderId,
-          razorpayKey: state.razorpayKey ? 'Present' : 'Missing',
-          razorpayAmount: state.razorpayAmount,
-          razorpayCurrency: state.razorpayCurrency,
-          discountAmount: state.discountAmount,
-          finalAmount: state.finalAmount
-        });
+        state.error = null;       
       })
       .addCase(placeOrder.rejected, (state, action) => {
         state.placeOrderLoading = false;
@@ -296,9 +279,7 @@ const ordersSlice = createSlice({
         if (action.payload && action.payload.order) {
           state.orderData = action.payload.order;
         }
-        
-        console.log('Payment verification successful, order data updated:', action.payload);
-      })
+        })
       .addCase(verifyRazorpayPayment.rejected, (state, action) => {
         state.paymentVerificationLoading = false;
         state.paymentVerificationError = action.payload;
@@ -411,7 +392,6 @@ const ordersSlice = createSlice({
       .addCase(downloadOrderInvoice.fulfilled, (state, action) => {
         state.downloadInvoiceLoading = false;
         state.downloadInvoiceError = null;
-        console.log('Invoice downloaded successfully:', action.payload);
       })
       .addCase(downloadOrderInvoice.rejected, (state, action) => {
         state.downloadInvoiceLoading = false;

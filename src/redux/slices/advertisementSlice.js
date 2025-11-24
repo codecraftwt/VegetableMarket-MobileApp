@@ -6,9 +6,7 @@ export const fetchAdvertisements = createAsyncThunk(
   'advertisement/fetchAdvertisements',
   async (_, { rejectWithValue }) => {
     try {
-      console.log('Fetching advertisements...');
       const response = await api.get('/farmer/advertisements/all');
-      console.log('Advertisements response:', response.data);
       return response.data;
     } catch (error) {
       console.error('Fetch advertisements error:', error);
@@ -54,9 +52,7 @@ export const fetchAdvertisementById = createAsyncThunk(
   'advertisement/fetchAdvertisementById',
   async (advertisementId, { rejectWithValue }) => {
     try {
-      console.log('Fetching advertisement by ID:', advertisementId);
       const response = await api.get(`/farmer/advertisements/${advertisementId}`);
-      console.log('Advertisement by ID response:', response.data);
       return response.data;
     } catch (error) {
       console.error('Fetch advertisement by ID error:', error);
@@ -102,9 +98,7 @@ export const deleteAdvertisement = createAsyncThunk(
   'advertisement/deleteAdvertisement',
   async (advertisementId, { rejectWithValue }) => {
     try {
-      console.log('Deleting advertisement:', advertisementId);
       const response = await api.delete(`/farmer/advertisements/${advertisementId}`);
-      console.log('Delete advertisement response:', response.data);
       return { advertisementId, ...response.data };
     } catch (error) {
       console.error('Delete advertisement error:', error);

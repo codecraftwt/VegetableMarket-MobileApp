@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { View, Text, StyleSheet, Animated } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchCart } from '../redux/slices/cartSlice';
 import ProfileScreen from '../screens/customer/Profile/ProfileScreen';

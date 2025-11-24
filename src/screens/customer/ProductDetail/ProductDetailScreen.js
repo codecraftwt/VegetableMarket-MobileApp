@@ -25,6 +25,11 @@ import SuccessModal from '../../../components/SuccessModal';
 import ErrorModal from '../../../components/ErrorModal';
 
 const ProductDetailScreen = ({ navigation, route }) => {
+  const dispatch = useDispatch();
+  const { vegetables, loading: vegetablesLoading } = useSelector(state => state.vegetables);
+  const { addLoading } = useSelector(state => state.cart);
+  const { items: wishlistItems, loading: wishlistLoading } = useSelector(state => state.wishlist);
+
   const [quantity, setQuantity] = useState(1);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
@@ -32,10 +37,6 @@ const ProductDetailScreen = ({ navigation, route }) => {
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [wishlistMessage, setWishlistMessage] = useState('');
-  const dispatch = useDispatch();
-  const { vegetables, loading: vegetablesLoading } = useSelector(state => state.vegetables);
-  const { addLoading } = useSelector(state => state.cart);
-  const { items: wishlistItems, loading: wishlistLoading } = useSelector(state => state.wishlist);
   
   // Get product data from navigation params or use default
   const product = route.params?.product || {

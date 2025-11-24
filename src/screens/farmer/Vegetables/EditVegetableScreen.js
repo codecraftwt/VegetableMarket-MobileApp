@@ -10,7 +10,6 @@ import {
   TextInput,
   Image,
   Alert,
-  PermissionsAndroid,
   Platform,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -20,6 +19,7 @@ import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import { p } from '../../../utils/Responsive';
 import { fontSizes } from '../../../utils/fonts';
 import { useDispatch, useSelector } from 'react-redux';
+import { requestStoragePermissionAndroid } from '../../../utils/permissions';
 import SuccessModal from '../../../components/SuccessModal';
 import ErrorModal from '../../../components/ErrorModal';
 import { CustomModal, SkeletonLoader } from '../../../components';
@@ -28,13 +28,11 @@ import {
   fetchVegetableById,
   clearFarmerVegetablesError, 
   clearFarmerVegetablesSuccess,
-  clearSelectedVegetable
 } from '../../../redux/slices/farmerVegetablesSlice';
 import { fetchVegetableCategories } from '../../../redux/slices/vegetablesSlice';
 
 const EditVegetableScreen = ({ navigation, route }) => {
   const dispatch = useDispatch();
-  const { user } = useSelector(state => state.auth);
   const { loading, error, success, message, selectedVegetable } = useSelector(state => state.farmerVegetables);
   const { categories, categoriesLoading, categoriesError } = useSelector(state => state.vegetables);
   
@@ -89,7 +87,6 @@ const EditVegetableScreen = ({ navigation, route }) => {
         price: selectedVegetable.price_per_kg || '',
         unit_type: selectedVegetable.unit_type || 'kg',
         stock: selectedVegetable.stock_kg?.toString() || '',
-        // availablestock: selectedVegetable.quantity_available || '',
         availablestock: selectedVegetable.quantity_available?.toString() || '',
         is_organic: selectedVegetable.is_organic?.toString() || '0',
         harvest_date: selectedVegetable.harvest_date || '',
@@ -178,35 +175,6 @@ const EditVegetableScreen = ({ navigation, route }) => {
     });
   };
 
-  const requestStoragePermission = async () => {
-    if (Platform.OS === 'android') {
-      try {
-        // For Android 13+ (API level 33+), no permission needed for photo picker
-        const androidVersion = Platform.Version;
-
-        if (androidVersion >= 33) {
-          return true; // No permission needed for Android 13+
-        }
-
-        // For older Android versions, use READ_EXTERNAL_STORAGE
-        const granted = await PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
-          {
-            title: 'Storage Permission',
-            message: 'This app needs access to your photos to select images.',
-            buttonNeutral: 'Ask Me Later',
-            buttonNegative: 'Cancel',
-            buttonPositive: 'OK',
-          },
-        );
-        return granted === PermissionsAndroid.RESULTS.GRANTED;
-      } catch (err) {
-        console.error('Storage permission error:', err);
-        return false;
-      }
-    }
-    return true;
-  };
 
   const openImageLibrary = async () => {
     try {
@@ -215,7 +183,7 @@ const EditVegetableScreen = ({ navigation, route }) => {
         const androidVersion = Platform.Version;
 
         if (androidVersion < 33) {
-          const hasStoragePermission = await requestStoragePermission();
+          const hasStoragePermission = await requestStoragePermissionAndroid();
           if (!hasStoragePermission) {
             Alert.alert('Permission Denied', 'Photo access permission is required to select images from your gallery.');
             return;

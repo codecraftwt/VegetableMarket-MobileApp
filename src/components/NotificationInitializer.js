@@ -13,7 +13,6 @@ const NotificationInitializer = ({ children }) => {
       try {
         if (!isInitialized) {
           await dispatch(initializeFCM()).unwrap();
-          console.log('Notifications initialized successfully');
         }
       } catch (error) {
         console.error('Failed to initialize notifications:', error);
@@ -26,7 +25,6 @@ const NotificationInitializer = ({ children }) => {
   // Set up message handlers when FCM is initialized
   useEffect(() => {
     if (isInitialized && fcmToken) {
-      // Set up background message handler
       const unsubscribe = firebaseMessagingService.setupMessageHandlers();
       
       return () => {

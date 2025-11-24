@@ -8,7 +8,6 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
-  Dimensions,
   Alert,
 } from 'react-native';
 import { CommonHeader } from '../../../components';
@@ -22,12 +21,9 @@ import ErrorModal from '../../../components/ErrorModal';
 import ConfirmationModal from '../../../components/ConfirmationModal';
 import { fetchVegetableById, fetchFarmerVegetables, deleteVegetable, clearFarmerVegetablesError, clearFarmerVegetablesSuccess, clearSelectedVegetable } from '../../../redux/slices/farmerVegetablesSlice';
 
-const { width } = Dimensions.get('window');
-
 const VegetableDetailsScreen = ({ navigation, route }) => {
   const dispatch = useDispatch();
-  const { user } = useSelector(state => state.auth);
-  const { selectedVegetable, vegetables, loadingVegetable, error, success, message } = useSelector(state => state.farmerVegetables);
+  const { selectedVegetable, loadingVegetable, error, success, message } = useSelector(state => state.farmerVegetables);
   
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -92,21 +88,12 @@ const VegetableDetailsScreen = ({ navigation, route }) => {
     navigation.navigate('Notification');
   };
 
-  const handleEditVegetable = () => {
-    navigation.navigate('EditVegetable', { vegetableId });
-  };
-
-  const handleDeleteVegetable = () => {
-    // TODO: Implement delete functionality
-    Alert.alert('Delete Vegetable', 'Delete Vegetable functionality will be implemented soon');
-  };
-
   const handleThreeDotsPress = (event) => {
     event.stopPropagation();
     
     // Get the position of the touch event
     const { pageX, pageY } = event.nativeEvent;
-    setModalPosition({ x: pageX - 100, y: pageY + 10 }); // Adjust position to show below the button
+    setModalPosition({ x: pageX - 100, y: pageY + 10 });
     setShowActionModal(true);
   };
 

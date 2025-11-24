@@ -8,7 +8,6 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
-  Alert,
   Modal,
 } from 'react-native';
 import CommonHeader from '../../../components/CommonHeader';
@@ -16,7 +15,6 @@ import Icon from 'react-native-vector-icons/FontAwesome';
 import { p } from '../../../utils/Responsive';
 import { fontSizes } from '../../../utils/fonts';
 import { useDispatch, useSelector } from 'react-redux';
-// import SuccessModal from '../../../components/SuccessModal'; // Removed to prevent double modals
 import ErrorModal from '../../../components/ErrorModal';
 import ConfirmationModal from '../../../components/ConfirmationModal';
 import { fetchFarms, deleteFarm, clearFarmsError, clearFarmsSuccess } from '../../../redux/slices/farmsSlice';
@@ -24,10 +22,8 @@ import { SkeletonLoader } from '../../../components';
 
 const MyFarmsScreen = ({ navigation }) => {
   const dispatch = useDispatch();
-  const { user } = useSelector(state => state.auth);
-  const { farms, loading, error, success, message } = useSelector(state => state.farms);
+  const { farms, loading, error} = useSelector(state => state.farms);
   
-  // const [showSuccessModal, setShowSuccessModal] = useState(false); // Removed to prevent double modals
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [farmToDelete, setFarmToDelete] = useState(null);
@@ -51,14 +47,6 @@ const MyFarmsScreen = ({ navigation }) => {
 
     return unsubscribe;
   }, [navigation, dispatch]);
-
-  // Handle success and error states - removed success modal to prevent double modals
-  // useEffect(() => {
-  //   if (success && message) {
-  //     setShowSuccessModal(true);
-  //     dispatch(clearFarmsSuccess());
-  //   }
-  // }, [success, message, dispatch]);
 
   useEffect(() => {
     if (error) {
@@ -101,8 +89,8 @@ const MyFarmsScreen = ({ navigation }) => {
     // Get the position of the button to position the modal
     event.target.measure((x, y, width, height, pageX, pageY) => {
       setModalPosition({
-        x: pageX - 120, // Better alignment with button
-        y: pageY + height + 5, // Position below the button
+        x: pageX - 120,
+        y: pageY + height + 5, 
       });
     });
     

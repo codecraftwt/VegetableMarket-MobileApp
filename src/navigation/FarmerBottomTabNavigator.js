@@ -1,6 +1,5 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-
 import Icon from 'react-native-vector-icons/Ionicons';
 import FarmerProfileScreen from '../screens/farmer/Profile/FarmerProfileScreen';
 import FarmerDashboardScreen from '../screens/farmer/Dashboard/FarmerDashboardScreen';

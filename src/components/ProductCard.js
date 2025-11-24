@@ -14,7 +14,7 @@ import Icon1 from 'react-native-vector-icons/Feather';
 import { p } from '../utils/Responsive';
 import { fontSizes } from '../utils/fonts';
 import { useDispatch, useSelector } from 'react-redux';
-import { addToCart, addItemToCart } from '../redux/slices/cartSlice';
+import { addToCart } from '../redux/slices/cartSlice';
 import { toggleWishlistItem } from '../redux/slices/wishlistSlice';
 import SuccessModal from './SuccessModal';
 import ErrorModal from './ErrorModal';
@@ -24,13 +24,13 @@ const ProductCard = ({
   onPress,
   onAddToCart,
   showAddToCart = true,
-  showWishlist = true, // Add wishlist prop
-  showDeleteButton = false, // Add delete button prop
-  onDelete, // Add delete handler prop
-  isDeleteLoading = false, // Add delete loading state prop
-  size = 'medium', // 'small', 'medium', 'large'
-  navigation, // Add navigation prop for cart navigation
-  isHighlighted = false, // Add highlighting prop
+  showWishlist = true,
+  showDeleteButton = false, 
+  onDelete,
+  isDeleteLoading = false,
+  size = 'medium',
+  navigation,
+  isHighlighted = false,
 }) => {
   const dispatch = useDispatch();
   const wishlistState = useSelector(state => state.wishlist);
@@ -39,16 +39,8 @@ const ProductCard = ({
   const [successMessage, setSuccessMessage] = useState('');
   const [successTitle, setSuccessTitle] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
-  const [isAddingToCart, setIsAddingToCart] = useState(false); // Individual loading state
-  const [isTogglingWishlist, setIsTogglingWishlist] = useState(false); // Individual wishlist loading state
-
-  // Debug logging for modal state
-  console.log('ProductCard: Modal state:', { 
-    showSuccessModal, 
-    showErrorModal, 
-    successTitle, 
-    successMessage 
-  });
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const [isTogglingWishlist, setIsTogglingWishlist] = useState(false);
 
   // Helper function to get product image
   const getProductImage = () => {
@@ -79,12 +71,10 @@ const ProductCard = ({
   const isInWishlist = () => {
     // First check the itemStatus tracking (for real-time updates)
     if (wishlistState.itemStatus && wishlistState.itemStatus.hasOwnProperty(item.id)) {
-      console.log('ProductCard: Item status from itemStatus:', item.id, wishlistState.itemStatus[item.id]);
       return wishlistState.itemStatus[item.id];
     }
     // Fallback to checking the items array
     const inItems = wishlistState.items.some(wishlistItem => wishlistItem.id === item.id);
-    console.log('ProductCard: Item status from items array:', item.id, inItems);
     return inItems;
   };
 
@@ -97,24 +87,19 @@ const ProductCard = ({
   const handleWishlistToggle = async (e) => {
     e.stopPropagation();
     try {
-      console.log('ProductCard: Toggling wishlist for item:', item.name);
       setIsTogglingWishlist(true);
       const result = await dispatch(toggleWishlistItem(item.id)).unwrap();
       
-      console.log('ProductCard: Wishlist toggle result:', result);
       if (result.wishlisted) {
-        console.log('ProductCard: Item added to wishlist, showing success modal');
         setSuccessTitle('Wishlist Updated!');
         setSuccessMessage(`${item.name} added to wishlist!`);
         setShowSuccessModal(true);
       } else {
-        console.log('ProductCard: Item removed from wishlist, showing success modal');
         setSuccessTitle('Wishlist Updated!');
         setSuccessMessage(`${item.name} removed from wishlist!`);
         setShowSuccessModal(true);
       }
     } catch (error) {
-      console.log('ProductCard: Wishlist toggle error:', error);
       const errorMsg = extractErrorMessage(error);
       setErrorMessage(errorMsg);
       setShowErrorModal(true);
@@ -170,8 +155,6 @@ const ProductCard = ({
       } catch (error) {
         // Handle error if onAddToCart throws
         console.error('ProductCard: Add to cart error:', error);
-        console.error('ProductCard: Error type:', typeof error);
-        console.error('ProductCard: Error keys:', error ? Object.keys(error) : 'null');
 
         const errorMsg = extractErrorMessage(error);
 
@@ -182,12 +165,12 @@ const ProductCard = ({
           [{ text: 'OK', style: 'default' }]
         );
       } finally {
-        setIsAddingToCart(false); // Stop individual loading
+        setIsAddingToCart(false);
       }
     } else {
       // Default add to cart behavior
       try {
-        setIsAddingToCart(true); // Start individual loading
+        setIsAddingToCart(true);
         await dispatch(
           addToCart({
             vegetable_id: item.id,
@@ -202,8 +185,6 @@ const ProductCard = ({
       } catch (error) {
         // Show error alert
         console.error('ProductCard: Add to cart error:', error);
-        console.error('ProductCard: Error type:', typeof error);
-        console.error('ProductCard: Error keys:', error ? Object.keys(error) : 'null');
 
         const errorMsg = extractErrorMessage(error);
 
@@ -214,27 +195,22 @@ const ProductCard = ({
           [{ text: 'OK', style: 'default' }]
         );
       } finally {
-        setIsAddingToCart(false); // Stop individual loading
+        setIsAddingToCart(false);
       }
     }
   };
 
   const handleSuccessModalClose = () => {
-    console.log('ProductCard: Closing success modal');
     setShowSuccessModal(false);
   };
 
   const handleErrorModalClose = () => {
-    console.log('ProductCard: Closing error modal');
     setShowErrorModal(false);
   };
 
   const handleViewWishlist = () => {
-    console.log('ProductCard: handleViewWishlist called');
-    console.log('ProductCard: navigation prop:', navigation);
     setShowSuccessModal(false);
     if (navigation) {
-      console.log('ProductCard: Navigating to Wishlist screen');
       navigation.navigate('Wishlist');
     } else {
       console.log('ProductCard: No navigation prop available');
@@ -242,11 +218,8 @@ const ProductCard = ({
   };
 
   const handleViewCart = () => {
-    console.log('ProductCard: handleViewCart called');
-    console.log('ProductCard: navigation prop:', navigation);
     setShowSuccessModal(false);
     if (navigation) {
-      console.log('ProductCard: Navigating to Cart screen');
       navigation.navigate('App', { screen: 'CartTab' });
     } else {
       console.log('ProductCard: No navigation prop available');

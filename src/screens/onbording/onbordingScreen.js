@@ -284,7 +284,6 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        // marginTop: StatusBar.currentHeight + scale(1),
         marginTop: 16,
         paddingHorizontal: scale(24),
         zIndex: 10,
@@ -399,12 +398,6 @@ const styles = StyleSheet.create({
         color: '#FFFFFF',
         marginRight: scale(8),
     },
-    arrowIcon: {
-        fontSize: scale(20),
-        color: '#FFFFFF',
-        fontWeight: 'bold',
-        marginTop: -2
-    }
 });
 
 export default OnboardingScreen;

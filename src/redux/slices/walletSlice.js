@@ -6,9 +6,7 @@ export const fetchWalletDetails = createAsyncThunk(
   'wallet/fetchWalletDetails',
   async (_, { rejectWithValue }) => {
     try {
-      console.log('Fetching wallet details...');
       const response = await api.get('/farmer/wallet-details');
-      console.log('Wallet details API response:', response.data);
       return response.data;
     } catch (error) {
       console.error('Fetch wallet details error:', error);
@@ -22,9 +20,7 @@ export const submitWithdrawalRequest = createAsyncThunk(
   'wallet/submitWithdrawalRequest',
   async (withdrawalData, { rejectWithValue }) => {
     try {
-      console.log('Submitting withdrawal request:', withdrawalData);
       const response = await api.post('/farmer/Withdraw-request', withdrawalData);
-      console.log('Withdrawal request API response:', response.data);
       return response.data;
     } catch (error) {
       console.error('Submit withdrawal request error:', error);

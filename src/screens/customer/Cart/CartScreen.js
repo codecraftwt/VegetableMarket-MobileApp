@@ -7,7 +7,6 @@ import {
   StatusBar,
   ScrollView,
   TouchableOpacity,
-  TextInput,
   Image,
 } from 'react-native';
 import SkeletonLoader from '../../../components/SkeletonLoader';
@@ -28,19 +27,13 @@ const CartScreen = ({ navigation }) => {
     cartItems: reduxCartItems,
     totalAmount: reduxTotalAmount,
     loading,
-    error,
-    updateLoading,
-    updateError,
-    removeLoading,
-    removeError
   } = useSelector(state => state.cart);
 
   // Local state for immediate updates
-  // This prevents unnecessary API calls and provides instant UI feedback
   const [localCartItems, setLocalCartItems] = useState([]);
   const [localTotalAmount, setLocalTotalAmount] = useState(0);
-  const [forceUpdate, setForceUpdate] = useState(0); // Force re-render
-  const [isInitialized, setIsInitialized] = useState(false); // Track if initial data is loaded
+  const [forceUpdate, setForceUpdate] = useState(0);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
@@ -48,13 +41,12 @@ const CartScreen = ({ navigation }) => {
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [itemToRemove, setItemToRemove] = useState(null);
-  const [removingItems, setRemovingItems] = useState(new Set()); // Track which items are being removed
-  const [isRefreshing, setIsRefreshing] = useState(false); // Track if cart is refreshing
+  const [removingItems, setRemovingItems] = useState(new Set());
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Fetch cart when component mounts and when screen comes into focus
   useFocusEffect(
     React.useCallback(() => {
-      console.log('CartScreen: Screen focused, fetching cart...');
       dispatch(fetchCart());
       dispatch(clearCartErrors());
 
@@ -67,19 +59,16 @@ const CartScreen = ({ navigation }) => {
     }, [dispatch])
   );
   // Manual refresh function for when we need to sync with server
-  const refreshCart = () => {
-    console.log('CartScreen: Manually refreshing cart...');
-    setIsRefreshing(true);
-    dispatch(fetchCart());
-  };
+  // const refreshCart = () => {
+  //   setIsRefreshing(true);
+  //   dispatch(fetchCart());
+  // };
 
 
   // Handle cleanup when screen loses focus
   useFocusEffect(
     React.useCallback(() => {
       return () => {
-        // Cleanup function when screen loses focus
-        console.log('CartScreen: Screen losing focus, cleaning up...');
         dispatch(clearCartErrors());
       };
     }, [dispatch])
@@ -88,7 +77,6 @@ const CartScreen = ({ navigation }) => {
   // Update local state when Redux state changes
   useEffect(() => {
     // Always sync local state with Redux state when Redux changes
-    console.log('CartScreen: Syncing local state with Redux - Items:', reduxCartItems.length, 'Total:', reduxTotalAmount);
     setLocalCartItems([...reduxCartItems]); // Create new array reference
     setLocalTotalAmount(reduxTotalAmount);
     setForceUpdate(prev => prev + 1); // Force re-render
@@ -102,16 +90,13 @@ const CartScreen = ({ navigation }) => {
       setIsInitialized(true); // Mark as initialized
     } else if (!loading && reduxCartItems.length === 0 && reduxTotalAmount === 0) {
       // Only mark as initialized if we're not loading and have confirmed empty cart
-      console.log('CartScreen: Confirmed empty cart, marking as initialized');
       setIsInitialized(true);
     }
   }, [reduxCartItems, reduxTotalAmount, loading, isRefreshing]);
 
   // Debug: Monitor local cart state changes
   useEffect(() => {
-    console.log('CartScreen: Local cart state updated - Items:', localCartItems.length, 'Total:', localTotalAmount);
     localCartItems.forEach((item, index) => {
-      console.log(`CartScreen: Item ${index} - Name: ${item.name}, Quantity: ${item.quantity_kg}, Unit: ${item.unit_type}, Price: ${item.price_per_kg}`);
       console.log('CartScreen: Full item object:', JSON.stringify(item, null, 2));
     });
   }, [localCartItems, localTotalAmount]);
@@ -130,7 +115,6 @@ const CartScreen = ({ navigation }) => {
 
     const currentQuantity = currentItem.quantity_kg || currentItem.quantity || 0;
     const newQuantity = Math.max(1, currentQuantity + change);
-    console.log('CartScreen: Updating quantity for item:', currentItem.name, 'from', currentQuantity, 'to', newQuantity);
 
     // Don't allow quantity less than 1
     if (newQuantity < 1) {
@@ -166,8 +150,6 @@ const CartScreen = ({ navigation }) => {
       sum + (parseFloat(item.price_per_kg) * (item.quantity_kg || item.quantity || 0)), 0
     );
 
-    console.log('CartScreen: Updating local state - new quantity:', newQuantity, 'new total:', newLocalTotalAmount);
-
     // Update local state immediately - this will trigger re-render
     setLocalCartItems([...updatedLocalCartItems]); // Create new array reference
     setLocalTotalAmount(newLocalTotalAmount);
@@ -177,10 +159,7 @@ const CartScreen = ({ navigation }) => {
     await new Promise(resolve => setTimeout(resolve, 25));
 
     try {
-      console.log('CartScreen: Making API call to update quantity');
       await dispatch(updateCartQuantity({ id: itemId, quantity: newQuantity })).unwrap();
-      console.log('CartScreen: API call successful, quantity updated');
-
     } catch (error) {
       console.error('CartScreen: Quantity update error:', error);
 
@@ -200,16 +179,12 @@ const CartScreen = ({ navigation }) => {
   };
 
   const handleRemoveItem = (item) => {
-    console.log('CartScreen: handleRemoveItem called for item:', item);
     setItemToRemove(item);
     setShowConfirmationModal(true);
   };
 
   const confirmRemoveItem = async () => {
     if (!itemToRemove) return;
-
-    console.log('CartScreen: confirmRemoveItem called for item:', itemToRemove);
-
     // Mark this item as being removed
     setRemovingItems(prev => new Set(prev).add(itemToRemove.id));
 
@@ -221,9 +196,6 @@ const CartScreen = ({ navigation }) => {
     const newLocalTotalAmount = updatedLocalCartItems.reduce((sum, item) =>
       sum + (parseFloat(item.price_per_kg) * (item.quantity_kg || item.quantity || 0)), 0
     );
-
-    console.log('CartScreen: Optimistically removing item, new total:', newLocalTotalAmount);
-
     // Update local state immediately
     setLocalCartItems([...updatedLocalCartItems]);
     setLocalTotalAmount(newLocalTotalAmount);
@@ -240,13 +212,8 @@ const CartScreen = ({ navigation }) => {
     try {
       // Make API call in background
       await dispatch(removeFromCart(itemToRemove.id)).unwrap();
-      console.log('CartScreen: Item removed successfully from API');
-
     } catch (error) {
       console.error('CartScreen: Remove from cart API error:', error);
-      // Optionally show error modal for API failures
-      // setErrorMessage(error.message || 'Failed to remove item from cart. Please try again.');
-      // setShowErrorModal(true);
     } finally {
       // Remove this item from removing set
       setRemovingItems(prev => {
@@ -263,17 +230,14 @@ const CartScreen = ({ navigation }) => {
       setShowErrorModal(true);
       return;
     }
-    console.log('Proceeding to checkout');
     navigation.navigate('Checkout', { totalPrice: localTotalAmount });
   };
 
   // Cart Item Component
   const CartItem = ({ item }) => {
-    // Helper function to get product image
     const getProductImage = () => {
       // Check if item has veg_images and if it's a valid URL
       if (item.veg_images && item.veg_images.length > 0 && item.veg_images[0]) {
-        // If it's a URL string, return the URI object
         if (typeof item.veg_images[0] === 'string' && item.veg_images[0].startsWith('http')) {
           return { uri: item.veg_images[0] };
         }

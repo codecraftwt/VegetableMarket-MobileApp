@@ -15,7 +15,7 @@ const ConfirmationModal = ({
   cancelText = 'Cancel',
   onConfirm,
   onCancel,
-  confirmButtonStyle = 'primary', // 'primary', 'destructive'
+  confirmButtonStyle = 'primary', 
   icon = 'help-circle'
 }) => {
   const handleConfirm = () => {

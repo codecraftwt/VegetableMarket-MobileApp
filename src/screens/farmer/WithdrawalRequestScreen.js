@@ -214,7 +214,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: p(16),
-    paddingBottom: p(100), // Extra padding for keyboard
+    paddingBottom: p(100),
   },
   section: {
     backgroundColor: '#fff',

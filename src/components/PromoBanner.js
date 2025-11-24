@@ -69,7 +69,7 @@ const PromoBanner = ({ navigation }) => {
           scrollViewRef.current.scrollTo({
             x: nextSlide * (slideWidth + slideSpacing),
             animated: true,
-            duration: 800, // Add duration for smoother animation
+            duration: 800,
           });
         }
         
@@ -136,13 +136,13 @@ const PromoBanner = ({ navigation }) => {
           onScroll={handleScroll}
           onScrollBeginDrag={handleScrollBegin}
           onMomentumScrollEnd={handleScrollEnd}
-          scrollEventThrottle={8} // Reduced from 16 for smoother scrolling
-          decelerationRate="normal" // Changed from "fast" to "normal" for smoother deceleration
+          scrollEventThrottle={8}
+          decelerationRate="normal" 
           snapToInterval={slideWidth + slideSpacing}
-          snapToAlignment="center" // Changed from "start" to "center" for better centering
+          snapToAlignment="center" 
           style={styles.scrollView}
-          bounces={false} // Disable bouncing for cleaner sliding
-          alwaysBounceHorizontal={false} // Ensure no horizontal bounce
+          bounces={false}
+          alwaysBounceHorizontal={false}
         >
           {banners.map((banner, index) => (
             <View key={banner.id} style={[styles.slide, { width: slideWidth, marginRight: index < banners.length - 1 ? slideSpacing : 0 }]}>

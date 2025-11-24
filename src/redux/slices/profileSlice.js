@@ -18,63 +18,49 @@ export const fetchProfile = createAsyncThunk(
 export const updateProfile = createAsyncThunk(
   'profile/updateProfile',
   async (profileData, { rejectWithValue }) => {
-    try {
-      console.log('updateProfile called with data:', profileData);
-      
+    try {      
       // Try using React Native's FormData first, which should work better
       const formData = new FormData();
       
       // Add text fields
       if (profileData.name) {
         formData.append('name', profileData.name);
-        console.log('Added name:', profileData.name);
       }
       if (profileData.phone) {
         formData.append('phone', profileData.phone);
-        console.log('Added phone:', profileData.phone);
       }
       if (profileData.bio) {
         formData.append('bio', profileData.bio);
-        console.log('Added bio:', profileData.bio);
       }
       
       // Add address fields
       if (profileData.address_label) {
         formData.append('address_label', profileData.address_label);
-        console.log('Added address_label:', profileData.address_label);
       }
       if (profileData.address_line) {
         formData.append('address_line', profileData.address_line);
-        console.log('Added address_line:', profileData.address_line);
       }
       if (profileData.city) {
         formData.append('city', profileData.city);
-        console.log('Added city:', profileData.city);
       }
       if (profileData.taluka) {
         formData.append('taluka', profileData.taluka);
-        console.log('Added taluka:', profileData.taluka);
       }
       if (profileData.district) {
         formData.append('district', profileData.district);
-        console.log('Added district:', profileData.district);
       }
       if (profileData.state) {
         formData.append('state', profileData.state);
-        console.log('Added state:', profileData.state);
       }
       if (profileData.country) {
         formData.append('country', profileData.country);
-        console.log('Added country:', profileData.country);
       }
       if (profileData.pincode) {
         formData.append('pincode', profileData.pincode);
-        console.log('Added pincode:', profileData.pincode);
       }
       
       // Add profile picture if exists
       if (profileData.profile_picture) {
-        console.log('Adding profile picture to form data:', profileData.profile_picture);
         
         // Get the image URI and create a proper file object
         let imageUri = profileData.profile_picture;
@@ -95,25 +81,14 @@ export const updateProfile = createAsyncThunk(
         };
         
         formData.append('profile_picture', imageFile);
-        console.log('Added profile picture file:', imageFile);
       }
-
-      console.log('FormData created with entries:');
-      console.log('FormData keys count:', Object.keys(formData).length);
-      console.log('API base URL:', api.defaults.baseURL);
-      console.log('Full request URL will be:', `${api.defaults.baseURL}/profile`);
       
       // Make the POST request to /profile with multipart/form-data
-      console.log('Making POST request to /profile with FormData...');
       const response = await api.post('/profile', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
-      
-      console.log('Profile update successful!');
-      console.log('Response status:', response.status);
-      console.log('Response data:', response.data);
       
       return response.data;
     } catch (error) {

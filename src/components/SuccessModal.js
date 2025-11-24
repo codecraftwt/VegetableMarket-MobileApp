@@ -20,9 +20,7 @@ const SuccessModal = ({
   closeOnBackdropPress = true
 }) => {
   const handleButtonPress = () => {
-    // Always call onClose first to ensure modal closes
     onClose();
-    // Then call onButtonPress if provided
     if (onButtonPress) {
       onButtonPress();
     }
@@ -32,7 +30,6 @@ const SuccessModal = ({
     if (onSecondaryButtonPress) {
       onSecondaryButtonPress();
     }
-    // Don't automatically close modal - let parent handle it
   };
 
   return (

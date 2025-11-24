@@ -148,50 +148,6 @@ const DeliveriesScreen = ({ navigation }) => {
     }
   };
 
-  // const handleStatusChange = (deliveryId, newStatus) => {
-  //   if (newStatus === 'assign') {
-  //     dispatch(assignDeliveryToSelf(deliveryId));
-  //   } else if (newStatus === 'in_progress') {
-  //     dispatch(updateOrderStatus({ orderId: deliveryId, status: 'out_for_delivery' }));
-  //     // Navigate to the AssignedDeliveryDetails screen after status update
-  //     setTimeout(() => {
-  //       navigation.navigate('AssignedDeliveryDetails', {
-  //         orderId: deliveryId
-  //       });
-  //     }, 2200); // 2 seconds delay
-  //   } else if (newStatus === 'delivered') {
-  //     dispatch(updateOrderStatus({ orderId: deliveryId, status: 'delivered' }));
-  //   } else {
-  //     console.log('Status change:', deliveryId, newStatus);
-  //   }
-  // };
-  // const handleStatusChange = (deliveryId, newStatus) => {
-  //   if (newStatus === 'assign') {
-  //     dispatch(assignDeliveryToSelf(deliveryId));
-  //   } else if (newStatus === 'in_progress') {
-  //     // Set loading state for this specific delivery
-  //     setStartingDeliveries(prev => ({ ...prev, [deliveryId]: true }));
-
-  //     dispatch(updateOrderStatus({ orderId: deliveryId, status: 'out_for_delivery' }));
-
-  //     // Navigate to the AssignedDeliveryDetails screen after status update
-  //     setTimeout(() => {
-  //       navigation.navigate('AssignedDeliveryDetails', {
-  //         orderId: deliveryId
-  //       });
-  //       // Clear the loading state after navigation
-  //       setStartingDeliveries(prev => {
-  //         const newState = { ...prev };
-  //         delete newState[deliveryId];
-  //         return newState;
-  //       });
-  //     }, 2200); // 2 seconds delay
-  //   } else if (newStatus === 'delivered') {
-  //     dispatch(updateOrderStatus({ orderId: deliveryId, status: 'delivered' }));
-  //   } else {
-  //     console.log('Status change:', deliveryId, newStatus);
-  //   }
-  // };
   const handleStatusChange = (deliveryId, newStatus) => {
     if (newStatus === 'assign') {
       dispatch(assignDeliveryToSelf(deliveryId));

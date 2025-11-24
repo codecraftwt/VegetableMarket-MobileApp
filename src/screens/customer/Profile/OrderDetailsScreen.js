@@ -19,13 +19,13 @@ import Icon from 'react-native-vector-icons/FontAwesome';
 import { p } from '../../../utils/Responsive';
 import { fontSizes } from '../../../utils/fonts';
 import { useSelector, useDispatch } from 'react-redux';
-import { 
-  fetchMyOrders, 
-  cancelOrder, 
-  clearCancelOrderError, 
-  acceptPartialOrder, 
-  clearAcceptPartialError, 
-  submitReview, 
+import {
+  fetchMyOrders,
+  cancelOrder,
+  clearCancelOrderError,
+  acceptPartialOrder,
+  clearAcceptPartialError,
+  submitReview,
   clearSubmitReviewError,
   downloadOrderInvoice,
   clearDownloadInvoiceError
@@ -52,17 +52,17 @@ const OrderDetailsScreen = ({ navigation, route }) => {
   const [invoiceSuccessMessage, setInvoiceSuccessMessage] = useState('');
   const [invoiceErrorMessage, setInvoiceErrorMessage] = useState('');
   const [lastGeneratedInvoice, setLastGeneratedInvoice] = useState(null);
-  const { 
-    cancelOrderLoading, 
-    cancelOrderError, 
-    acceptPartialLoading, 
-    acceptPartialError, 
-    submitReviewLoading, 
+  const {
+    cancelOrderLoading,
+    cancelOrderError,
+    acceptPartialLoading,
+    acceptPartialError,
+    submitReviewLoading,
     submitReviewError,
     downloadInvoiceLoading,
     downloadInvoiceError
   } = useSelector(state => state.orders);
-  const { 
+  const {
     statusLoading: otpStatusLoading,
     error: otpError,
     otpStatus
@@ -107,28 +107,9 @@ const OrderDetailsScreen = ({ navigation, route }) => {
   // Fetch OTP status when order is out for delivery
   useEffect(() => {
     if (order.delivery_status === 'out for delivery' && order.order_id) {
-      console.log('📊 Fetching OTP Status for Customer:', {
-        orderId: order.order_id,
-        orderIdType: typeof order.order_id,
-        deliveryStatus: order.delivery_status,
-        fullOrder: order
-      });
       dispatch(getOTPStatus(order.order_id));
     }
   }, [order.delivery_status, order.order_id, dispatch]);
-
-  // Debug OTP status changes
-  useEffect(() => {
-    if (otpStatus) {
-      console.log('📱 OTP Status Received in Customer Screen:', {
-        otpStatus: otpStatus,
-        exists: otpStatus.exists,
-        verified: otpStatus.verified,
-        created_at: otpStatus.created_at,
-        expires_at: otpStatus.expires_at
-      });
-    }
-  }, [otpStatus]);
 
   const handleBackPress = () => {
     navigation.goBack();
@@ -144,14 +125,9 @@ const OrderDetailsScreen = ({ navigation, route }) => {
         setOrder(updatedOrder);
         // Also update the route params for consistency
         navigation.setParams({ order: updatedOrder });
-        
+
         // Refresh OTP status if order is out for delivery
         if (updatedOrder.delivery_status === 'out for delivery') {
-          console.log('🔄 Refreshing OTP Status for Customer:', {
-            orderId: updatedOrder.order_id,
-            deliveryStatus: updatedOrder.delivery_status,
-            deliveryOTP: updatedOrder.delivery_otp // Log the OTP
-          });
           dispatch(getOTPStatus(updatedOrder.order_id));
         }
       }
@@ -172,14 +148,14 @@ const OrderDetailsScreen = ({ navigation, route }) => {
       setSuccessMessage('Order cancelled successfully!');
       setShowSuccessModal(true);
       setShowCancelModal(false);
-      
+
       // Update local order state
       setOrder(prevOrder => ({
         ...prevOrder,
         is_canceled: true,
         delivery_status: 'cancelled'
       }));
-      
+
       // Navigate back to orders screen after a short delay
       setTimeout(() => {
         navigation.goBack();
@@ -197,7 +173,7 @@ const OrderDetailsScreen = ({ navigation, route }) => {
     try {
       const result = await dispatch(acceptPartialOrder(order.order_id)).unwrap();
       const upiLinkResult = result.data?.upi_link;
-      
+
       if (upiLinkResult) {
         setUpiLink(upiLinkResult);
         setShowUPIModal(true);
@@ -205,9 +181,9 @@ const OrderDetailsScreen = ({ navigation, route }) => {
         setSuccessMessage('Partial order accepted successfully!');
         setShowSuccessModal(true);
       }
-      
+
       setShowAcceptPartialModal(false);
-      
+
       // Refresh order details
       handleRefresh();
     } catch (error) {
@@ -295,9 +271,9 @@ const OrderDetailsScreen = ({ navigation, route }) => {
   // Format OTP status for display
   const formatOTPStatus = () => {
     if (!otpStatus) return null;
-    
+
     const { verified, exists, created_at, expires_at } = otpStatus;
-    
+
     if (!exists) {
       return {
         status: 'No OTP Generated',
@@ -306,7 +282,7 @@ const OrderDetailsScreen = ({ navigation, route }) => {
         message: 'Delivery agent has not generated OTP yet'
       };
     }
-    
+
     if (verified) {
       return {
         status: 'OTP Verified',
@@ -315,12 +291,12 @@ const OrderDetailsScreen = ({ navigation, route }) => {
         message: 'OTP has been verified by delivery agent'
       };
     }
-    
+
     // Check if OTP is expired
     const now = new Date();
     const expiresAt = new Date(expires_at);
     const isExpired = now > expiresAt;
-    
+
     if (isExpired) {
       return {
         status: 'OTP Expired',
@@ -329,7 +305,7 @@ const OrderDetailsScreen = ({ navigation, route }) => {
         message: 'OTP has expired. Please contact delivery agent for new OTP'
       };
     }
-    
+
     return {
       status: 'OTP Active',
       color: '#FF9800',
@@ -339,81 +315,11 @@ const OrderDetailsScreen = ({ navigation, route }) => {
   };
 
   // Request storage permissions for file operations
-  // const requestStoragePermission = async () => {
-  //   if (Platform.OS === 'android') {
-  //     try {
-  //       const androidVersion = Platform.Version;
-  //       console.log('Android version:', androidVersion);
-
-  //       // For Android 13+ (API 33+)
-  //       if (androidVersion >= 33) {
-  //         // Try MANAGE_EXTERNAL_STORAGE first
-  //         try {
-  //           const manageStorageGranted = await PermissionsAndroid.request(
-  //             PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
-  //             {
-  //               title: 'Storage Permission',
-  //               message: 'This app needs access to storage to save invoice PDF files to your Downloads folder.',
-  //               buttonNeutral: 'Ask Me Later',
-  //               buttonNegative: 'Cancel',
-  //               buttonPositive: 'OK',
-  //             },
-  //           );
-  //           console.log('MANAGE_EXTERNAL_STORAGE permission result:', manageStorageGranted);
-  //           if (manageStorageGranted === PermissionsAndroid.RESULTS.GRANTED) {
-  //             return true;
-  //           }
-  //         } catch (error) {
-  //           console.log('MANAGE_EXTERNAL_STORAGE not available, trying other permissions');
-  //         }
-
-  //         // Request media permissions for Android 13+
-  //         const mediaPermissions = [
-  //           PermissionsAndroid.PERMISSIONS.READ_MEDIA_IMAGES,
-  //           PermissionsAndroid.PERMISSIONS.READ_MEDIA_VIDEO,
-  //           PermissionsAndroid.PERMISSIONS.READ_MEDIA_AUDIO,
-  //         ];
-
-  //         const mediaResults = await PermissionsAndroid.requestMultiple(mediaPermissions);
-  //         console.log('Media permission results:', mediaResults);
-
-  //         // Check if at least one media permission is granted
-  //         const hasMediaPermission = Object.values(mediaResults).some(
-  //           result => result === PermissionsAndroid.RESULTS.GRANTED
-  //         );
-
-  //         return hasMediaPermission;
-  //       } else {
-  //         // For Android 12 and below, request WRITE_EXTERNAL_STORAGE
-  //         const writeStorageGranted = await PermissionsAndroid.request(
-  //           PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
-  //           {
-  //             title: 'Storage Permission',
-  //             message: 'This app needs access to storage to save invoice PDF files to your Downloads folder.',
-  //             buttonNeutral: 'Ask Me Later',
-  //             buttonNegative: 'Cancel',
-  //             buttonPositive: 'OK',
-  //           },
-  //         );
-  //         console.log('WRITE_EXTERNAL_STORAGE permission result:', writeStorageGranted);
-  //         return writeStorageGranted === PermissionsAndroid.RESULTS.GRANTED;
-  //       }
-  //     } catch (err) {
-  //       console.error('Storage permission error:', err);
-  //       return false;
-  //     }
-  //   }
-  //   return true; // iOS doesn't need this permission
-  // };
-
-  // Request storage permissions for file operations
   const requestStoragePermission = async () => {
     if (Platform.OS === 'android') {
       try {
         const androidVersion = Platform.Version;
-        console.log('Android version:', androidVersion);
-
-        // For Android 10 and below (API < 29)
+        // For Android 10 and below (API < 29), need WRITE_EXTERNAL_STORAGE for file saving
         if (androidVersion < 29) {
           const writeStorageGranted = await PermissionsAndroid.request(
             PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
@@ -425,13 +331,8 @@ const OrderDetailsScreen = ({ navigation, route }) => {
               buttonPositive: 'OK',
             },
           );
-          console.log('WRITE_EXTERNAL_STORAGE permission result:', writeStorageGranted);
           return writeStorageGranted === PermissionsAndroid.RESULTS.GRANTED;
         }
-
-        // For Android 11+ (API 30+), we don't need WRITE_EXTERNAL_STORAGE
-        // We can use MediaStore or DocumentFile for Downloads access
-        console.log('Android 11+: No storage permission required for Downloads');
         return true;
 
       } catch (err) {
@@ -439,7 +340,7 @@ const OrderDetailsScreen = ({ navigation, route }) => {
         return false;
       }
     }
-    return true; // iOS doesn't need this permission
+    return true;
   };
 
   // Get the best available file path for saving files
@@ -448,10 +349,8 @@ const OrderDetailsScreen = ({ navigation, route }) => {
       // Always try Downloads first for better user experience
       try {
         const downloadPath = `${RNFS.DownloadDirectoryPath}/${fileName}`;
-        console.log('Trying Downloads path:', downloadPath);
         return downloadPath;
       } catch (error) {
-        console.log('Downloads path failed, using Documents:', error);
         return `${RNFS.DocumentDirectoryPath}/${fileName}`;
       }
     } else {
@@ -467,10 +366,8 @@ const OrderDetailsScreen = ({ navigation, route }) => {
       const exists = await RNFS.exists(directory);
       if (!exists) {
         await RNFS.mkdir(directory);
-        console.log('Created directory:', directory);
       }
     } catch (error) {
-      console.log('Directory creation error:', error);
       throw new Error(`Failed to create directory: ${error.message}`);
     }
   };
@@ -478,28 +375,21 @@ const OrderDetailsScreen = ({ navigation, route }) => {
   // Share generated file
   const shareFile = async (filePath, fileName) => {
     try {
-      console.log('Sharing file:', filePath);
-      
       // Check if file exists
       const fileExists = await RNFS.exists(filePath);
-      console.log('File exists:', fileExists);
-      
       if (!fileExists) {
         Alert.alert('Error', 'File not found. Please try generating the invoice again.');
         return;
       }
-      
+
       const shareOptions = {
         title: 'Order Invoice',
         message: `Here's the invoice for order ORD-${order.order_id}: ${fileName}`,
         url: `file://${filePath}`,
         type: 'application/pdf',
       };
-      
-      console.log('Share options:', shareOptions);
       await Share.open(shareOptions);
     } catch (error) {
-      console.log('Share cancelled or failed:', error);
       Alert.alert('Share Error', 'Failed to share the file. Please try again.');
     }
   };
@@ -522,26 +412,21 @@ const OrderDetailsScreen = ({ navigation, route }) => {
 
       // Download invoice from API
       const result = await dispatch(downloadOrderInvoice(order.order_id)).unwrap();
-      console.log('Invoice download result:', result);
-
       if (result.success && result.pdf_base64) {
         // Save PDF file
         const fileName = result.file_name || `invoice_order_${order.order_id}.pdf`;
         const filePath = await getFileSavePath(fileName);
-        
-        console.log('Saving invoice to:', filePath);
-        
+
         // Ensure directory exists
         await ensureDirectoryExists(filePath);
-        
+
         // Write the base64 PDF data to file
         await RNFS.writeFile(filePath, result.pdf_base64, 'base64');
-        console.log('Invoice saved successfully to:', filePath);
-        
+
         setLastGeneratedInvoice({ path: filePath, name: fileName });
-        
-        const saveLocation = filePath.includes('DownloadDirectoryPath') 
-          ? 'Downloads folder' 
+
+        const saveLocation = filePath.includes('DownloadDirectoryPath')
+          ? 'Downloads folder'
           : 'Documents folder';
         setInvoiceSuccessMessage(`Invoice saved to ${saveLocation}: ${fileName}\n\nYou can find it in your ${saveLocation} or use the Share button to send it.`);
         setShowInvoiceSuccessModal(true);
@@ -550,7 +435,7 @@ const OrderDetailsScreen = ({ navigation, route }) => {
       }
     } catch (error) {
       console.error('Invoice download error:', error);
-      
+
       let errorMessage = 'Failed to download invoice. ';
       if (error.message?.includes('permission')) {
         errorMessage += 'Please grant storage permission in your device settings and try again.';
@@ -559,7 +444,7 @@ const OrderDetailsScreen = ({ navigation, route }) => {
       } else {
         errorMessage += 'Please try again or contact support if the issue persists.';
       }
-      
+
       setInvoiceErrorMessage(errorMessage);
       setShowInvoiceErrorModal(true);
     }
@@ -583,8 +468,8 @@ const OrderDetailsScreen = ({ navigation, route }) => {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar backgroundColor="#019a34" barStyle="light-content" />
-      
-      <CommonHeader 
+
+      <CommonHeader
         screenName="Order Details"
         showBackButton={true}
         onBackPress={handleBackPress}
@@ -626,7 +511,7 @@ const OrderDetailsScreen = ({ navigation, route }) => {
         {/* Status Timeline */}
         <View style={styles.statusCard}>
           <Text style={styles.sectionTitle}>Order Status</Text>
-          
+
           <View style={styles.statusTimeline}>
             <View style={styles.statusItem}>
               <View style={styles.statusIconContainer}>
@@ -669,7 +554,7 @@ const OrderDetailsScreen = ({ navigation, route }) => {
         {/* Delivery Information */}
         <View style={styles.deliveryCard}>
           <Text style={styles.sectionTitle}>Delivery Information</Text>
-          
+
           <View style={styles.deliveryInfo}>
             <View style={styles.infoRow}>
               <Icon name="map-marker" size={16} color="#019a34" />
@@ -687,19 +572,18 @@ const OrderDetailsScreen = ({ navigation, route }) => {
               <TouchableOpacity
                 style={styles.refreshOTPButton}
                 onPress={() => {
-                  console.log('🔄 Manual OTP Status Refresh:', { orderId: order.order_id });
                   dispatch(getOTPStatus(order.order_id));
                 }}
                 disabled={otpStatusLoading}
               >
-                <Icon 
-                  name="refresh" 
-                  size={16} 
-                  color={otpStatusLoading ? "#ccc" : "#019a34"} 
+                <Icon
+                  name="refresh"
+                  size={16}
+                  color={otpStatusLoading ? "#ccc" : "#019a34"}
                 />
               </TouchableOpacity>
             </View>
-            
+
             {otpStatusLoading ? (
               <View style={styles.otpLoadingContainer}>
                 <Icon name="spinner" size={20} color="#019a34" />
@@ -726,7 +610,7 @@ const OrderDetailsScreen = ({ navigation, route }) => {
                         </Text>
                       </View>
                     </View>
-                    
+
                     {/* Show OTP details if available */}
                     {otpStatus.exists && !otpStatus.verified && (
                       <View style={styles.otpDetailsContainer}>
@@ -761,7 +645,7 @@ const OrderDetailsScreen = ({ navigation, route }) => {
         {order.delivery_boy && (
           <View style={styles.deliveryBoyCard}>
             <Text style={styles.sectionTitle}>Delivery Agent</Text>
-            
+
             <View style={styles.deliveryBoyInfo}>
               <View style={styles.deliveryBoyHeader}>
                 <View style={styles.deliveryBoyAvatar}>
@@ -772,7 +656,7 @@ const OrderDetailsScreen = ({ navigation, route }) => {
                   <Text style={styles.deliveryBoyId}>ID: {order.delivery_boy.id}</Text>
                 </View>
               </View>
-              
+
               <View style={styles.deliveryBoyContact}>
                 <View style={styles.contactRow}>
                   <Icon name="envelope" size={14} color="#666" />
@@ -790,7 +674,7 @@ const OrderDetailsScreen = ({ navigation, route }) => {
         {/* Order Items */}
         <View style={styles.itemsCard}>
           <Text style={styles.sectionTitle}>Order Items</Text>
-          
+
           {order.items.map((item, index) => (
             <View key={index} style={[
               styles.itemCard,
@@ -799,7 +683,7 @@ const OrderDetailsScreen = ({ navigation, route }) => {
               <View style={styles.itemLeft}>
                 <View style={styles.itemImageContainer}>
                   {item.images && item.images.length > 0 ? (
-                    <Image 
+                    <Image
                       source={{ uri: item.images[0] }}
                       style={styles.itemImage}
                       resizeMode="cover"
@@ -815,7 +699,7 @@ const OrderDetailsScreen = ({ navigation, route }) => {
                   <Text style={styles.itemUnitPrice}>Unit Price: ₹{item.price_per_kg}</Text>
                 </View>
               </View>
-              
+
               <View style={styles.itemRight}>
                 <Text style={styles.itemTotalPrice}>₹{item.subtotal}</Text>
                 <View style={[
@@ -837,27 +721,27 @@ const OrderDetailsScreen = ({ navigation, route }) => {
         {/* Price Breakdown */}
         <View style={styles.priceCard}>
           <Text style={styles.sectionTitle}>Price Breakdown</Text>
-          
+
           <View style={styles.priceRow}>
             <Text style={styles.priceLabel}>Subtotal:</Text>
             <Text style={styles.priceValue}>₹{order.total_amount}</Text>
           </View>
-          
+
           <View style={styles.priceRow}>
             <Text style={styles.priceLabel}>Delivery Fee:</Text>
             <Text style={styles.priceValue}>₹0.00</Text>
           </View>
-          
+
           <View style={styles.priceRow}>
             <Text style={styles.priceLabel}>Tax:</Text>
             <Text style={styles.priceValue}>₹0.00</Text>
           </View>
-          
+
           <View style={styles.priceRow}>
             <Text style={styles.priceLabel}>Discount:</Text>
             <Text style={styles.priceValue}>-₹{order.discount_amount ?? '0.00'}</Text>
           </View>
-          
+
           <View style={[styles.priceRow, styles.totalRow]}>
             <Text style={styles.totalPriceLabel}>Total:</Text>
             <Text style={styles.totalPriceValue}>₹{order.final_amount}</Text>
@@ -870,7 +754,7 @@ const OrderDetailsScreen = ({ navigation, route }) => {
             <Icon name="phone" size={14} color="#fff" />
             <Text style={styles.actionButtonText}>Contact Support</Text>
           </TouchableOpacity>
-          
+
           {/* Download Invoice Button - Only show for delivered and cancelled orders */}
           {isEligibleForInvoice() && (
             <TouchableOpacity
@@ -892,7 +776,7 @@ const OrderDetailsScreen = ({ navigation, route }) => {
 
         {/* Review Order Button - Only show for delivered orders that are not reviewed */}
         {order.delivery_status === 'delivered' && !order.is_reviewed && (
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.reviewOrderButton, submitReviewLoading && styles.buttonDisabled]}
             onPress={handleReviewOrder}
             disabled={submitReviewLoading}
@@ -906,7 +790,7 @@ const OrderDetailsScreen = ({ navigation, route }) => {
 
         {/* Cancel Order Button - Only show for cancellable orders */}
         {order.delivery_status !== 'delivered' && !order.is_canceled && (
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.cancelOrderButton, cancelOrderLoading && styles.buttonDisabled]}
             onPress={handleCancelOrder}
             disabled={cancelOrderLoading}
@@ -919,20 +803,20 @@ const OrderDetailsScreen = ({ navigation, route }) => {
         )}
 
         {/* Accept Partial Order Button - Only show for partial orders */}
-        {order.delivery_status === 'out for delivery' && 
-         order.items.some(item => item.delivery_item_status === 'partial' || item.delivery_item_status === 'pending') && 
-         !order.is_canceled && (
-          <TouchableOpacity 
-            style={[styles.acceptPartialButton, acceptPartialLoading && styles.buttonDisabled]}
-            onPress={handleAcceptPartialOrder}
-            disabled={acceptPartialLoading}
-          >
-            <Icon name="hand-paper-o" size={16} color="#fff" />
-            <Text style={styles.acceptPartialButtonText}>
-              {acceptPartialLoading ? 'Accepting...' : 'Accept Partial Order'}
-            </Text>
-          </TouchableOpacity>
-        )}
+        {order.delivery_status === 'out for delivery' &&
+          order.items.some(item => item.delivery_item_status === 'partial' || item.delivery_item_status === 'pending') &&
+          !order.is_canceled && (
+            <TouchableOpacity
+              style={[styles.acceptPartialButton, acceptPartialLoading && styles.buttonDisabled]}
+              onPress={handleAcceptPartialOrder}
+              disabled={acceptPartialLoading}
+            >
+              <Icon name="hand-paper-o" size={16} color="#fff" />
+              <Text style={styles.acceptPartialButtonText}>
+                {acceptPartialLoading ? 'Accepting...' : 'Accept Partial Order'}
+              </Text>
+            </TouchableOpacity>
+          )}
 
         {/* Review Status Indicator */}
         {order.delivery_status === 'delivered' && (

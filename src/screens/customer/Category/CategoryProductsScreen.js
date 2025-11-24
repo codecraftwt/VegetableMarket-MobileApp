@@ -30,7 +30,7 @@ const CategoryProductsScreen = ({ navigation, route }) => {
   const [errorMessage, setErrorMessage] = useState('');
   const dispatch = useDispatch();
   const { vegetables, loading } = useSelector(state => state.vegetables);
-  const { addLoading } = useSelector(state => state.cart);
+  // const { addLoading } = useSelector(state => state.cart);
   const [searchQuery, setSearchQuery] = useState('');
 
   // Fetch vegetables when component mounts
@@ -70,18 +70,15 @@ const CategoryProductsScreen = ({ navigation, route }) => {
 
   const handleAddToCart = async (item) => {
     try {
-      console.log('CategoryProductsScreen: Adding to cart:', item.name);
       await dispatch(addToCart({ 
         vegetable_id: item.id, 
         quantity: 1 
       })).unwrap();
       
-      console.log('CategoryProductsScreen: Add to cart successful, showing success modal');
       // Show success modal
       setSuccessMessage(`${item.name} added to cart successfully!`);
       setShowSuccessModal(true);
     } catch (error) {
-      console.log('CategoryProductsScreen: Add to cart failed:', error.message);
       // Show error modal
       setErrorMessage(error.message || 'Failed to add item to cart. Please try again.');
       setShowErrorModal(true);
@@ -106,7 +103,6 @@ const CategoryProductsScreen = ({ navigation, route }) => {
 
   const handleViewCart = () => {
     setShowSuccessModal(false);
-    // Navigate to App (BottomTabNavigator) and then to CartTab
     navigation.navigate('App', { screen: 'CartTab' });
   };
 

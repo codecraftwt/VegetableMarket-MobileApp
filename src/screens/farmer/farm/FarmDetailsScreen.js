@@ -8,8 +8,6 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
-  Dimensions,
-  Alert,
   Modal,
 } from 'react-native';
 import { SkeletonLoader } from '../../../components';
@@ -23,11 +21,8 @@ import ErrorModal from '../../../components/ErrorModal';
 import { fetchFarmById, deleteFarm, clearFarmsError, clearFarmsSuccess, clearSelectedFarm } from '../../../redux/slices/farmsSlice';
 import { CommonHeader } from '../../../components';
 
-const { width } = Dimensions.get('window');
-
 const FarmDetailsScreen = ({ navigation, route }) => {
   const dispatch = useDispatch();
-  const { user } = useSelector(state => state.auth);
   const { selectedFarm, loading, error, success, message } = useSelector(state => state.farms);
   
   const [showErrorModal, setShowErrorModal] = useState(false);
@@ -129,8 +124,8 @@ const FarmDetailsScreen = ({ navigation, route }) => {
     // Get the position of the button to position the modal
     event.target.measure((x, y, width, height, pageX, pageY) => {
       setModalPosition({
-        x: pageX - 120, // Better alignment with button
-        y: pageY + height + 5, // Position below the button
+        x: pageX - 120, 
+        y: pageY + height + 5,
       });
     });
     

@@ -20,7 +20,6 @@ class FirebaseMessagingService {
       await this.getFCMToken();
 
       this.initialized = true;
-      console.log('Firebase Messaging initialized successfully');
     } catch (error) {
       console.error('Error initializing Firebase Messaging:', error);
     }
@@ -43,7 +42,6 @@ class FirebaseMessagingService {
         );
 
         if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
-          console.log('Notification permission denied');
           return false;
         }
       }
@@ -55,11 +53,9 @@ class FirebaseMessagingService {
         authStatus === messaging.AuthorizationStatus.PROVISIONAL;
 
       if (!enabled) {
-        console.log('Notification permission denied');
         return false;
       }
 
-      console.log('Notification permission granted');
       return true;
     } catch (error) {
       console.error('Error requesting notification permission:', error);
@@ -72,18 +68,13 @@ class FirebaseMessagingService {
     try {
       const token = await messaging().getToken();
       this.fcmToken = token;
-      
+
       // Store token in AsyncStorage
       await AsyncStorage.setItem('fcm_token', token);
-      
-      // Print FCM token in console
-      console.log('=== FCM TOKEN ===');
-      console.log(token);
-      console.log('================');
-      
+
       // Send token to your backend
       await this.sendTokenToBackend(token);
-      
+
       return token;
     } catch (error) {
       console.error('Error getting FCM token:', error);
@@ -96,10 +87,10 @@ class FirebaseMessagingService {
     try {
       // Get user info from AsyncStorage or Redux store
       const userInfo = await AsyncStorage.getItem('user_info');
-      
+
       if (userInfo) {
         const user = JSON.parse(userInfo);
-        
+
         // Use the correct API endpoint
         const response = await fetch('https://kisancart.in/api/fcm-token', {
           method: 'POST',
@@ -132,8 +123,6 @@ class FirebaseMessagingService {
   setupMessageHandlers(dispatch) {
     // Handle background messages
     messaging().setBackgroundMessageHandler(async remoteMessage => {
-      console.log('📱 Background message received:', remoteMessage);
-      
       // Add notification to Redux store even in background
       if (dispatch && remoteMessage.data) {
         const notificationData = {
@@ -145,18 +134,14 @@ class FirebaseMessagingService {
           created_at: new Date().toISOString(),
           ...remoteMessage.data
         };
-        
-        console.log('📱 Adding background notification to Redux:', notificationData);
         dispatch({ type: 'notification/addNotification', payload: notificationData });
       }
     });
 
     // Handle foreground messages
     messaging().onMessage(async remoteMessage => {
-      console.log('📱 Foreground message received:', remoteMessage);
-      console.log('📱 Message data:', remoteMessage.data);
-      console.log('📱 Notification:', remoteMessage.notification);
-      
+
+
       // Add notification to Redux store for real-time updates
       if (dispatch && remoteMessage.data) {
         const notificationData = {
@@ -168,21 +153,17 @@ class FirebaseMessagingService {
           created_at: new Date().toISOString(),
           ...remoteMessage.data
         };
-        
-        console.log('📱 Adding foreground notification to Redux:', notificationData);
         dispatch({ type: 'notification/addNotification', payload: notificationData });
       }
-      
+
       // Show local notification for foreground messages
       if (remoteMessage.notification) {
         console.log('📱 Showing local notification:', remoteMessage.notification.title);
-        // You can add local notification display logic here if needed
       }
     });
 
     // Handle notification tap when app is in background/quit
     messaging().onNotificationOpenedApp(remoteMessage => {
-      console.log('📱 Notification opened app:', remoteMessage);
       this.handleNotificationTap(remoteMessage);
     });
 
@@ -191,7 +172,6 @@ class FirebaseMessagingService {
       .getInitialNotification()
       .then(remoteMessage => {
         if (remoteMessage) {
-          console.log('📱 Notification opened app from quit state:', remoteMessage);
           this.handleNotificationTap(remoteMessage);
         }
       });
@@ -199,11 +179,9 @@ class FirebaseMessagingService {
 
   // Handle notification tap
   handleNotificationTap(remoteMessage) {
-    console.log('📱 Handling notification tap:', remoteMessage);
-    
     // You can add navigation logic here based on notification type
     const data = remoteMessage.data || {};
-    
+
     if (data.type === 'otp') {
       console.log('📱 OTP notification tapped - order:', data.order_id);
       // Navigate to order details or OTP screen
@@ -227,12 +205,6 @@ class FirebaseMessagingService {
       const token = await messaging().getToken();
       this.fcmToken = token;
       await AsyncStorage.setItem('fcm_token', token);
-      
-      // Print FCM token in console
-      console.log('=== FCM TOKEN REFRESHED ===');
-      console.log(token);
-      console.log('============================');
-      
       await this.sendTokenToBackend(token);
       return token;
     } catch (error) {

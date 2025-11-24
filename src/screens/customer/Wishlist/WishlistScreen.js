@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, StatusBar, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import CommonHeader from '../../../components/CommonHeader';
 import { SuccessModal, ErrorModal, ConfirmationModal } from '../../../components';
@@ -9,7 +9,6 @@ import { fontSizes } from '../../../utils/fonts';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchWishlist, removeWishlistItem } from '../../../redux/slices/wishlistSlice';
 import { addToCart, addItemToCart, clearCartErrors, fetchCart } from '../../../redux/slices/cartSlice';
-import { useFocusEffect } from '@react-navigation/native';
 
 const WishlistScreen = ({ navigation }) => {
   const dispatch = useDispatch();
@@ -64,7 +63,6 @@ const WishlistScreen = ({ navigation }) => {
   
   // Fetch wishlist only once when component mounts
   useEffect(() => {
-    console.log('Component mounted, fetching wishlist');
     dispatch(fetchWishlist());
   }, [dispatch]);
 
@@ -81,7 +79,6 @@ const WishlistScreen = ({ navigation }) => {
   useEffect(() => {
     if (addError) {
       // Clear the error immediately to prevent it from showing in Dashboard or other screens
-      // We've already shown an Alert in handleAddToCart, so we don't need to show ErrorModal here
       dispatch(clearCartErrors());
     }
   }, [addError, dispatch]);
@@ -99,13 +96,8 @@ const WishlistScreen = ({ navigation }) => {
     if (!itemToRemove) return;
 
     try {
-      console.log('Starting delete for item:', itemToRemove.id);
-      console.log('Items before delete:', items.length);
-      
       await dispatch(removeWishlistItem(itemToRemove.id)).unwrap();
-      
-      console.log('Delete successful, items after delete:', items.length);
-      
+          
       setShowConfirmModal(false);
       setItemToRemove(null);
       setSuccessMessage('Item removed from wishlist!');
@@ -125,7 +117,6 @@ const WishlistScreen = ({ navigation }) => {
 
   const handleProductPress = useCallback((item) => {
     // Navigate to product detail screen
-    // navigation.navigate('ProductDetail', { productId: item.id });
      navigation.navigate('ProductDetail', { product: item });
   }, [navigation]);
 

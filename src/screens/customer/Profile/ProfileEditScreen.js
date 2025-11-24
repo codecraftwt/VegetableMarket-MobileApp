@@ -15,24 +15,22 @@ const ProfileEditScreen = ({ navigation, route }) => {
   const profileState = useSelector(state => state.profile);
   const addressesState = useSelector(state => state.addresses);
   const authState = useSelector(state => state.auth);
-  const { user, address, profile, loading, updateLoading, updateError } = profileState;
+  const { user, address, profile, loading, updateLoading } = profileState;
   const { addLoading: addAddressLoading, addError: addAddressError, updateLoading: updateAddressLoading, updateError: updateAddressError } = addressesState;
   const { user: authUser } = authState;
-  const [activeTab, setActiveTab] = useState('profile'); // 'profile' or 'address'
+  const [activeTab, setActiveTab] = useState('profile');
   const [isAddingNewAddress, setIsAddingNewAddress] = useState(false);
   const [editingAddressId, setEditingAddressId] = useState(null);
   const [isEditMode, setIsEditMode] = useState(false);
   const editDataLoadedRef = useRef(false);
-  
+
   // Check if user is a customer
   const isCustomer = useMemo(() => {
     return authUser?.role_id === ROLES.CUSTOMER.id;
   }, [authUser]);
-  
+
   // Check if we should start with address tab (e.g., from checkout)
   useEffect(() => {
-    console.log('Route params changed:', route.params);
-    
     if (route.params?.activeTab) {
       setActiveTab(route.params.activeTab);
     }
@@ -42,15 +40,12 @@ const ProfileEditScreen = ({ navigation, route }) => {
   useEffect(() => {
     if (route.params?.editAddress) {
       const address = route.params.editAddress;
-      console.log('=== LOADING EDIT ADDRESS DATA ===');
-      console.log('Edit address received:', address);
-      console.log('Setting editingAddressId to:', address.id);
-      
+
       // Set all flags immediately
       setEditingAddressId(address.id);
       setIsEditMode(true);
-      editDataLoadedRef.current = true; // Mark that edit data has been loaded
-      
+      editDataLoadedRef.current = true;
+
       const newAddressData = {
         addressLabel: address.address_label || '',
         addressLine: address.address_line || '',
@@ -61,25 +56,17 @@ const ProfileEditScreen = ({ navigation, route }) => {
         country: address.country || '',
         pincode: address.pincode || '',
       };
-      console.log('Setting addressData to:', newAddressData);
       setAddressData(newAddressData);
-      
-      // Force a re-render to ensure the data is set
-      setTimeout(() => {
-        console.log('=== CONFIRMING EDIT DATA SET ===');
-        console.log('Current addressData after timeout:', addressData);
-      }, 100);
     }
   }, [route.params?.editAddress]);
 
   // Handle adding new address from AllAddressesScreen - separate useEffect
   useEffect(() => {
     if (route.params?.addNewAddress) {
-      console.log('=== ADDING NEW ADDRESS ===');
       setIsAddingNewAddress(true);
-      setEditingAddressId(null); // Clear editing address ID when adding new
-      setIsEditMode(false); // Clear edit mode flag
-      editDataLoadedRef.current = false; // Reset edit data loaded flag
+      setEditingAddressId(null);
+      setIsEditMode(false);
+      editDataLoadedRef.current = false;
       setAddressData({
         addressLabel: '',
         addressLine: '',
@@ -134,18 +121,8 @@ const ProfileEditScreen = ({ navigation, route }) => {
   }, [user, profile]);
 
   useEffect(() => {
-    console.log('=== PROFILE ADDRESS USEEFFECT ===');
-    console.log('address:', address);
-    console.log('isAddingNewAddress:', isAddingNewAddress);
-    console.log('editingAddressId:', editingAddressId);
-    console.log('isEditMode:', isEditMode);
-    console.log('editDataLoadedRef.current:', editDataLoadedRef.current);
-    console.log('Should load profile address?', address && !isAddingNewAddress && !editingAddressId && !isEditMode && !editDataLoadedRef.current);
-    
     // Only load profile address data if we're not editing a specific address and not in edit mode and edit data hasn't been loaded
     if (address && !isAddingNewAddress && !editingAddressId && !isEditMode && !editDataLoadedRef.current) {
-      console.log('=== LOADING PROFILE ADDRESS DATA ===');
-      console.log('Profile address:', address);
       const newAddressData = {
         addressLabel: address.address_label || '',
         addressLine: address.address_line || '',
@@ -156,11 +133,9 @@ const ProfileEditScreen = ({ navigation, route }) => {
         country: address.country || '',
         pincode: address.pincode || '',
       };
-      console.log('Setting profile addressData to:', newAddressData);
       setAddressData(newAddressData);
     } else {
       console.log('BLOCKING profile address loading - edit data loaded or other conditions');
-      console.log('Reasons: isAddingNewAddress=', isAddingNewAddress, 'editingAddressId=', editingAddressId, 'isEditMode=', isEditMode, 'editDataLoaded=', editDataLoadedRef.current);
     }
   }, [address, isAddingNewAddress, editingAddressId, isEditMode]);
 
@@ -172,31 +147,8 @@ const ProfileEditScreen = ({ navigation, route }) => {
     }
   }, [updateAddressError]);
 
-  // Debug editing address ID changes
-  useEffect(() => {
-    console.log('editingAddressId changed to:', editingAddressId);
-  }, [editingAddressId]);
-
-  // Debug addressData changes
-  useEffect(() => {
-    console.log('=== ADDRESS DATA CHANGED ===');
-    console.log('New addressData:', addressData);
-    console.log('Current editingAddressId:', editingAddressId);
-    console.log('Current isAddingNewAddress:', isAddingNewAddress);
-    console.log('Current isEditMode:', isEditMode);
-  }, [addressData]);
-
-  // Debug edit mode changes
-  useEffect(() => {
-    console.log('isEditMode changed to:', isEditMode);
-  }, [isEditMode]);
-
   // Fetch profile data when component mounts
   useEffect(() => {
-    console.log('=== COMPONENT MOUNTED ===');
-    console.log('Initial route.params:', route.params);
-    console.log('Initial editingAddressId:', editingAddressId);
-    console.log('Initial addressData:', addressData);
     dispatch(fetchProfile());
   }, [dispatch]);
 
@@ -330,7 +282,7 @@ const ProfileEditScreen = ({ navigation, route }) => {
         name: formData.name,
         phone: formData.phone,
         bio: formData.bio,
-        
+
         // Address fields - map to the correct API field names
         address_label: addressData.addressLabel,
         address_line: addressData.addressLine,
@@ -341,14 +293,12 @@ const ProfileEditScreen = ({ navigation, route }) => {
         country: addressData.country,
         pincode: addressData.pincode,
       };
-      
-      console.log('Sending profile update data:', updateData);
-      
+
       await dispatch(updateProfile(updateData)).unwrap();
-      
+
       // Refresh profile data after successful update
       dispatch(fetchProfile());
-      
+
       // Show success modal
       setSuccessMessage('Profile updated successfully!');
       setShowSuccessModal(true);
@@ -383,11 +333,9 @@ const ProfileEditScreen = ({ navigation, route }) => {
           country: addressData.country,
           pincode: addressData.pincode,
         };
-        
-        console.log('Updating address via addresses API:', updateData);
-        
+
         await dispatch(updateAddress({ addressId: editingAddressId, addressData: updateData })).unwrap();
-        
+
         // Show success modal
         setSuccessMessage('Address updated successfully!');
         setShowSuccessModal(true);
@@ -398,7 +346,7 @@ const ProfileEditScreen = ({ navigation, route }) => {
           name: formData.name,
           phone: formData.phone,
           bio: formData.bio,
-          
+
           // Address fields - map to the correct API field names
           address_label: addressData.addressLabel,
           address_line: addressData.addressLine,
@@ -409,14 +357,12 @@ const ProfileEditScreen = ({ navigation, route }) => {
           country: addressData.country,
           pincode: addressData.pincode,
         };
-        
-        console.log('Sending address update data through profile API:', updateData);
-        
+
         await dispatch(updateProfile(updateData)).unwrap();
-        
+
         // Refresh profile data after successful update
         dispatch(fetchProfile());
-        
+
         // Show success modal
         setSuccessMessage('Address updated successfully!');
         setShowSuccessModal(true);
@@ -458,18 +404,16 @@ const ProfileEditScreen = ({ navigation, route }) => {
         country: addressData.country,
         pincode: addressData.pincode,
       };
-      
-      console.log('Sending new address data:', newAddressData);
-      
+
       await dispatch(addAddress(newAddressData)).unwrap();
-      
+
       // Refresh profile data to get the new address
       dispatch(fetchProfile());
-      
+
       // Show success modal
       setSuccessMessage('Address added successfully!');
       setShowSuccessModal(true);
-      
+
       // Reset the adding new address state after showing success modal
       // This will be handled in the success modal close handler
     } catch (error) {
@@ -483,7 +427,7 @@ const ProfileEditScreen = ({ navigation, route }) => {
   // Modal handlers
   const handleSuccessModalClose = useCallback(() => {
     setShowSuccessModal(false);
-    
+
     // Check if we came from CheckoutScreen (when adding address)
     if (route.params?.fromCheckout) {
       // Navigate back to CheckoutScreen
@@ -510,7 +454,6 @@ const ProfileEditScreen = ({ navigation, route }) => {
           pincode: address.pincode || '',
         });
       }
-      // Don't navigate anywhere, just stay on the profile edit screen
     } else {
       // For profile updates, stay on the same screen instead of going back
       // This prevents navigation back to register screen
@@ -540,7 +483,7 @@ const ProfileEditScreen = ({ navigation, route }) => {
       setShowErrorModal(true);
       return;
     }
-    
+
     setIsAddingNewAddress(true);
     setEditingAddressId(null); // Clear editing address ID when adding new
     setIsEditMode(false); // Clear edit mode flag
@@ -591,31 +534,31 @@ const ProfileEditScreen = ({ navigation, route }) => {
   const handleNameChange = useCallback((text) => {
     // Only allow letters and spaces, limit length
     const processedText = text.replace(/[^a-zA-Z\s]/g, '').slice(0, 50);
-    setFormData(prev => ({...prev, name: processedText}));
+    setFormData(prev => ({ ...prev, name: processedText }));
   }, []);
 
   const handleEmailChange = useCallback((text) => {
     // Limit email length
     const processedText = text.slice(0, 100);
-    setFormData(prev => ({...prev, email: processedText}));
+    setFormData(prev => ({ ...prev, email: processedText }));
   }, []);
 
   const handlePhoneChange = useCallback((text) => {
     // Only allow numbers and limit to 10 digits
     const processedText = text.replace(/[^0-9]/g, '').slice(0, 10);
-    setFormData(prev => ({...prev, phone: processedText}));
+    setFormData(prev => ({ ...prev, phone: processedText }));
   }, []);
 
   const handleBioChange = useCallback((text) => {
     // Limit bio length
     const processedText = text.slice(0, 500);
-    setFormData(prev => ({...prev, bio: processedText}));
+    setFormData(prev => ({ ...prev, bio: processedText }));
   }, []);
 
   const ProfileTab = useMemo(() => (
     <View style={styles.tabContent}>
       <Text style={styles.sectionTitle}>Personal Information</Text>
-      
+
       <View style={styles.inputGroup}>
         <Text style={styles.inputLabel}>Full Name</Text>
         <TextInput
@@ -675,8 +618,8 @@ const ProfileEditScreen = ({ navigation, route }) => {
         />
       </View>
 
-      <TouchableOpacity 
-        style={[styles.saveButton, updateLoading && styles.saveButtonDisabled]} 
+      <TouchableOpacity
+        style={[styles.saveButton, updateLoading && styles.saveButtonDisabled]}
         onPress={() => setShowConfirmProfileModal(true)}
         disabled={updateLoading}
       >
@@ -692,50 +635,46 @@ const ProfileEditScreen = ({ navigation, route }) => {
   // Optimized address handlers with validation
   const handleAddressLabelChange = useCallback((text) => {
     const processedText = text.slice(0, 50);
-    setAddressData(prev => ({...prev, addressLabel: processedText}));
+    setAddressData(prev => ({ ...prev, addressLabel: processedText }));
   }, []);
 
   const handleAddressLineChange = useCallback((text) => {
     const processedText = text.slice(0, 200);
-    setAddressData(prev => ({...prev, addressLine: processedText}));
+    setAddressData(prev => ({ ...prev, addressLine: processedText }));
   }, []);
 
   const handleCityChange = useCallback((text) => {
     const processedText = text.slice(0, 50);
-    setAddressData(prev => ({...prev, city: processedText}));
+    setAddressData(prev => ({ ...prev, city: processedText }));
   }, []);
 
   const handleTalukaChange = useCallback((text) => {
     const processedText = text.slice(0, 50);
-    setAddressData(prev => ({...prev, taluka: processedText}));
+    setAddressData(prev => ({ ...prev, taluka: processedText }));
   }, []);
 
   const handleDistrictChange = useCallback((text) => {
     const processedText = text.slice(0, 50);
-    setAddressData(prev => ({...prev, district: processedText}));
+    setAddressData(prev => ({ ...prev, district: processedText }));
   }, []);
 
   const handleStateChange = useCallback((text) => {
     const processedText = text.slice(0, 50);
-    setAddressData(prev => ({...prev, state: processedText}));
+    setAddressData(prev => ({ ...prev, state: processedText }));
   }, []);
 
   const handleCountryChange = useCallback((text) => {
     const processedText = text.slice(0, 50);
-    setAddressData(prev => ({...prev, country: processedText}));
+    setAddressData(prev => ({ ...prev, country: processedText }));
   }, []);
 
   const handlePincodeChange = useCallback((text) => {
     // Only allow numbers and limit to 6 digits
     const processedText = text.replace(/[^0-9]/g, '').slice(0, 6);
-    setAddressData(prev => ({...prev, pincode: processedText}));
+    setAddressData(prev => ({ ...prev, pincode: processedText }));
   }, []);
 
   const AddressTab = useMemo(() => {
-    console.log('AddressTab rendering with addressData:', addressData);
-    console.log('editingAddressId:', editingAddressId);
-    console.log('isAddingNewAddress:', isAddingNewAddress);
-    
     return (
       <View style={styles.tabContent}>
         <View style={styles.addressHeader}>
@@ -743,196 +682,196 @@ const ProfileEditScreen = ({ navigation, route }) => {
             <Text style={styles.sectionTitle}>
               {isAddingNewAddress ? 'Add New Address' : editingAddressId ? 'Edit Address' : 'Delivery Address'}
             </Text>
-          {!isAddingNewAddress && isCustomer && (
-            <TouchableOpacity 
-              style={styles.seeAllButton}
-              onPress={() => navigation.navigate('AllAddresses')}
+            {!isAddingNewAddress && isCustomer && (
+              <TouchableOpacity
+                style={styles.seeAllButton}
+                onPress={() => navigation.navigate('AllAddresses')}
+              >
+                <Text style={styles.seeAllButtonText}>See all addresses</Text>
+                <Icon name="chevron-right" size={12} color="#007bff" />
+              </TouchableOpacity>
+            )}
+          </View>
+          {isAddingNewAddress && (
+            <TouchableOpacity
+              style={styles.cancelButton}
+              onPress={handleCancelAddAddress}
             >
-              <Text style={styles.seeAllButtonText}>See all addresses</Text>
-              <Icon name="chevron-right" size={12} color="#007bff" />
+              <Icon name="times" size={16} color="#dc3545" />
+              <Text style={styles.cancelButtonText}>Cancel</Text>
             </TouchableOpacity>
           )}
         </View>
-        {isAddingNewAddress && (
-          <TouchableOpacity 
-            style={styles.cancelButton}
-            onPress={handleCancelAddAddress}
+
+        <View style={[styles.inputGroup, { marginTop: 0 }]}>
+          <Text style={styles.inputLabel}>Address Label</Text>
+          <TextInput
+            style={styles.textInput}
+            value={addressData.addressLabel}
+            onChangeText={handleAddressLabelChange}
+            placeholder="Enter Address Label e.g. Home, Farm, etc"
+            autoCapitalize="words"
+            returnKeyType="next"
+            blurOnSubmit={false}
+            maxLength={50}
+          />
+        </View>
+
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>Address Line</Text>
+          <TextInput
+            style={styles.textInput}
+            value={addressData.addressLine}
+            onChangeText={handleAddressLineChange}
+            placeholder="Enter Address Line"
+            autoCapitalize="words"
+            returnKeyType="next"
+            blurOnSubmit={false}
+            maxLength={200}
+          />
+        </View>
+
+        <View style={styles.row}>
+          <View style={[styles.inputGroup, { flex: 1, marginRight: p(10) }]}>
+            <Text style={styles.inputLabel}>City/Village</Text>
+            <TextInput
+              style={styles.textInput}
+              value={addressData.city}
+              onChangeText={handleCityChange}
+              placeholder="Enter City"
+              autoCapitalize="words"
+              returnKeyType="next"
+              blurOnSubmit={false}
+              maxLength={50}
+            />
+          </View>
+          <View style={[styles.inputGroup, { flex: 1 }]}>
+            <Text style={styles.inputLabel}>Taluka</Text>
+            <TextInput
+              style={styles.textInput}
+              value={addressData.taluka}
+              onChangeText={handleTalukaChange}
+              placeholder="Enter Taluka"
+              autoCapitalize="words"
+              returnKeyType="next"
+              blurOnSubmit={false}
+              maxLength={50}
+            />
+          </View>
+        </View>
+
+        <View style={styles.row}>
+          <View style={[styles.inputGroup, { flex: 1, marginRight: p(10) }]}>
+            <Text style={styles.inputLabel}>District</Text>
+            <TextInput
+              style={styles.textInput}
+              value={addressData.district}
+              onChangeText={handleDistrictChange}
+              placeholder="Enter District"
+              autoCapitalize="words"
+              returnKeyType="next"
+              blurOnSubmit={false}
+              maxLength={50}
+            />
+          </View>
+          <View style={[styles.inputGroup, { flex: 1 }]}>
+            <Text style={styles.inputLabel}>State</Text>
+            <TextInput
+              style={styles.textInput}
+              value={addressData.state}
+              onChangeText={handleStateChange}
+              placeholder="Enter State"
+              autoCapitalize="words"
+              returnKeyType="next"
+              blurOnSubmit={false}
+              maxLength={50}
+            />
+          </View>
+        </View>
+
+        <View style={styles.row}>
+          <View style={[styles.inputGroup, { flex: 1, marginRight: p(10) }]}>
+            <Text style={styles.inputLabel}>Country</Text>
+            <TextInput
+              style={styles.textInput}
+              value={addressData.country}
+              onChangeText={handleCountryChange}
+              placeholder="Enter Country"
+              autoCapitalize="words"
+              returnKeyType="next"
+              blurOnSubmit={false}
+              maxLength={50}
+            />
+          </View>
+          <View style={[styles.inputGroup, { flex: 1 }]}>
+            <Text style={styles.inputLabel}>Pincode</Text>
+            <TextInput
+              style={styles.textInput}
+              value={addressData.pincode}
+              onChangeText={handlePincodeChange}
+              placeholder="Enter Pincode"
+              keyboardType="numeric"
+              returnKeyType="done"
+              blurOnSubmit={true}
+              maxLength={6}
+            />
+          </View>
+        </View>
+
+        {isAddingNewAddress ? (
+          <TouchableOpacity
+            style={[styles.addButton, addAddressLoading && styles.addButtonDisabled]}
+            onPress={() => setShowConfirmAddAddressModal(true)}
+            disabled={addAddressLoading}
           >
-            <Icon name="times" size={16} color="#dc3545" />
-            <Text style={styles.cancelButtonText}>Cancel</Text>
+            {addAddressLoading ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Text style={styles.addButtonText}>Add Address</Text>
+            )}
           </TouchableOpacity>
+        ) : (
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity
+              style={[styles.saveButton, (updateLoading || updateAddressLoading) && styles.saveButtonDisabled]}
+              onPress={() => setShowConfirmAddressModal(true)}
+              disabled={updateLoading || updateAddressLoading}
+            >
+              {(updateLoading || updateAddressLoading) ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Text style={styles.saveButtonText}>Save Address</Text>
+              )}
+            </TouchableOpacity>
+
+            {isCustomer && (
+              <TouchableOpacity
+                style={styles.addNewButton}
+                onPress={handleAddNewAddress}
+              >
+                <Icon name="plus" size={16} color="#007bff" />
+                <Text style={styles.addNewButtonText}>Add New Address</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         )}
       </View>
-      
-      <View style={[styles.inputGroup, {marginTop:0}]}>
-        <Text style={styles.inputLabel}>Address Label</Text>
-        <TextInput
-          style={styles.textInput}
-          value={addressData.addressLabel}
-          onChangeText={handleAddressLabelChange}
-          placeholder="Enter Address Label e.g. Home, Farm, etc"
-          autoCapitalize="words"
-          returnKeyType="next"
-          blurOnSubmit={false}
-          maxLength={50}
-        />
-      </View>
-
-      <View style={styles.inputGroup}>
-        <Text style={styles.inputLabel}>Address Line</Text>
-        <TextInput
-          style={styles.textInput}
-          value={addressData.addressLine}
-          onChangeText={handleAddressLineChange}
-          placeholder="Enter Address Line"
-          autoCapitalize="words"
-          returnKeyType="next"
-          blurOnSubmit={false}
-          maxLength={200}
-        />
-      </View>
-
-      <View style={styles.row}>
-        <View style={[styles.inputGroup, { flex: 1, marginRight: p(10) }]}>
-          <Text style={styles.inputLabel}>City/Village</Text>
-          <TextInput
-            style={styles.textInput}
-            value={addressData.city}
-            onChangeText={handleCityChange}
-            placeholder="Enter City"
-            autoCapitalize="words"
-            returnKeyType="next"
-            blurOnSubmit={false}
-            maxLength={50}
-          />
-        </View>
-        <View style={[styles.inputGroup, { flex: 1 }]}>
-          <Text style={styles.inputLabel}>Taluka</Text>
-          <TextInput
-            style={styles.textInput}
-            value={addressData.taluka}
-            onChangeText={handleTalukaChange}
-            placeholder="Enter Taluka"
-            autoCapitalize="words"
-            returnKeyType="next"
-            blurOnSubmit={false}
-            maxLength={50}
-          />
-        </View>
-      </View>
-
-      <View style={styles.row}>
-        <View style={[styles.inputGroup, { flex: 1, marginRight: p(10) }]}>
-          <Text style={styles.inputLabel}>District</Text>
-          <TextInput
-            style={styles.textInput}
-            value={addressData.district}
-            onChangeText={handleDistrictChange}
-            placeholder="Enter District"
-            autoCapitalize="words"
-            returnKeyType="next"
-            blurOnSubmit={false}
-            maxLength={50}
-          />
-        </View>
-        <View style={[styles.inputGroup, { flex: 1 }]}>
-          <Text style={styles.inputLabel}>State</Text>
-          <TextInput
-            style={styles.textInput}
-            value={addressData.state}
-            onChangeText={handleStateChange}
-            placeholder="Enter State"
-            autoCapitalize="words"
-            returnKeyType="next"
-            blurOnSubmit={false}
-            maxLength={50}
-          />
-        </View>
-      </View>
-
-      <View style={styles.row}>
-        <View style={[styles.inputGroup, { flex: 1, marginRight: p(10) }]}>
-          <Text style={styles.inputLabel}>Country</Text>
-          <TextInput
-            style={styles.textInput}
-            value={addressData.country}
-            onChangeText={handleCountryChange}
-            placeholder="Enter Country"
-            autoCapitalize="words"
-            returnKeyType="next"
-            blurOnSubmit={false}
-            maxLength={50}
-          />
-        </View>
-        <View style={[styles.inputGroup, { flex: 1 }]}>
-          <Text style={styles.inputLabel}>Pincode</Text>
-          <TextInput
-            style={styles.textInput}
-            value={addressData.pincode}
-            onChangeText={handlePincodeChange}
-            placeholder="Enter Pincode"
-            keyboardType="numeric"
-            returnKeyType="done"
-            blurOnSubmit={true}
-            maxLength={6}
-          />
-        </View>
-      </View>
-
-      {isAddingNewAddress ? (
-        <TouchableOpacity 
-          style={[styles.addButton, addAddressLoading && styles.addButtonDisabled]} 
-          onPress={() => setShowConfirmAddAddressModal(true)}
-          disabled={addAddressLoading}
-        >
-          {addAddressLoading ? (
-            <ActivityIndicator size="small" color="#fff" />
-          ) : (
-            <Text style={styles.addButtonText}>Add Address</Text>
-          )}
-        </TouchableOpacity>
-      ) : (
-        <View style={styles.buttonContainer}>
-        <TouchableOpacity 
-          style={[styles.saveButton, (updateLoading || updateAddressLoading) && styles.saveButtonDisabled]} 
-          onPress={() => setShowConfirmAddressModal(true)}
-          disabled={updateLoading || updateAddressLoading}
-        >
-          {(updateLoading || updateAddressLoading) ? (
-            <ActivityIndicator size="small" color="#fff" />
-          ) : (
-            <Text style={styles.saveButtonText}>Save Address</Text>
-          )}
-        </TouchableOpacity>
-
-          {isCustomer && (
-            <TouchableOpacity 
-              style={styles.addNewButton} 
-              onPress={handleAddNewAddress}
-            >
-              <Icon name="plus" size={16} color="#007bff" />
-              <Text style={styles.addNewButtonText}>Add New Address</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      )}
-    </View>
     );
   }, [
-    isAddingNewAddress, 
-    handleCancelAddAddress, 
-    addressData, 
-    handleAddressLabelChange, 
-    handleAddressLineChange, 
-    handleCityChange, 
-    handleTalukaChange, 
-    handleDistrictChange, 
-    handleStateChange, 
-    handleCountryChange, 
-    handlePincodeChange, 
-    addAddressLoading, 
-    updateLoading, 
-    isCustomer, 
+    isAddingNewAddress,
+    handleCancelAddAddress,
+    addressData,
+    handleAddressLabelChange,
+    handleAddressLineChange,
+    handleCityChange,
+    handleTalukaChange,
+    handleDistrictChange,
+    handleStateChange,
+    handleCountryChange,
+    handlePincodeChange,
+    addAddressLoading,
+    updateLoading,
+    isCustomer,
     handleAddNewAddress,
     editingAddressId
   ]);
@@ -940,14 +879,14 @@ const ProfileEditScreen = ({ navigation, route }) => {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar backgroundColor="#019a34" barStyle="light-content" />
-      
-      <CommonHeader 
+
+      <CommonHeader
         screenName="Edit Profile"
         showBackButton={true}
         onBackPress={handleBackPress}
         showNotification={false}
       />
-      
+
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#019a34" />
@@ -968,14 +907,14 @@ const ProfileEditScreen = ({ navigation, route }) => {
             <TabButton title="Profile" tab="profile" icon="user" />
             <TabButton title="Address" tab="address" icon="map-marker" />
           </View>
-          
-          <KeyboardAvoidingView 
+
+          <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             style={{ flex: 1 }}
             keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
           >
-            <ScrollView 
-              style={styles.content} 
+            <ScrollView
+              style={styles.content}
               showsVerticalScrollIndicator={false}
               contentContainerStyle={styles.scrollContent}
               keyboardShouldPersistTaps="always"
@@ -1063,7 +1002,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingBottom: p(16),
   },
-  
+
   // Tab Navigation
   tabContainer: {
     flexDirection: 'row',
@@ -1102,7 +1041,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontFamily: 'Poppins-SemiBold',
   },
-  
+
   // Tab Content
   tabContent: {
     backgroundColor: '#fff',
@@ -1116,7 +1055,7 @@ const styles = StyleSheet.create({
     elevation: 2,
     borderWidth: 1,
     borderColor: '#f0f0f0',
-     marginBottom: p(44),
+    marginBottom: p(44),
   },
   sectionTitle: {
     fontSize: fontSizes.lg,
@@ -1125,7 +1064,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontFamily: 'Poppins-Bold',
   },
-  
+
   // Input Groups
   inputGroup: {
     marginBottom: p(16),
@@ -1154,7 +1093,7 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
   },
-  
+
   // Save Button
   saveButton: {
     backgroundColor: '#019a34',

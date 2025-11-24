@@ -8,14 +8,12 @@ import {
   ScrollView,
   TouchableOpacity,
   RefreshControl,
-  Image,
-  Alert,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import CommonHeader from '../../../components/CommonHeader';
-import { SuccessModal, ErrorModal, SkeletonLoader } from '../../../components';
+import { ErrorModal, SkeletonLoader } from '../../../components';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { p } from '../../../utils/Responsive';
 import { fontSizes } from '../../../utils/fonts';

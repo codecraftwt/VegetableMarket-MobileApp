@@ -15,17 +15,15 @@ import { fontSizes } from '../../../utils/fonts';
 import { SkeletonLoader } from '../../../components';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchFarmerOrders, clearFarmerOrdersError, clearFarmerOrdersSuccess } from '../../../redux/slices/farmerOrdersSlice';
-import SuccessModal from '../../../components/SuccessModal';
+import { fetchFarmerOrders, clearFarmerOrdersError } from '../../../redux/slices/farmerOrdersSlice';
 import ErrorModal from '../../../components/ErrorModal'; 
 
 const FarmerOrdersScreen = ({ navigation }) => {
   const dispatch = useDispatch();
-  const { orders, loading, error, success, message } = useSelector(state => state.farmerOrders);
+  const { orders, loading, error } = useSelector(state => state.farmerOrders);
   
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
-  const [viewMode, setViewMode] = useState('cards'); // 'cards' or 'list'
+  const [viewMode, setViewMode] = useState('cards');
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredOrders, setFilteredOrders] = useState([]);
 

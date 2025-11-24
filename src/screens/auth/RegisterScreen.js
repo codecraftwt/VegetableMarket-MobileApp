@@ -15,7 +15,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { useDispatch, useSelector } from 'react-redux';
 import { registerUser, clearError, ROLES } from '../../redux/slices/authSlice';
-import { getFontFamily, fontSizes } from '../../utils/fonts';
+import { fontSizes } from '../../utils/fonts';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { p } from '../../utils/Responsive';
 import SuccessModal from '../../components/SuccessModal';
@@ -24,7 +24,7 @@ import ErrorModal from '../../components/ErrorModal';
 const RegisterScreen = () => {
   const navigation = useNavigation();
   const dispatch = useDispatch();
-  const { loading, error, isLoggedIn, token } = useSelector(state => state.auth);
+  const { loading, error, token } = useSelector(state => state.auth);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -609,6 +609,7 @@ const styles = StyleSheet.create({
     top: '50%',
     transform: [{ translateY: -p(10) }],
     padding: p(6),
+    paddingTop: p(0),
     zIndex: 1,
   },
   registerButton: {

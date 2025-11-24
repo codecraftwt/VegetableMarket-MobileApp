@@ -377,15 +377,16 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   passwordInput: {
-    paddingRight: p(50), // Make space for the eye icon
+    paddingRight: p(50),
   },
   eyeIcon: {
     position: 'absolute',
     right: p(18),
     top: '50%',
-    transform: [{ translateY: -10 }], // Center vertically
+    transform: [{ translateY: -10 }],
     padding: p(6),
     zIndex: 1,
+    paddingTop: p(0),
   },
   loginButton: {
     backgroundColor: '#019a34',

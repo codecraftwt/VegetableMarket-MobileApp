@@ -6,13 +6,7 @@ export const fetchFilteredVegetables = createAsyncThunk(
   'filter/fetchFilteredVegetables',
   async (filters, { rejectWithValue, getState }) => {
     try {
-      console.log('Fetching filtered vegetables with filters:', filters);
-      
-      // Get the current state to access the token
-      // const state = getState();
-      // const token = state.auth.token;
-      
-      // Build query parameters
+    // Build query parameters
       const queryParams = new URLSearchParams();
       
       // Add filters to query parameters
@@ -28,10 +22,8 @@ export const fetchFilteredVegetables = createAsyncThunk(
       
       // Construct the URL with query parameters
       const url = `/vegetables?${queryParams.toString()}`;
-      console.log('Filter API URL:', url);
       
       const response = await api.get(url);
-      console.log('Filter API response:', response.data);
       return response.data;
     } catch (error) {
       console.error('Fetch filtered vegetables error:', error);
@@ -45,10 +37,7 @@ export const clearFilters = createAsyncThunk(
   'filter/clearFilters',
   async (_, { rejectWithValue, getState }) => {
     try {
-      console.log('Clearing filters and fetching all vegetables...');
-      
       const response = await api.get('/vegetables');
-      console.log('Clear filters API response:', response.data);
       return response.data;
     } catch (error) {
       console.error('Clear filters error:', error);

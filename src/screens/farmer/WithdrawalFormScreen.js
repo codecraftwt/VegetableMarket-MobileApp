@@ -206,9 +206,6 @@ const WithdrawalFormScreen = ({ navigation }) => {
       // For existing account, only include the existing_fund_account_id
       requestData.existing_fund_account_id = selectedAccountId;
     }
-
-    console.log('Submitting withdrawal request with data:', requestData);
-
     try {
       await dispatch(submitWithdrawalRequest(requestData)).unwrap();
     } catch (error) {

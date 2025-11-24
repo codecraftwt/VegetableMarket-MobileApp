@@ -41,7 +41,6 @@ const TodaysTaskDetailsScreen = ({ navigation, route }) => {
           text: 'Confirm',
           onPress: () => {
             dispatch(updateTaskStatus({ taskId, status: newStatus }));
-            // Navigate back after status update
             navigation.goBack();
           },
         },

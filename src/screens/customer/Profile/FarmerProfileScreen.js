@@ -20,7 +20,7 @@ import { fetchFarmerProfile, clearFarmerProfile } from '../../../redux/slices/ve
 import SkeletonLoader from '../../../components/SkeletonLoader';
 
 const FarmerProfileScreen = ({ navigation, route }) => {
-  const { farmerId, farmerName } = route.params;
+  const { farmerId } = route.params;
   const dispatch = useDispatch();
   const { farmerProfile, farmerProfileLoading, farmerProfileError } = useSelector(state => state.vegetables);
 
@@ -593,20 +593,6 @@ const styles = StyleSheet.create({
   rightArrow: {
     right: p(8),
   },
-  imageCounter: {
-    position: 'absolute',
-    bottom: p(8),
-    right: p(8),
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    paddingHorizontal: p(6),
-    paddingVertical: p(3),
-    borderRadius: p(8),
-  },
-  imageCounterText: {
-    color: '#fff',
-    fontSize: fontSizes.xs,
-    fontFamily: 'Poppins-Bold',
-  },
   farmContent: {
     padding: p(12),
   },
@@ -701,20 +687,6 @@ const styles = StyleSheet.create({
     fontSize: fontSizes.sm,
     color: '#666',
     textAlign: 'center',
-    fontFamily: 'Poppins-Regular',
-  },
-
-  // Loading and Error States
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: p(40),
-  },
-  loadingText: {
-    marginTop: p(16),
-    fontSize: fontSizes.sm,
-    color: '#666',
     fontFamily: 'Poppins-Regular',
   },
   errorContainer: {

@@ -27,10 +27,7 @@ const CheckoutScreen = ({ navigation }) => {
   const { totalAmount, loading, cartItems, addresses: cartAddresses, paymentSettings } = useSelector(state => state.cart);
   const { user, profile, loading: profileLoading } = useSelector(state => state.profile);
   
-  // Debug user data (only in development)
-  if (__DEV__) {
-    console.log('Profile state:', { user, profile, profileLoading });
-  }
+
   const { 
     orderData, 
     razorpayOrderId, 
@@ -144,12 +141,9 @@ const CheckoutScreen = ({ navigation }) => {
     const isRazorpayMethod = normalizedPaymentMethod === 'RAZORPAY' || normalizedPaymentMethod === 'RAZORPAYX';
     
     if (orderSuccess && razorpayOrderId && isRazorpayMethod) {
-      console.log('Initializing Razorpay payment with Order ID:', razorpayOrderId);
-      console.log('Payment method:', selectedPaymentMethod?.payment_method, '-> Normalized:', normalizedPaymentMethod);
       // Initialize Razorpay payment
       handleRazorpayPayment();
     } else if (orderSuccess && !isRazorpayMethod) {
-      console.log('Non-Razorpay payment method, showing success directly');
       // For non-Razorpay methods (COD, UPI_AT_DOOR), show success directly
       const paymentMethodName = formatPaymentMethod(selectedPaymentMethod?.payment_method);
       setSuccessMessage(`Order placed successfully using ${paymentMethodName}!`);
@@ -167,16 +161,13 @@ const CheckoutScreen = ({ navigation }) => {
   // Handle payment verification
   useEffect(() => {
     if (paymentVerified) {
-      console.log('Payment verified successfully, showing order confirmation modal');
       setSuccessMessage('Order confirmed! Your payment was successful and order has been placed.');
       setShowSuccessModal(true);
       // Don't clear order data immediately, let user see the modal first
     }
     
     // Handle payment verification errors
-    if (paymentVerificationError) {
-      console.log('Payment verification failed:', paymentVerificationError);
-      
+    if (paymentVerificationError) {      
       // Check if this is a backend error or payment verification error
       if (paymentVerificationError.status === 500 || paymentVerificationError.status === 400) {
         console.error('Backend error during payment verification');
@@ -247,11 +238,6 @@ const CheckoutScreen = ({ navigation }) => {
 
   // Define the payment handler function outside of the main function
   const handlePaymentSuccess = useCallback((response) => {
-    console.log('Processing Razorpay payment response:', {
-      payment_id: response.razorpay_payment_id,
-      order_id: response.razorpay_order_id,
-      signature: response.razorpay_signature?.substring(0, 20) + '...'
-    });
     
     // Validate payment response
     if (!response.razorpay_payment_id || !response.razorpay_order_id || !response.razorpay_signature) {
@@ -293,7 +279,7 @@ const CheckoutScreen = ({ navigation }) => {
     // CRITICAL: Use the order_id from Razorpay response, not from Redux state
     const paymentData = {
       razorpay_payment_id: response.razorpay_payment_id,
-      razorpay_order_id: response.razorpay_order_id, // Use from response, not razorpayOrderId
+      razorpay_order_id: response.razorpay_order_id,
       razorpay_signature: response.razorpay_signature,
       user_id: currentUser.id,
       address_id: selectedAddress.id,
@@ -334,18 +320,8 @@ const CheckoutScreen = ({ navigation }) => {
       })
     };
     
-    console.log('Sending payment verification:', {
-      order_id: paymentData.razorpay_order_id,
-      user_id: paymentData.user_id,
-      address_id: paymentData.address_id,
-      total_amount: paymentData.total_amount,
-      cart_items_count: paymentData.cart_items.length
-    });
-    
     try {
-      dispatch(verifyRazorpayPayment(paymentData));
-      console.log('verifyRazorpayPayment dispatched successfully');
-      
+      dispatch(verifyRazorpayPayment(paymentData));      
       // Show loading state for payment verification
       setSuccessMessage('Payment successful! Verifying payment and creating your order...');
       setShowSuccessModal(true);
@@ -357,25 +333,12 @@ const CheckoutScreen = ({ navigation }) => {
   }, [razorpayOrderId, user, selectedAddress, totalAmount, cartItems, dispatch, setErrorMessage, setShowErrorModal, setSuccessMessage]);
 
   const handleRazorpayPayment = useCallback(() => {
-    console.log('=== RAZORPAY PAYMENT INITIALIZATION ===');
-    console.log('Razorpay configuration check:', { 
-      razorpayKey: razorpayKey ? 'Present' : 'Missing',
-      razorpayOrderId: razorpayOrderId ? 'Present' : 'Missing', 
-      razorpayAmount: razorpayAmount,
-      razorpayCurrency: razorpayCurrency,
-      razorpayName: razorpayName,
-      razorpayEmail: razorpayEmail,
-      razorpayContact: razorpayContact
-    });
-    
     if (!razorpayKey || !razorpayOrderId || !razorpayAmount) {
-      console.log('Razorpay configuration missing:', { razorpayKey, razorpayOrderId, razorpayAmount });
       setErrorMessage('Razorpay configuration error. Please try again.');
       setShowErrorModal(true);
       return;
     }
     
-    console.log('All Razorpay configuration present, proceeding with payment...');
     const options = {
       description: 'Vegetable Market Order',
       image: 'https://your-logo-url.com/logo.png',
@@ -415,8 +378,6 @@ const CheckoutScreen = ({ navigation }) => {
         ondismiss: function () {
           // Payment modal dismissed
           console.log('=== RAZORPAY MODAL DISMISSED ===');
-          console.log('User dismissed the payment modal');
-          console.log('===============================');
         }
       },
       // Add additional debugging
@@ -426,17 +387,8 @@ const CheckoutScreen = ({ navigation }) => {
     };
 
     try {
-      console.log('Opening Razorpay checkout with options:', {
-        key: options.key,
-        amount: options.amount,
-        currency: options.currency,
-        order_id: options.order_id,
-        name: options.name
-      });
-      
       RazorpayCheckout.open(options)
         .then((response) => {
-          console.log('Razorpay payment successful:', response);
           handlePaymentSuccess(response);
         })
         .catch((error) => {
@@ -444,12 +396,8 @@ const CheckoutScreen = ({ navigation }) => {
           setErrorMessage('Payment failed. Please try again.');
           setShowErrorModal(true);
         });
-      console.log('Razorpay checkout opened successfully');
     } catch (error) {
-      console.log('=== RAZORPAY INITIALIZATION ERROR ===');
       console.error('Razorpay error:', error);
-      console.log('Error details:', JSON.stringify(error, null, 2));
-      console.log('=====================================');
       setErrorMessage('Failed to open payment gateway. Please try again.');
       setShowErrorModal(true);
     }
@@ -483,23 +431,6 @@ const CheckoutScreen = ({ navigation }) => {
       payment_method: normalizedPaymentMethod,
       ...(appliedCoupon && { coupon_code: appliedCoupon.trim() })
     };
-    
-    console.log('Selected payment method:', selectedPaymentMethod);
-    console.log('Applied coupon:', appliedCoupon);
-    console.log('Placing order with data:', orderData);
-    
-    // Additional validation logging
-    console.log('Order data validation:', {
-      address_id: orderData.address_id,
-      payment_method: orderData.payment_method,
-      original_payment_method: selectedPaymentMethod.payment_method,
-      coupon_code: orderData.coupon_code || 'Not applied',
-      address_id_type: typeof orderData.address_id,
-      payment_method_type: typeof orderData.payment_method,
-      total_amount: totalAmount,
-      minimum_order_met: totalAmount >= 100
-    });
-    
     dispatch(placeOrder(orderData));
   };
 
@@ -632,13 +563,11 @@ const CheckoutScreen = ({ navigation }) => {
         })),
         // Add coupon data if coupon is applied
         ...(appliedCoupon && {
-          coupon_id: couponData?.coupon_id || 1, // Use server coupon_id if available, fallback to 1
+          coupon_id: couponData?.coupon_id || 1,
           discount_amount: localDiscountAmount || discountAmount || 0,
           final_amount: localFinalAmount || finalAmount || totalAmount
         })
       };
-      
-      console.log('Retrying payment verification with data:', paymentData);
       dispatch(verifyRazorpayPayment(paymentData));
     }
   };

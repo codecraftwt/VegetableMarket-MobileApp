@@ -2,19 +2,19 @@
 export const fonts = {
   // Montserrat Font Family
   'Montserrat-Regular': 'Montserrat-Regular',
-  'Montserrat-Medium': 'Montserrat-Regular', // Fallback to Regular
+  'Montserrat-Medium': 'Montserrat-Regular',
   'Montserrat-SemiBold': 'Montserrat-SemiBold',
   'Montserrat-Bold': 'Montserrat-Bold',
   
   // Poppins Font Family
   'Poppins-Regular': 'Poppins-Regular',
-  'Poppins-Medium': 'Poppins-Regular', // Fallback to Regular
+  'Poppins-Medium': 'Poppins-Regular',
   'Poppins-SemiBold': 'Poppins-SemiBold',
   'Poppins-Bold': 'Poppins-Bold',
   
   // Rubik Font Family
   'Rubik-Regular': 'Rubik-Regular',
-  'Rubik-Medium': 'Rubik-Regular', // Fallback to Regular
+  'Rubik-Medium': 'Rubik-Regular',
   'Rubik-SemiBold': 'Rubik-SemiBold',
   'Rubik-Bold': 'Rubik-Bold',
   

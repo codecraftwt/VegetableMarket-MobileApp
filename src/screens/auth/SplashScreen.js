@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated, Easing, Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const SplashScreen = () => {
   const navigation = useNavigation();
@@ -75,28 +76,73 @@ const SplashScreen = () => {
     animateDots();
   }, []);
 
-  // Navigate to Onboarding after splash
+  // Navigate based on onboarding and auth status after splash
   useEffect(() => {
-    const timer = setTimeout(() => {
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 0,
-          duration: 600,
-          useNativeDriver: true,
-          easing: Easing.in(Easing.ease),
-        }),
-        Animated.timing(logoOpacity, {
-          toValue: 0,
-          duration: 600,
-          useNativeDriver: true,
-          easing: Easing.in(Easing.ease),
-        }),
-      ]).start(() => {
-        navigation.replace('Onboarding'); // Always navigate to onboarding
-      });
-    }, 2000); // Splash duration
+    let timer = null;
 
-    return () => clearTimeout(timer);
+    const checkOnboardingAndNavigate = async () => {
+      try {
+        // Check if onboarding has been completed
+        const onboardingCompleted = await AsyncStorage.getItem('@onboarding_completed');
+
+        // Navigate after splash animation
+        timer = setTimeout(() => {
+          Animated.parallel([
+            Animated.timing(fadeAnim, {
+              toValue: 0,
+              duration: 600,
+              useNativeDriver: true,
+              easing: Easing.in(Easing.ease),
+            }),
+            Animated.timing(logoOpacity, {
+              toValue: 0,
+              duration: 600,
+              useNativeDriver: true,
+              easing: Easing.in(Easing.ease),
+            }),
+          ]).start(() => {
+            // If onboarding is completed, go to Login
+            // If user is already logged in, they'll be redirected by auth check
+            if (onboardingCompleted === 'true') {
+              navigation.replace('Login');
+            } else {
+              // Show onboarding if not completed
+              navigation.replace('Onboarding');
+            }
+          });
+        }, 2000); // Splash duration
+      } catch (error) {
+        console.error('Error checking onboarding status:', error);
+        // On error, default to onboarding
+        timer = setTimeout(() => {
+          Animated.parallel([
+            Animated.timing(fadeAnim, {
+              toValue: 0,
+              duration: 600,
+              useNativeDriver: true,
+              easing: Easing.in(Easing.ease),
+            }),
+            Animated.timing(logoOpacity, {
+              toValue: 0,
+              duration: 600,
+              useNativeDriver: true,
+              easing: Easing.in(Easing.ease),
+            }),
+          ]).start(() => {
+            navigation.replace('Onboarding');
+          });
+        }, 2000);
+      }
+    };
+
+    checkOnboardingAndNavigate();
+
+    // Cleanup function
+    return () => {
+      if (timer) {
+        clearTimeout(timer);
+      }
+    };
   }, [fadeAnim, logoOpacity, navigation]);
 
   return (

@@ -8,7 +8,6 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
-  Alert,
   TextInput,
 } from 'react-native';
 import CommonHeader from '../../../components/CommonHeader';
@@ -24,13 +23,7 @@ import { fetchFarmerVegetables, deleteVegetable, updateVegetableStatus, clearFar
 
 const FarmerBucketScreen = ({ navigation }) => {
   const dispatch = useDispatch();
-  const { user } = useSelector(state => state.auth);
   const { vegetables, loading, error, success, message } = useSelector(state => state.farmerVegetables);
-  
-  // Debug Redux state
-  useEffect(() => {
-    console.log('Redux state changed:', { success, message, error, vegetablesCount: vegetables.length });
-  }, [success, message, error, vegetables.length]);
   
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
@@ -43,11 +36,6 @@ const FarmerBucketScreen = ({ navigation }) => {
   const [modalPosition, setModalPosition] = useState({ x: 0, y: 0 });
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredVegetables, setFilteredVegetables] = useState([]);
-
-  // Debug selectedVegetable changes
-  useEffect(() => {
-    console.log('selectedVegetable changed:', selectedVegetable);
-  }, [selectedVegetable]);
 
   useEffect(() => {
     // Clear any lingering success state when component mounts
@@ -71,15 +59,12 @@ const FarmerBucketScreen = ({ navigation }) => {
   // Handle success and error states - only for delete operations
   useEffect(() => {
     if (success && message && message.includes('deleted')) {
-      console.log('Delete success modal triggered:', message);
-      console.log('Current vegetables count:', vegetables.length);
       setShowSuccessModal(true);
     }
   }, [success, message, vegetables.length]);
 
   useEffect(() => {
     if (error) {
-      console.log('Error modal triggered:', error);
       setShowErrorModal(true);
     }
   }, [error]);
@@ -112,12 +97,11 @@ const FarmerBucketScreen = ({ navigation }) => {
 
   const handleThreeDotsPress = (event, vegetable) => {
     event.stopPropagation();
-    console.log('Setting selected vegetable:', vegetable);
     setSelectedVegetable(vegetable);
     
     // Get the position of the touch event
     const { pageX, pageY } = event.nativeEvent;
-    setModalPosition({ x: pageX - 100, y: pageY + 10 }); // Adjust position to show below the button
+    setModalPosition({ x: pageX - 100, y: pageY + 10 });
     setShowActionModal(true);
   };
 
@@ -127,8 +111,6 @@ const FarmerBucketScreen = ({ navigation }) => {
   };
 
   const handleDeleteVegetable = () => {
-    console.log('Delete button pressed, selectedVegetable:', selectedVegetable);
-    console.log('selectedVegetable name:', selectedVegetable?.name);
     setShowActionModal(false);
     setShowConfirmationModal(true);
   };
@@ -136,7 +118,6 @@ const FarmerBucketScreen = ({ navigation }) => {
   const handleConfirmDelete = () => {
     setShowConfirmationModal(false);
     if (selectedVegetable) {
-      console.log('Deleting vegetable with ID:', selectedVegetable.id);
       dispatch(deleteVegetable(selectedVegetable.id));
       // Clear selectedVegetable after initiating delete
       setSelectedVegetable(null);
@@ -526,7 +507,6 @@ const FarmerBucketScreen = ({ navigation }) => {
         confirmButtonStyle="destructive"
         icon="delete-alert"
         onConfirm={() => {
-          console.log('Confirm delete clicked, selectedVegetable:', selectedVegetable);
           handleConfirmDelete();
         }}
         onCancel={handleCancelDelete}

@@ -67,22 +67,16 @@ export const updateSupportTicketStatus = createAsyncThunk(
   'supportTicket/updateSupportTicketStatus',
   async ({ ticketId, status }, { rejectWithValue }) => {
     try {
-      console.log('Updating ticket status:', { ticketId, status });
       const requestBody = { status };
-      console.log('Request body:', requestBody);
       
       const response = await api.put(`/support-ticket/${ticketId}/status`, requestBody, {
         headers: {
           'Content-Type': 'application/json',
         },
       });
-      
-      console.log('Status update response:', response.data);
       return response.data;
     } catch (error) {
       console.error('Status update error:', error);
-      console.error('Error response:', error.response?.data);
-      console.error('Error status:', error.response?.status);
       console.error('Validation errors:', error.response?.data?.errors);
       
       // Get more specific error message from validation errors

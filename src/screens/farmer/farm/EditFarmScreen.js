@@ -34,11 +34,10 @@ import {
   clearSelectedFarm 
 } from '../../../redux/slices/farmsSlice';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
-import { PermissionsAndroid } from 'react-native';
+import { requestCameraPermissionAndroid, requestStoragePermissionAndroid } from '../../../utils/permissions';
 
 const EditFarmScreen = ({ navigation, route }) => {
   const dispatch = useDispatch();
-  const { user } = useSelector(state => state.auth);
   const { selectedFarm, loading, error, success, message } = useSelector(state => state.farms);
   
   const { farmId } = route.params;
@@ -107,60 +106,9 @@ const EditFarmScreen = ({ navigation, route }) => {
     }));
   };
 
-  const requestCameraPermission = async () => {
-    if (Platform.OS === 'android') {
-      try {
-        const granted = await PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.CAMERA,
-          {
-            title: 'Camera Permission',
-            message: 'App needs access to camera to take photos',
-            buttonNeutral: 'Ask Me Later',
-            buttonNegative: 'Cancel',
-            buttonPositive: 'OK',
-          },
-        );
-        return granted === PermissionsAndroid.RESULTS.GRANTED;
-      } catch (err) {
-        console.warn(err);
-        return false;
-      }
-    }
-    return true;
-  };
-
-  const requestStoragePermission = async () => {
-    if (Platform.OS === 'android') {
-      try {
-        // For Android 13+ (API level 33+), no permission needed for photo picker
-        const androidVersion = Platform.Version;
-
-        if (androidVersion >= 33) {
-          return true; // No permission needed for Android 13+
-        }
-
-        // For older Android versions, use READ_EXTERNAL_STORAGE
-        const granted = await PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
-          {
-            title: 'Storage Permission',
-            message: 'This app needs access to your photos to select images.',
-            buttonNeutral: 'Ask Me Later',
-            buttonNegative: 'Cancel',
-            buttonPositive: 'OK',
-          },
-        );
-        return granted === PermissionsAndroid.RESULTS.GRANTED;
-      } catch (err) {
-        console.error('Storage permission error:', err);
-        return false;
-      }
-    }
-    return true;
-  };
 
   const handleTakePhoto = async () => {
-    const hasPermission = await requestCameraPermission();
+    const hasPermission = await requestCameraPermissionAndroid();
     if (!hasPermission) {
       Alert.alert('Permission Denied', 'Camera permission is required to take photos');
       return;
@@ -197,7 +145,7 @@ const EditFarmScreen = ({ navigation, route }) => {
 
         // For Android 13+, no permission check needed
         if (androidVersion < 33) {
-          const hasStoragePermission = await requestStoragePermission();
+          const hasStoragePermission = await requestStoragePermissionAndroid();
           if (!hasStoragePermission) {
             Alert.alert('Permission Denied', 'Photo access permission is required to select images from your gallery.');
             return;

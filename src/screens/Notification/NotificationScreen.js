@@ -59,7 +59,6 @@ const NotificationScreen = ({ navigation }) => {
   useEffect(() => {
     // Try to fetch from API, but don't show error if route doesn't exist
     dispatch(fetchNotifications()).catch(error => {
-      console.log('📱 Notifications API not available, using local notifications only');
     });
   }, [dispatch]);
 

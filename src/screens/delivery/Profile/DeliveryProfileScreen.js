@@ -9,7 +9,6 @@ import {
   TouchableOpacity,
   Image,
   Platform,
-  PermissionsAndroid,
   Alert
 } from 'react-native';
 import { SkeletonLoader } from '../../../components';
@@ -20,13 +19,14 @@ import { p } from '../../../utils/Responsive';
 import { fontSizes } from '../../../utils/fonts';
 import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '../../../redux/slices/authSlice';
-import { fetchProfile, setProfileImage, updateProfile } from '../../../redux/slices/profileSlice';
+import { fetchProfile } from '../../../redux/slices/profileSlice';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
+import { requestCameraPermissionAndroid, requestStoragePermissionAndroid } from '../../../utils/permissions';
 
 const DeliveryProfileScreen = ({ navigation }) => {
   const dispatch = useDispatch();
   const profileState = useSelector(state => state.profile);
-  const { user, address, profile, loading, error } = profileState;
+  const { user, address, profile, loading } = profileState;
   const [showPhotoModal, setShowPhotoModal] = useState(false);
 
   // Modal states
@@ -37,12 +37,7 @@ const DeliveryProfileScreen = ({ navigation }) => {
   const [errorMessage, setErrorMessage] = useState('');
   const [isProcessingImage, setIsProcessingImage] = useState(false);
 
-  // Debug logging
-  console.log('DeliveryProfileScreen - Redux State:', profileState);
-  console.log('DeliveryProfileScreen - Error:', profileState.error);
-
   useEffect(() => {
-    console.log('DeliveryProfileScreen - Dispatching fetchProfile...');
     dispatch(fetchProfile()).then((result) => {
       console.log('DeliveryProfileScreen - fetchProfile result:', result);
     }).catch((error) => {
@@ -101,50 +96,8 @@ const DeliveryProfileScreen = ({ navigation }) => {
     });
   };
 
-  const requestCameraPermissionAndroid = async () => {
-    try {
-      console.log('Requesting camera permission...');
-      const granted = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.CAMERA,
-        {
-          title: 'Camera Permission',
-          message: 'This app needs access to your camera to take profile photos.',
-          buttonNeutral: 'Ask Me Later',
-          buttonNegative: 'Cancel',
-          buttonPositive: 'OK',
-        },
-      );
-      console.log('Camera permission result:', granted);
-      return granted === PermissionsAndroid.RESULTS.GRANTED;
-    } catch (err) {
-      console.error('Camera permission error:', err);
-      return false;
-    }
-  };
-
-  const requestStoragePermissionAndroid = async () => {
-    try {
-      console.log('Requesting storage permission...');
-      const granted = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
-        {
-          title: 'Storage Permission',
-          message: 'This app needs access to your storage to select photos.',
-          buttonNeutral: 'Ask Me Later',
-          buttonNegative: 'Cancel',
-          buttonPositive: 'OK',
-        },
-      );
-      console.log('Storage permission result:', granted);
-      return granted === PermissionsAndroid.RESULTS.GRANTED;
-    } catch (err) {
-      console.error('Storage permission error:', err);
-      return false;
-    }
-  };
 
   const handleCameraPress = () => {
-    console.log('Camera button pressed!');
     setShowPhotoModal(true);
   };
 
@@ -153,7 +106,6 @@ const DeliveryProfileScreen = ({ navigation }) => {
   };
 
   const handleCameraOption = () => {
-    console.log('Camera option selected');
     setShowPhotoModal(false);
     setTimeout(() => {
       openCamera();
@@ -161,7 +113,6 @@ const DeliveryProfileScreen = ({ navigation }) => {
   };
 
   const handleGalleryOption = () => {
-    console.log('Gallery option selected');
     setShowPhotoModal(false);
     setTimeout(() => {
       openGallery();
@@ -171,7 +122,6 @@ const DeliveryProfileScreen = ({ navigation }) => {
   const uploadProfilePicture = async (imageUri) => {
     try {
       setIsProcessingImage(true);
-      console.log('Starting profile picture upload for URI:', imageUri);
 
       // Validate image URI
       if (!imageUri) {
@@ -207,11 +157,7 @@ const DeliveryProfileScreen = ({ navigation }) => {
       updateData.country = address?.country || '';
       updateData.pincode = address?.pincode || '';
 
-      console.log('Update data prepared, dispatching updateProfile...');
-      const result = await dispatch(updateProfile(updateData)).unwrap();
-      console.log('Update profile result:', result);
-
-      console.log('Profile picture updated successfully, refreshing profile...');
+      // const result = await dispatch(updateProfile(updateData)).unwrap();
       // Refresh profile data to get the new image
       dispatch(fetchProfile());
 
@@ -239,8 +185,6 @@ const DeliveryProfileScreen = ({ navigation }) => {
   };
 
   const openCamera = async () => {
-    console.log('Opening camera...');
-
     try {
       // Check permissions first
       if (Platform.OS === 'android') {
@@ -273,17 +217,13 @@ const DeliveryProfileScreen = ({ navigation }) => {
         includeExtra: false,
       };
 
-      console.log('Launching camera with options:', options);
       const response = await launchCamera(options);
-      console.log('Camera response:', response);
 
       if (response.didCancel) {
-        console.log('User cancelled camera');
         return;
       }
 
       if (response.errorCode) {
-        console.log('Camera error:', response.errorMessage);
         setErrorMessage(`Camera error: ${response.errorMessage}`);
         setShowErrorModal(true);
         return;
@@ -291,10 +231,8 @@ const DeliveryProfileScreen = ({ navigation }) => {
 
       if (response.assets && response.assets.length > 0) {
         const asset = response.assets[0];
-        console.log('Camera asset:', asset);
 
         if (asset.uri) {
-          console.log('Processing image URI:', asset.uri);
           await uploadProfilePicture(asset.uri);
         } else {
           console.error('No URI in camera response');
@@ -314,8 +252,6 @@ const DeliveryProfileScreen = ({ navigation }) => {
   };
 
   const openGallery = async () => {
-    console.log('Opening gallery...');
-
     try {
       // Check permissions first
       if (Platform.OS === 'android') {
@@ -346,17 +282,13 @@ const DeliveryProfileScreen = ({ navigation }) => {
         includeExtra: false,
       };
 
-      console.log('Launching gallery with options:', options);
       const response = await launchImageLibrary(options);
-      console.log('Gallery response:', response);
 
       if (response.didCancel) {
-        console.log('User cancelled gallery');
         return;
       }
 
       if (response.errorCode) {
-        console.log('Gallery error:', response.errorMessage);
         setErrorMessage(`Gallery error: ${response.errorMessage}`);
         setShowErrorModal(true);
         return;
@@ -364,10 +296,8 @@ const DeliveryProfileScreen = ({ navigation }) => {
 
       if (response.assets && response.assets.length > 0) {
         const asset = response.assets[0];
-        console.log('Gallery asset:', asset);
 
         if (asset.uri) {
-          console.log('Processing image URI:', asset.uri);
           await uploadProfilePicture(asset.uri);
         } else {
           console.error('No URI in gallery response');

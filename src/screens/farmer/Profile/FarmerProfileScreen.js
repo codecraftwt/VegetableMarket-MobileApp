@@ -9,7 +9,6 @@ import {
   TouchableOpacity,
   Image,
   Platform,
-  PermissionsAndroid,
   Alert
 } from 'react-native';
 import { SkeletonLoader } from '../../../components';
@@ -20,14 +19,15 @@ import { p } from '../../../utils/Responsive';
 import { fontSizes } from '../../../utils/fonts';
 import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '../../../redux/slices/authSlice';
-import { fetchProfile, setProfileImage, updateProfile } from '../../../redux/slices/profileSlice';
+import { fetchProfile, updateProfile } from '../../../redux/slices/profileSlice';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
+import { requestCameraPermissionAndroid, requestStoragePermissionAndroid } from '../../../utils/permissions';
 
 const FarmerProfileScreen = ({ navigation }) => {
   const dispatch = useDispatch();
   const { user } = useSelector(state => state.auth);
   const profileState = useSelector(state => state.profile);
-  const { address, profile, loading, error } = profileState;
+  const { address, profile, loading } = profileState;
   const [showPhotoModal, setShowPhotoModal] = useState(false);
 
   // Modal states
@@ -93,48 +93,6 @@ const FarmerProfileScreen = ({ navigation }) => {
     });
   };
 
-  const requestCameraPermissionAndroid = async () => {
-    try {
-      const granted = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.CAMERA,
-        {
-          title: 'Camera Permission',
-          message: 'This app needs access to your camera to take profile photos.',
-          buttonNeutral: 'Ask Me Later',
-          buttonNegative: 'Cancel',
-          buttonPositive: 'OK',
-        },
-      );
-      return granted === PermissionsAndroid.RESULTS.GRANTED;
-    } catch (err) {
-      console.error('Camera permission error:', err);
-      return false;
-    }
-  };
-
-  const requestStoragePermissionAndroid = async () => {
-    try {
-      const androidVersion = Platform.Version;
-
-      if (androidVersion >= 33) {
-        return true;
-      }
-      const granted = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
-        {
-          title: 'Storage Permission',
-          message: 'This app needs access to your storage to select photos.',
-          buttonNeutral: 'Ask Me Later',
-          buttonNegative: 'Cancel',
-          buttonPositive: 'OK',
-        },
-      );
-      return granted === PermissionsAndroid.RESULTS.GRANTED;
-    } catch (err) {
-      console.error('Storage permission error:', err);
-      return false;
-    }
-  };
 
   const handleCameraPress = () => {
     setShowPhotoModal(true);

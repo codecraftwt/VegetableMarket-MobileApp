@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, StatusBar, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, StatusBar, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import CommonHeader from '../../../components/CommonHeader';
 import { SuccessModal, ErrorModal, ConfirmationModal } from '../../../components';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { p } from '../../../utils/Responsive';
 import { fontSizes } from '../../../utils/fonts';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchAllAddresses, setPrimaryAddress, setPrimaryAddressLocal, deleteAddress } from '../../../redux/slices/addressesSlice';
+import { fetchAllAddresses, setPrimaryAddress, deleteAddress } from '../../../redux/slices/addressesSlice';
 import { ROLES } from '../../../redux/slices/authSlice';
 
 const AllAddressesScreen = ({ navigation, route }) => {

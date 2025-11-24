@@ -25,21 +25,16 @@ import { fontSizes } from '../../../utils/fonts';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   fetchSalesReport,
-  clearSalesReportError,
   clearSalesReport,
-  exportSalesReportPDF,
-  exportSalesReportExcel
 } from '../../../redux/slices/salesReportSlice';
 import RNFS from 'react-native-fs';
 import Share from 'react-native-share';
 import { jsPDF } from 'jspdf';
 import * as XLSX from 'xlsx';
 
-const { width } = Dimensions.get('window');
-
 const SalesReportScreen = ({ navigation }) => {
   const dispatch = useDispatch();
-  const { salesReport, loading, error, exportingPDF, exportingExcel } = useSelector(state => state.salesReport);
+  const { salesReport, loading} = useSelector(state => state.salesReport);
 
   const [showDateModal, setShowDateModal] = useState(false);
   const [startDate, setStartDate] = useState('');
@@ -159,7 +154,6 @@ const SalesReportScreen = ({ navigation }) => {
         const androidVersion = Platform.Version;
         // For Android 13+ (API 33+)
         if (androidVersion >= 33) {
-          // Try MANAGE_EXTERNAL_STORAGE first
           try {
             const manageStorageGranted = await PermissionsAndroid.request(
               PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
@@ -211,10 +205,8 @@ const SalesReportScreen = ({ navigation }) => {
         return false;
       }
     }
-    return true; // iOS doesn't need this permission
+    return true;
   };
-
-
 
   // Generate PDF content
   const generatePDFContent = () => {
@@ -734,7 +726,7 @@ const SalesReportScreen = ({ navigation }) => {
     // Calculate chart width based on number of data points
     const minWidth = Dimensions.get('window').width - 80;
     const dataPoints = labels.length;
-    const chartWidth = Math.max(minWidth, dataPoints * 60); // 60px per data point minimum
+    const chartWidth = Math.max(minWidth, dataPoints * 60);
 
     return (
       <View style={styles.chartContainer}>

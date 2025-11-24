@@ -6,7 +6,6 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
-  Image,
   StatusBar,
   SafeAreaView,
   Platform,
@@ -24,7 +23,7 @@ import {
   fetchVegetables,
   fetchVegetableCategories,
 } from '../../../redux/slices/vegetablesSlice';
-import { fetchPopularItems, fetchWishlist } from '../../../redux/slices/wishlistSlice'; // Add fetchWishlist
+import { fetchPopularItems, fetchWishlist } from '../../../redux/slices/wishlistSlice';
 import { addToCart, fetchCart, addItemToCart } from '../../../redux/slices/cartSlice';
 import SuccessModal from '../../../components/SuccessModal';
 import ErrorModal from '../../../components/ErrorModal';

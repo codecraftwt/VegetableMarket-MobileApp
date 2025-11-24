@@ -28,7 +28,6 @@ const EmailVerificationScreen = () => {
 
   useEffect(() => {
     if (emailVerified) {
-      // Show success modal instead of navigating to dashboard
       setShowSuccessModal(true);
     }
   }, [emailVerified]);

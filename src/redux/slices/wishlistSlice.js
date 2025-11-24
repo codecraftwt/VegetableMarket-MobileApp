@@ -5,9 +5,7 @@ import api from '../../api/axiosInstance';
 export const fetchWishlist = createAsyncThunk(
   'wishlist/fetchWishlist',
   async (_, { rejectWithValue, getState }) => {
-    try {
-      console.log('Fetching wishlist items...');
-      
+    try {      
       // Get the current state to access the token
       const state = getState();
       const token = state.auth.token;
@@ -15,7 +13,6 @@ export const fetchWishlist = createAsyncThunk(
       // For GET requests, we can include the token as a query parameter
       // or the Bearer token in headers should be sufficient
       const response = await api.get('/wishlist');
-      console.log('Wishlist API response:', response.data);
       return response.data;
     } catch (error) {
       console.error('Fetch wishlist error:', error);
@@ -28,15 +25,12 @@ export const fetchWishlist = createAsyncThunk(
 export const fetchPopularItems = createAsyncThunk(
   'wishlist/fetchPopularItems',
   async (_, { rejectWithValue, getState }) => {
-    try {
-      console.log('Fetching popular items...');
-      
+    try {      
       // Get the current state to access the token
       const state = getState();
       const token = state.auth.token;
       
       const response = await api.get('/popular-items');
-      console.log('Popular items API response:', response.data);
       return response.data;
     } catch (error) {
       console.error('Fetch popular items error:', error);
@@ -49,9 +43,7 @@ export const fetchPopularItems = createAsyncThunk(
 export const toggleWishlistItem = createAsyncThunk(
   'wishlist/toggleWishlistItem',
   async (vegetableId, { rejectWithValue, getState }) => {
-    try {
-      console.log('Toggling wishlist item for vegetable ID:', vegetableId);
-      
+    try {      
       // Get the current state to access the token
       const state = getState();
       const token = state.auth.token;
@@ -61,11 +53,8 @@ export const toggleWishlistItem = createAsyncThunk(
         vegetable_id: vegetableId,
         _token: token
       };
-      
-      console.log('Toggle wishlist payload:', payload);
-      
+            
       const response = await api.post('/wishlist/toggle', payload);
-      console.log('Toggle wishlist API response:', response.data);
       return { ...response.data, vegetableId };
     } catch (error) {
       console.error('Toggle wishlist error:', error);
@@ -78,9 +67,7 @@ export const toggleWishlistItem = createAsyncThunk(
 export const removeWishlistItem = createAsyncThunk(
   'wishlist/removeWishlistItem',
   async (vegetableId, { rejectWithValue, getState }) => {
-    try {
-      console.log('Removing wishlist item for vegetable ID:', vegetableId);
-      
+    try {      
       // Get the current state to access the token
       const state = getState();
       const token = state.auth.token;
@@ -92,7 +79,6 @@ export const removeWishlistItem = createAsyncThunk(
           _token: token
         }
       });
-      console.log('Remove wishlist API response:', response.data);
       return { ...response.data, vegetableId };
     } catch (error) {
       console.error('Remove wishlist error:', error);

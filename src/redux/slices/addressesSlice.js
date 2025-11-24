@@ -6,9 +6,7 @@ export const fetchAllAddresses = createAsyncThunk(
   'addresses/fetchAllAddresses',
   async (_, { rejectWithValue }) => {
     try {
-      console.log('Fetching addresses from API...');
       const response = await api.get('/addresses');
-      console.log('Addresses API response:', response.data);
       return response.data;
     } catch (error) {
       console.error('Fetch addresses error:', error);
@@ -35,10 +33,7 @@ export const updateAddress = createAsyncThunk(
   'addresses/updateAddress',
   async ({ addressId, addressData }, { rejectWithValue }) => {
     try {
-      console.log('Updating address with ID:', addressId);
-      console.log('Update address data:', addressData);
       const response = await api.put(`/addresses/${addressId}`, addressData);
-      console.log('Update address API response:', response.data);
       return response.data;
     } catch (error) {
       console.error('Update address error:', error);
@@ -52,9 +47,7 @@ export const deleteAddress = createAsyncThunk(
   'addresses/deleteAddress',
   async (addressId, { rejectWithValue }) => {
     try {
-      console.log('Deleting address with ID:', addressId);
       const response = await api.delete(`/addresses/${addressId}`);
-      console.log('Delete address API response:', response.data);
       return response.data;
     } catch (error) {
       console.error('Delete address error:', error);
@@ -68,11 +61,8 @@ export const setPrimaryAddress = createAsyncThunk(
   'addresses/setPrimaryAddress',
   async (addressId, { rejectWithValue }) => {
     try {
-      console.log('Setting primary address with ID:', addressId);
-      console.log('CORRECT API endpoint: /address/' + addressId + '/set-primary');
       // Using SINGULAR 'address' not 'addresses' as per API spec
       const response = await api.post(`/address/${addressId}/set-primary`);
-      console.log('Set primary address API response:', response.data);
       return response.data;
     } catch (error) {
       console.error('Set primary address error:', error);

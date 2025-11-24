@@ -116,10 +116,8 @@ const TicketDetailsScreen = ({ navigation, route }) => {
   };
 
   const handleStatusChange = (newStatus) => {
-    console.log('Changing status from', displayStatus, 'to', newStatus);
-    console.log('Ticket ID:', ticket.id);
     setIsUpdatingStatus(true);
-    setLocalTicketStatus(newStatus); // Update immediately for instant UI feedback
+    setLocalTicketStatus(newStatus);
     dispatch(updateSupportTicketStatus({ 
       ticketId: ticket.id, 
       status: newStatus 

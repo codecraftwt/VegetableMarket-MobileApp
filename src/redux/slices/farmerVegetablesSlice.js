@@ -36,14 +36,11 @@ export const addVegetable = createAsyncThunk(
   'farmerVegetables/addVegetable',
   async (vegetableData, { rejectWithValue }) => {
     try {
-      console.log('Vegetable data ------------------->', vegetableData);
       const response = await api.post('/farmer/vegetables', vegetableData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
-      console.log('Raw API response:', response);
-      console.log('API response data:', response.data);
       return response.data;
     } catch (error) {
       return rejectWithValue(
@@ -58,15 +55,11 @@ export const updateVegetable = createAsyncThunk(
   'farmerVegetables/updateVegetable',
   async ({ vegetableId, vegetableData }, { rejectWithValue }) => {
     try {
-      console.log('Update vegetable data ------------------->', vegetableData);
-      console.log('Update vegetable ID:', vegetableId);
       const response = await api.post(`/farmer/vegetables/${vegetableId}`, vegetableData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
-      console.log('Update vegetable raw API response:', response);
-      console.log('Update vegetable API response data:', response.data);
       return response.data;
     } catch (error) {
       console.error('Update vegetable API error:', error);
@@ -83,12 +76,9 @@ export const deleteVegetable = createAsyncThunk(
   'farmerVegetables/deleteVegetable',
   async (vegetableId, { rejectWithValue }) => {
     try {
-      console.log('Deleting vegetable with ID:', vegetableId);
       const response = await api.delete(`/farmer/vegetables/${vegetableId}`);
-      console.log('Delete response:', response.data);
       return { ...response.data, vegetableId };
     } catch (error) {
-      console.log('Delete error:', error);
       return rejectWithValue(
         error.response?.data?.message || 'Failed to delete vegetable'
       );
@@ -178,11 +168,7 @@ const farmerVegetablesSlice = createSlice({
       .addCase(addVegetable.fulfilled, (state, action) => {
         state.loading = false;
         // Handle different response structures
-        const vegetableData = action.payload.vegetable || action.payload.data;
-        console.log('Add vegetable response structure:', action.payload);
-        console.log('Vegetable data:', vegetableData);
-        console.log('Vegetable images:', vegetableData?.images);
-        
+        const vegetableData = action.payload.vegetable || action.payload.data;   
         if (vegetableData) {
           state.vegetables.unshift(vegetableData);
         }
@@ -204,10 +190,6 @@ const farmerVegetablesSlice = createSlice({
         state.loading = false;
         // Handle different response structures
         const updatedVegetable = action.payload.vegetable || action.payload.data;
-        console.log('Update vegetable response structure:', action.payload);
-        console.log('Updated vegetable data:', updatedVegetable);
-        console.log('Updated vegetable images:', updatedVegetable?.images);
-        
         if (updatedVegetable) {
           state.vegetables = state.vegetables.map(vegetable =>
             vegetable.id === updatedVegetable.id ? updatedVegetable : vegetable
@@ -227,18 +209,15 @@ const farmerVegetablesSlice = createSlice({
       
       // Delete vegetable
       .addCase(deleteVegetable.pending, (state) => {
-        console.log('Delete vegetable pending');
         state.loading = true;
         state.error = null;
       })
       .addCase(deleteVegetable.fulfilled, (state, action) => {
-        console.log('Delete vegetable fulfilled:', action.payload);
         state.loading = false;
         const originalLength = state.vegetables.length;
         state.vegetables = state.vegetables.filter(
           vegetable => vegetable.id !== action.payload.vegetableId
         );
-        console.log('Vegetables before:', originalLength, 'after:', state.vegetables.length);
         if (state.selectedVegetable && state.selectedVegetable.id === action.payload.vegetableId) {
           state.selectedVegetable = null;
         }
@@ -247,7 +226,6 @@ const farmerVegetablesSlice = createSlice({
         state.error = null;
       })
       .addCase(deleteVegetable.rejected, (state, action) => {
-        console.log('Delete vegetable rejected:', action.payload);
         state.loading = false;
         state.error = action.payload;
       })

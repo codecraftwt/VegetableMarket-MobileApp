@@ -6,7 +6,6 @@ import Icon1 from 'react-native-vector-icons/FontAwesome5';
 
 import { p } from '../utils/Responsive';
 import { fontSizes } from '../utils/fonts';
-import SkeletonLoader from './SkeletonLoader';
 
 const CategoryItem = ({
   category,

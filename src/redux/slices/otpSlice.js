@@ -6,22 +6,10 @@ export const generateOTP = createAsyncThunk(
   'otp/generateOTP',
   async ({ orderId }, { rejectWithValue }) => {
     try {
-      console.log('🚀 Generate OTP API Call:', {
-        url: '/delivery/otp/generate',
-        orderId: orderId,
-        orderIdType: typeof orderId,
-        requestBody: { order_id: orderId }
-      });
-      
       // Check if we have a valid token
       try {
         const AsyncStorage = await import('@react-native-async-storage/async-storage');
         const token = await AsyncStorage.default.getItem('token');
-        console.log('🔑 Authentication Token:', {
-          hasToken: !!token,
-          tokenLength: token?.length,
-          tokenPreview: token ? token.substring(0, 20) + '...' : 'No token'
-        });
       } catch (tokenError) {
         console.log('❌ Token Check Error:', tokenError);
       }
@@ -30,16 +18,9 @@ export const generateOTP = createAsyncThunk(
         order_id: orderId
       });
       
-      console.log('✅ Generate OTP API Response:', {
-        status: response.status,
-        data: response.data,
-        headers: response.headers
-      });
-      
       // After generating OTP, fetch the OTP status to get the actual OTP value
       try {
         const statusResponse = await api.get(`/delivery/otp/status/${orderId}`);
-        console.log('📊 OTP Status After Generation:', statusResponse.data);
         
         // Return both the generation response and the OTP status
         return {
@@ -48,29 +29,13 @@ export const generateOTP = createAsyncThunk(
           actualOTP: statusResponse.data.otp || null // Extract OTP if available
         };
       } catch (statusError) {
-        console.log('⚠️ Could not fetch OTP status after generation:', statusError);
         return response.data;
       }
     } catch (error) {
-      console.log('❌ Generate OTP API Error:', {
-        status: error.response?.status,
-        data: error.response?.data,
-        message: error.message,
-        fullError: error
-      });
-      
       // Log the detailed error response
       if (error.response?.data) {
         console.log('🔍 Detailed Error Response:', JSON.stringify(error.response.data, null, 2));
       }
-      
-      // Log the request that failed
-      console.log('📤 Failed Request Details:', {
-        url: '/delivery/otp/generate',
-        method: 'POST',
-        data: { order_id: orderId },
-        headers: error.config?.headers
-      });
       
       return rejectWithValue(
         error.response?.data?.message || 'Failed to generate OTP'
@@ -84,33 +49,13 @@ export const verifyOTP = createAsyncThunk(
   'otp/verifyOTP',
   async ({ orderId, otp }, { rejectWithValue }) => {
     try {
-      console.log('🔐 Verify OTP API Call:', {
-        url: '/delivery/otp/verify',
-        orderId: orderId,
-        otp: otp,
-        requestBody: { order_id: orderId, otp: otp }
-      });
-      
       const response = await api.post('/delivery/otp/verify', {
         order_id: orderId,
         otp: otp
       });
       
-      console.log('✅ Verify OTP API Response:', {
-        status: response.status,
-        data: response.data,
-        headers: response.headers
-      });
-      
       return response.data;
     } catch (error) {
-      console.log('❌ Verify OTP API Error:', {
-        status: error.response?.status,
-        data: error.response?.data,
-        message: error.message,
-        fullError: error
-      });
-      
       // Log detailed error response for debugging
       if (error.response?.data) {
         console.log('🔍 Detailed Verify OTP Error Response:', JSON.stringify(error.response.data, null, 2));
@@ -127,55 +72,23 @@ export const verifyOTP = createAsyncThunk(
 export const getOTPStatus = createAsyncThunk(
   'otp/getOTPStatus',
   async (orderId, { rejectWithValue }) => {
-    try {
-      console.log('📊 Get OTP Status API Call:', {
-        url: `/delivery/otp/status/${orderId}`,
-        orderId: orderId,
-        orderIdType: typeof orderId
-      });
-      
+    try {     
       // Check if we have a valid token
       try {
         const AsyncStorage = await import('@react-native-async-storage/async-storage');
         const token = await AsyncStorage.default.getItem('token');
-        console.log('🔑 OTP Status Token Check:', {
-          hasToken: !!token,
-          tokenLength: token?.length,
-          tokenPreview: token ? token.substring(0, 20) + '...' : 'No token'
-        });
       } catch (tokenError) {
         console.log('❌ OTP Status Token Check Error:', tokenError);
       }
       
-      const response = await api.get(`/delivery/otp/status/${orderId}`);
-      
-      console.log('✅ Get OTP Status API Response:', {
-        status: response.status,
-        data: response.data,
-        headers: response.headers
-      });
+      const response = await api.get(`/delivery/otp/status/${orderId}`);      
       
       return response.data;
     } catch (error) {
-      console.log('❌ Get OTP Status API Error:', {
-        status: error.response?.status,
-        data: error.response?.data,
-        message: error.message,
-        fullError: error
-      });
-      
       // Log the detailed error response
       if (error.response?.data) {
         console.log('🔍 OTP Status Detailed Error Response:', JSON.stringify(error.response.data, null, 2));
       }
-      
-      // Log the request that failed
-      console.log('📤 OTP Status Failed Request Details:', {
-        url: `/delivery/otp/status/${orderId}`,
-        method: 'GET',
-        orderId: orderId,
-        headers: error.config?.headers
-      });
       
       return rejectWithValue(
         error.response?.data?.message || 'Failed to get OTP status'

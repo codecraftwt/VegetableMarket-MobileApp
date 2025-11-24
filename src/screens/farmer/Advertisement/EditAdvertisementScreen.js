@@ -50,7 +50,6 @@ const EditAdvertisementScreen = ({ navigation, route }) => {
       setFromDate(advertisement.from ? new Date(advertisement.from) : new Date());
       setToDate(advertisement.to ? new Date(advertisement.to) : new Date());
     } else {
-      // Otherwise, fetch the advertisement by ID
       dispatch(fetchAdvertisementById(advertisement.id));
     }
   }, [advertisement, dispatch]);

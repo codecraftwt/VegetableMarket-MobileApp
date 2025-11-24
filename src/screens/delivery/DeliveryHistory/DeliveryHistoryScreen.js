@@ -20,7 +20,7 @@ import { fetchDeliveryHistory } from '../../../redux/slices/deliveryHistorySlice
 
 const DeliveryHistoryScreen = ({ navigation }) => {
   const dispatch = useDispatch();
-  const { deliveries, loading, error } = useSelector(state => state.deliveryHistory);
+  const { deliveries, loading } = useSelector(state => state.deliveryHistory);
   
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredDeliveries, setFilteredDeliveries] = useState([]);

@@ -1,9 +1,9 @@
 import React, { useEffect, useRef } from 'react';
-import { View, StyleSheet, Animated } from 'react-native';
+import { StyleSheet, Animated } from 'react-native';
 import { p } from '../utils/Responsive';
 
 const SkeletonLoader = ({ 
-  type = 'card', // 'card', 'category', 'text', 'banner', 'cart-item', 'profile'
+  type = 'card',
   width, 
   height, 
   style,

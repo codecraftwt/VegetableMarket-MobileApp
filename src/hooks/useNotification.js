@@ -24,10 +24,7 @@ const useNotification = () => {
 
   const initializeNotification = async () => {
     try {
-      await dispatch(initializeFCM()).unwrap();
-      console.log('FCM initialized successfully');
-      
-      // Set up message handlers with dispatch
+      await dispatch(initializeFCM()).unwrap();      
       firebaseMessagingService.setupMessageHandlers(dispatch);
     } catch (error) {
       console.error('Failed to initialize FCM:', error);

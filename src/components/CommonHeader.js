@@ -17,16 +17,10 @@ const CommonHeader = ({
   navigation,
 }) => {
   const handleBackPress = () => {
-    console.log('Back button pressed');
-    console.log('onBackPress available:', !!onBackPress);
-    console.log('navigation available:', !!navigation);
-    console.log('screenName:', screenName);
     
     if (onBackPress) {
-      console.log('Using custom onBackPress handler');
       onBackPress();
     } else if (navigation) {
-      console.log('Using navigation utility');
       const fallbackRoute = getFallbackRoute(screenName);
       handleBackNavigation(navigation, fallbackRoute);
     } else {
@@ -57,12 +51,9 @@ const CommonHeader = ({
           <TouchableOpacity
             style={styles.notificationButton}
             onPress={() => {
-              console.log('Notification button pressed, navigation available:', !!navigation);
               if (navigation) {
-                console.log('Navigating to Notification screen');
                 navigation.navigate('Notification');
               } else if (onNotificationPress) {
-                console.log('Calling onNotificationPress fallback');
                 onNotificationPress();
               }
             }}

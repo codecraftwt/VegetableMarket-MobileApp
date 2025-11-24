@@ -13,14 +13,14 @@ import { createBackPressHandler } from '../../../utils/navigationUtils';
 const MyOrdersScreen = ({ navigation }) => {
   const dispatch = useDispatch();
   const { orders, loading, error } = useSelector(state => state.orders);
-  const { cancelOrderLoading, cancelOrderError, submitReviewLoading, submitReviewError } = useSelector(state => state.orders);
+  const { cancelOrderError, submitReviewLoading, submitReviewError } = useSelector(state => state.orders);
   const [refreshing, setRefreshing] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [selectedOrder, setSelectedOrder] = useState(null);
-  const [cancellingOrders, setCancellingOrders] = useState(new Set()); // Track which orders are being cancelled
+  const [cancellingOrders, setCancellingOrders] = useState(new Set());
 
   useEffect(() => {
     dispatch(fetchMyOrders());
@@ -103,7 +103,6 @@ const MyOrdersScreen = ({ navigation }) => {
         newSet.delete(orderId);
         return newSet;
       });
-      // Error is already handled by the slice
     }
   };
 

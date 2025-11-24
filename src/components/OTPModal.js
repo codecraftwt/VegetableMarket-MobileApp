@@ -29,7 +29,6 @@ const OTPModal = ({
   useEffect(() => {
     if (visible) {
       setOtp(['', '', '', '', '', '']);
-      // Focus first input when modal opens
       setTimeout(() => {
         inputRefs.current[0]?.focus();
       }, 100);

@@ -37,12 +37,9 @@ export const fetchNotifications = createAsyncThunk(
   'notification/fetchNotifications',
   async (_, { rejectWithValue }) => {
     try {
-      console.log('📱 Fetching notifications from API...');
       const response = await axiosInstance.get('/notifications');
-      console.log('📱 Notifications API Response:', response.data);
       return response.data;
     } catch (error) {
-      console.log('📱 Notifications API Error:', error.response?.data || error.message);
       return rejectWithValue(error.response?.data?.message || error.message);
     }
   }
@@ -53,12 +50,9 @@ export const markNotificationAsRead = createAsyncThunk(
   'notification/markNotificationAsRead',
   async (notificationId, { rejectWithValue }) => {
     try {
-      console.log('📱 Marking notification as read:', notificationId);
       const response = await axiosInstance.put(`/notifications/${notificationId}/read`);
-      console.log('📱 Mark notification as read response:', response.data);
       return { notificationId, ...response.data };
     } catch (error) {
-      console.log('📱 Mark notification as read error:', error.response?.data || error.message);
       return rejectWithValue(error.response?.data?.message || error.message);
     }
   }
@@ -69,12 +63,9 @@ export const markAllNotificationsAsRead = createAsyncThunk(
   'notification/markAllNotificationsAsRead',
   async (_, { rejectWithValue }) => {
     try {
-      console.log('📱 Marking all notifications as read...');
       const response = await axiosInstance.put('/notifications/mark-all-read');
-      console.log('📱 Mark all notifications as read response:', response.data);
       return response.data;
     } catch (error) {
-      console.log('📱 Mark all notifications as read error:', error.response?.data || error.message);
       return rejectWithValue(error.response?.data?.message || error.message);
     }
   }
@@ -84,9 +75,7 @@ export const markAllNotificationsAsRead = createAsyncThunk(
 export const sendTestNotification = createAsyncThunk(
   'notification/sendTestNotification',
   async (notificationData, { rejectWithValue }) => {
-    try {
-      console.log('📱 Sending test notification:', notificationData);
-      
+    try {      
       // For now, we'll just add it to local state
       // In a real app, this would send to your backend which would then send FCM
       const testNotification = {
@@ -99,10 +88,8 @@ export const sendTestNotification = createAsyncThunk(
         ...notificationData
       };
       
-      console.log('📱 Test notification created:', testNotification);
       return testNotification;
     } catch (error) {
-      console.log('📱 Test notification error:', error);
       return rejectWithValue(error.message);
     }
   }

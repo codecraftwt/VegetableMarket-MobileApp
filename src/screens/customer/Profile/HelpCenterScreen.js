@@ -31,7 +31,7 @@ const HelpCenterScreen = ({ navigation }) => {
   };
 
   const handleCallSupport = () => {
-    const phoneNumber = '+919623448771'; // Updated support number
+    const phoneNumber = '+919623448771';
     const phoneUrl = `tel:${phoneNumber}`;
     
     Linking.canOpenURL(phoneUrl)

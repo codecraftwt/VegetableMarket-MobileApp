@@ -11,7 +11,6 @@ import {
   Alert,
   Image,
   Platform,
-  PermissionsAndroid,
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
@@ -21,6 +20,7 @@ import Icon from 'react-native-vector-icons/FontAwesome';
 import { p } from '../../../utils/Responsive';
 import { fontSizes } from '../../../utils/fonts';
 import { createSupportTicket, clearSupportTicketError, clearSupportTicketSuccess } from '../../../redux/slices/supportTicketSlice';
+import { requestCameraPermissionAndroid, requestStoragePermissionAndroid } from '../../../utils/permissions';
 
 const GenerateTicketScreen = ({ navigation }) => {
   const dispatch = useDispatch();
@@ -41,30 +41,6 @@ const GenerateTicketScreen = ({ navigation }) => {
     navigation.goBack();
   };
 
-  const requestStoragePermissionAndroid = async () => {
-    try {
-      const androidVersion = Platform.Version;
-      let permission;
-
-      if (androidVersion >= 33) {
-        permission = PermissionsAndroid.PERMISSIONS.READ_MEDIA_IMAGES;
-      } else {
-        permission = PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE;
-      }
-
-      const granted = await PermissionsAndroid.request(permission, {
-        title: 'Storage Permission',
-        message: 'This app needs access to your photos to select images.',
-        buttonNeutral: 'Ask Me Later',
-        buttonNegative: 'Cancel',
-        buttonPositive: 'OK',
-      });
-      return granted === PermissionsAndroid.RESULTS.GRANTED;
-    } catch (err) {
-      console.error('Storage permission error:', err);
-      return false;
-    }
-  };
 
   const tryAlternativeGallery = async () => {
     try {
@@ -102,24 +78,6 @@ const GenerateTicketScreen = ({ navigation }) => {
     }
   };
 
-  const requestCameraPermissionAndroid = async () => {
-    try {
-      const granted = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.CAMERA,
-        {
-          title: 'Camera Permission',
-          message: 'This app needs access to your camera to take photos.',
-          buttonNeutral: 'Ask Me Later',
-          buttonNegative: 'Cancel',
-          buttonPositive: 'OK',
-        },
-      );
-      return granted === PermissionsAndroid.RESULTS.GRANTED;
-    } catch (err) {
-      console.error('Camera permission error:', err);
-      return false;
-    }
-  };
 
   const openCamera = async () => {
     try {
@@ -168,7 +126,7 @@ const GenerateTicketScreen = ({ navigation }) => {
   const openGallery = async () => {
     try {
       if (Platform.OS === 'android') {
-        const hasStoragePermission = await requestStoragePermissionAndroid();
+        const hasStoragePermission = await requestStoragePermissionAndroid({ useMediaImages: true });
         if (!hasStoragePermission) {
           Alert.alert('Permission required', 'Please grant photo access permission.');
           return;

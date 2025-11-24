@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -16,11 +16,11 @@ import { SkeletonLoader } from '../../../components';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { p } from '../../../utils/Responsive';
 import { fontSizes } from '../../../utils/fonts';
-import { fetchTodaysTasks, fetchTodaysTaskSummary, updateTaskStatus, updateOrderStatus, updateAssignmentStatus, updatePaymentStatus } from '../../../redux/slices/todaysTaskSlice';
+import { fetchTodaysTasks, fetchTodaysTaskSummary, updateOrderStatus, updatePaymentStatus } from '../../../redux/slices/todaysTaskSlice';
 
 const TodaysTaskScreen = ({ navigation }) => {
   const dispatch = useDispatch();
-  const { tasks, summary, loading, summaryLoading, error, loading: updatePaymentStatusLoading } = useSelector(state => state.todaysTask);
+  const { tasks, summary, loading, summaryLoading, loading: updatePaymentStatusLoading } = useSelector(state => state.todaysTask);
   
   useFocusEffect(
     React.useCallback(() => {

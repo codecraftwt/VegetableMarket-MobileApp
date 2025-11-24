@@ -7,8 +7,6 @@ import {
   StatusBar,
   ScrollView,
   TouchableOpacity,
-  Image,
-  TextInput,
 } from 'react-native';
 import SkeletonLoader from '../../../components/SkeletonLoader';
 import CommonHeader from '../../../components/CommonHeader';
@@ -34,21 +32,20 @@ const BucketScreen = ({ navigation, route }) => {
   const [errorMessage, setErrorMessage] = useState('');
   const dispatch = useDispatch();
   const { vegetables, categories, loading, categoriesLoading } = useSelector(state => state.vegetables);
-  const { addLoading } = useSelector(state => state.cart);
+  // const { addLoading } = useSelector(state => state.cart);
   const wishlistState = useSelector(state => state.wishlist);
 
   // Fetch data when component mounts
   useEffect(() => {
     dispatch(fetchVegetables());
     dispatch(fetchVegetableCategories());
-    dispatch(fetchCart()); // Fetch cart to show accurate badge count
+    dispatch(fetchCart());
   }, [dispatch]);
 
   // Handle route parameters for search
   useEffect(() => {
     if (route?.params) {
       if (route.params.searchQuery) {
-        // Use setTimeout to ensure this runs after useFocusEffect
         setTimeout(() => {
           setSearchQuery(route.params.searchQuery);
         }, 50);
@@ -65,7 +62,6 @@ const BucketScreen = ({ navigation, route }) => {
   useFocusEffect(
     React.useCallback(() => {
       // Always clear search state when screen comes into focus
-      // The route params useEffect will set it again if there's a search query
       setSelectedCategory('all');
       setSearchQuery('');
       

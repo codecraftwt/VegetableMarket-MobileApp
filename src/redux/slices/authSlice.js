@@ -27,7 +27,6 @@ export const registerUser = createAsyncThunk(
       };
 
       const response = await api.post('register', apiData);
-      console.log(response.data);
       return response.data;
     } catch (error) {
       return rejectWithValue(
@@ -65,18 +64,9 @@ export const loginUser = createAsyncThunk(
         // device_type: deviceType // Commented out
       };
 
-      console.log('📱 Login Request Data:', {
-        email: credentials.email,
-        hasPassword: !!credentials.password,
-        // device_token: deviceToken ? 'Present' : 'Missing', // Commented out
-        // device_type: deviceType // Commented out
-      });
-
       const response = await api.post('login', loginData);
-      console.log('✅ Login response:', response.data);
       return response.data;
     } catch (error) {
-      console.log('❌ Login error:', error.response?.data);
       return rejectWithValue(error.response?.data?.message || 'Login failed');
     }
   },

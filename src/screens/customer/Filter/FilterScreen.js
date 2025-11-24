@@ -9,7 +9,6 @@ import {
   TouchableOpacity,
   TextInput,
   Switch,
-  Alert,
 } from 'react-native';
 import CommonHeader from '../../../components/CommonHeader';
 import Icon from 'react-native-vector-icons/FontAwesome';
@@ -18,8 +17,6 @@ import { fontSizes } from '../../../utils/fonts';
 import { useDispatch, useSelector } from 'react-redux';
 import { 
   fetchFilteredVegetables, 
-  clearFilters, 
-  updateFilter, 
   resetFilters 
 } from '../../../redux/slices/filterSlice';
 import { fetchVegetableCategories } from '../../../redux/slices/vegetablesSlice';
@@ -33,12 +30,11 @@ const FilterScreen = ({ navigation }) => {
   const { 
     vegetables, 
     loading, 
-    error, 
     currentFilters, 
     pagination 
   } = useSelector(state => state.filter);
   const { categories } = useSelector(state => state.vegetables);
-  const { addLoading, addError } = useSelector(state => state.cart);
+  const { addError } = useSelector(state => state.cart);
 
   // Local state for form inputs
   const [searchQuery, setSearchQuery] = useState(currentFilters.search || '');
@@ -258,14 +254,6 @@ const FilterScreen = ({ navigation }) => {
   );
 
   const ResultsSection = () => {
-    // Debug logging for filter results
-    console.log('FilterScreen: Filter results:', {
-      vegetablesCount: vegetables.length,
-      firstVegetable: vegetables[0],
-      hasImages: vegetables[0]?.images?.length > 0,
-      imagePath: vegetables[0]?.images?.[0]?.image_path
-    });
-
     if (loading) {
       return (
         <View style={styles.resultsContainer}>
@@ -305,9 +293,7 @@ const FilterScreen = ({ navigation }) => {
                   item={item}
                   onPress={() => navigation.navigate('ProductDetail', { product: item })}
                   onAddToCart={async (item) => {
-                    try {
-                      console.log('FilterScreen: Adding to cart:', item.name);
-                      
+                    try {                      
                       // Update cart state immediately for badge
                       dispatch(addItemToCart({
                         vegetable_id: item.id,
@@ -320,7 +306,6 @@ const FilterScreen = ({ navigation }) => {
                         vegetable_id: item.id, 
                         quantity: 1 
                       })).unwrap().then(() => {
-                        console.log('FilterScreen: Add to cart API successful');
                         setSuccessMessage(`${item.name} added to cart!`);
                         setShowSuccessModal(true);
                       }).catch((error) => {
