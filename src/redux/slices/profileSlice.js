@@ -141,6 +141,19 @@ export const updateProfile = createAsyncThunk(
   }
 );
 
+// Async thunk for deleting profile
+export const deleteProfile = createAsyncThunk(
+  'profile/deleteProfile',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await api.post('/profile/delete');
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || 'Failed to delete profile');
+    }
+  }
+);
+
 // Async thunk for updating address
 export const updateAddress = createAsyncThunk(
   'profile/updateAddress',
@@ -206,6 +219,8 @@ const initialState = {
   error: null,
   updateLoading: false,
   updateError: null,
+  deleteProfileLoading: false,
+  deleteProfileError: null,
   changePasswordLoading: false,
   changePasswordError: null,
   addAddressLoading: false,
@@ -272,6 +287,26 @@ const profileSlice = createSlice({
       .addCase(updateProfile.rejected, (state, action) => {
         state.updateLoading = false;
         state.updateError = action.payload;
+      });
+
+    // Delete Profile
+    builder
+      .addCase(deleteProfile.pending, (state) => {
+        state.deleteProfileLoading = true;
+        state.deleteProfileError = null;
+      })
+      .addCase(deleteProfile.fulfilled, (state, action) => {
+        state.deleteProfileLoading = false;
+        // Clear profile data after successful deletion
+        state.user = null;
+        state.address = null;
+        state.addresses = [];
+        state.profile = null;
+        state.deleteProfileError = null;
+      })
+      .addCase(deleteProfile.rejected, (state, action) => {
+        state.deleteProfileLoading = false;
+        state.deleteProfileError = action.payload;
       });
 
     // Update Address

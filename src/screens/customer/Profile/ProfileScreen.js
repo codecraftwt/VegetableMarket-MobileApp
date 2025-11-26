@@ -18,20 +18,21 @@ import { p } from '../../../utils/Responsive';
 import { fontSizes } from '../../../utils/fonts';
 import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '../../../redux/slices/authSlice';
-import { fetchProfile, updateProfile } from '../../../redux/slices/profileSlice';
+import { fetchProfile, updateProfile, deleteProfile } from '../../../redux/slices/profileSlice';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import { requestCameraPermissionAndroid, requestStoragePermissionAndroid } from '../../../utils/permissions';
 
 const ProfileScreen = ({ navigation }) => {
   const dispatch = useDispatch();
   const profileState = useSelector(state => state.profile);
-  const { user, address, profile, loading } = profileState;
+  const { user, address, profile, loading, deleteProfileLoading, deleteProfileError } = profileState;
   const [showPhotoModal, setShowPhotoModal] = useState(false);
 
   // Modal states
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [isProcessingImage, setIsProcessingImage] = useState(false);
@@ -39,6 +40,14 @@ const ProfileScreen = ({ navigation }) => {
   useEffect(() => {
     dispatch(fetchProfile());
   }, [dispatch]);
+
+  // Handle delete profile success
+  useEffect(() => {
+    if (deleteProfileError) {
+      setErrorMessage(deleteProfileError);
+      setShowErrorModal(true);
+    }
+  }, [deleteProfileError]);
 
   const handleNotificationPress = () => {
     console.log('Profile notification pressed');
@@ -70,33 +79,33 @@ const ProfileScreen = ({ navigation }) => {
   };
 
   const handleDeleteAccount = () => {
-    Alert.alert(
-      "Confirm Delete Account",
-      "Are you sure you want to delete your account?",
-      [
-        {
-          text: "Cancel",
-          style: "cancel"
-        },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: handleConfirmDelete
-        }
-      ]
-    );
+    setShowDeleteModal(true);
   };
 
-  const handleConfirmDelete = () => {
-    dispatch(logout());
-    navigation.reset({
-      index: 0,
-      routes: [{ name: 'Login' }],
-    });
-    // Show success alert after navigation
-    setTimeout(() => {
-      Alert.alert("Success", "Account deleted successfully");
-    }, 500);
+  const handleConfirmDelete = async () => {
+    setShowDeleteModal(false);
+
+    try {
+      const result = await dispatch(deleteProfile()).unwrap();
+
+      if (result.success) {
+        // Show success message
+        setSuccessMessage(result.message || 'Your profile has been deleted successfully.');
+        setShowSuccessModal(true);
+
+        // Navigate to login after successful deletion
+        setTimeout(() => {
+          dispatch(logout());
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'Login' }],
+          });
+        }, 2000);
+      }
+    } catch (error) {
+      // Error is handled in the useEffect above
+      console.error('Delete profile error:', error);
+    }
   };
   const handleLogout = () => {
     setShowLogoutModal(true);
@@ -526,18 +535,28 @@ const ProfileScreen = ({ navigation }) => {
         <Icon name="chevron-right" size={16} color="#999" />
       </TouchableOpacity>
 
-      {/* temporary delete account */}
-      <TouchableOpacity style={styles.actionItem} onPress={handleDeleteAccount}>
+      {/* Delete Account Button */}
+      <TouchableOpacity
+        style={[styles.actionItem, deleteProfileLoading && styles.actionItemDisabled]}
+        onPress={handleDeleteAccount}
+        disabled={deleteProfileLoading}
+      >
         <View style={styles.actionIcon}>
           <Icon name="trash" size={20} color="#dc3545" />
         </View>
         <View style={styles.actionContent}>
-          <Text style={[styles.actionTitle, styles.logoutTitle]}>Delete Account</Text>
+          <Text style={[styles.actionTitle, styles.logoutTitle]}>
+            {deleteProfileLoading ? 'Deleting Account...' : 'Delete Account'}
+          </Text>
           <Text style={[styles.actionSubtitle]}>
             Delete your account
           </Text>
         </View>
-        <Icon name="chevron-right" size={16} color="#999" />
+        {deleteProfileLoading ? (
+          <SkeletonLoader type="category" width={16} height={16} borderRadius={8} />
+        ) : (
+          <Icon name="chevron-right" size={16} color="#999" />
+        )}
       </TouchableOpacity>
       <TouchableOpacity style={styles.actionItem} onPress={handleLogout}>
         <View style={[styles.actionIcon, styles.logoutIcon]}>
@@ -646,6 +665,20 @@ const ProfileScreen = ({ navigation }) => {
         onConfirm={handleConfirmLogout}
         onCancel={() => setShowLogoutModal(false)}
         type="warning"
+      />
+
+      {/* Delete Account Confirmation Modal */}
+      <ConfirmationModal
+        visible={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        title="Delete Account"
+        message="Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently lost."
+        confirmText={deleteProfileLoading ? "Deleting..." : "Delete Account"}
+        cancelText="Cancel"
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setShowDeleteModal(false)}
+        type="danger"
+        confirmDisabled={deleteProfileLoading}
       />
     </SafeAreaView>
   );
