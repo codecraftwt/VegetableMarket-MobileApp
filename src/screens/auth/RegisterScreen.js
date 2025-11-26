@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useDispatch, useSelector } from 'react-redux';
-import { registerUser, clearError, ROLES } from '../../redux/slices/authSlice';
+import { registerUser, clearError, ROLES, resendVerificationEmail } from '../../redux/slices/authSlice';
 import { fontSizes } from '../../utils/fonts';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { p } from '../../utils/Responsive';
@@ -54,17 +54,24 @@ const RegisterScreen = () => {
   // Get roles from the auth slice
   const roles = Object.values(ROLES).map(role => role.name);
 
-  // After registration, navigate to email verification screen
+  // After registration, send verification email and navigate to email verification screen
   useEffect(() => {
     // In updated flow, register no longer sets isLoggedIn true; rely on token presence
     if (token && !hasNavigated.current) {
       hasNavigated.current = true;
-      // Directly navigate to EmailVerification screen
+      
+      // Automatically send verification email after successful registration
+      dispatch(resendVerificationEmail()).catch(error => {
+        // If sending fails here, EmailVerificationScreen will handle it
+        console.log('Failed to send verification email during registration:', error);
+      });
+      
+      // Navigate to EmailVerification screen after a short delay
       setTimeout(() => {
         navigation.replace('EmailVerification');
-      }, 200);
+      }, 300);
     }
-  }, [token, navigation]);
+  }, [token, navigation, dispatch]);
 
   // Handle registration errors
   useEffect(() => {

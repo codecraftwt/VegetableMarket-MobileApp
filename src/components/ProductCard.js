@@ -88,7 +88,10 @@ const ProductCard = ({
     e.stopPropagation();
     try {
       setIsTogglingWishlist(true);
-      const result = await dispatch(toggleWishlistItem(item.id)).unwrap();
+      const result = await dispatch(toggleWishlistItem({ 
+        vegetableId: item.id, 
+        vegetable: item 
+      })).unwrap();
       
       if (result.wishlisted) {
         setSuccessTitle('Wishlist Updated!');

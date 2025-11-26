@@ -101,10 +101,10 @@ const SplashScreen = () => {
               easing: Easing.in(Easing.ease),
             }),
           ]).start(() => {
-            // If onboarding is completed, go to Login
-            // If user is already logged in, they'll be redirected by auth check
+            // Navigate based on onboarding status
             if (onboardingCompleted === 'true') {
-              navigation.replace('Login');
+              // Onboarding completed - go directly to Dashboard (guest mode enabled)
+              navigation.replace('App');
             } else {
               // Show onboarding if not completed
               navigation.replace('Onboarding');

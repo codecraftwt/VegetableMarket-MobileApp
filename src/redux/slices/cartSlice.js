@@ -1,17 +1,36 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import api from '../../api/axiosInstance';
+import { 
+  saveGuestCart, 
+  getGuestCart, 
+  clearGuestCart,
+  mergeGuestCartWithUserCart 
+} from '../../utils/guestStorage';
 
 // Async thunks
 export const addToCart = createAsyncThunk(
   'cart/addToCart',
-  async ({ vegetable_id, quantity }, { rejectWithValue }) => {
+  async ({ vegetable_id, quantity }, { rejectWithValue, getState }) => {
     try {
+      const state = getState();
+      const isLoggedIn = state.auth.isLoggedIn;
+      
+      // If not logged in, just return success (guest mode - stored locally)
+      if (!isLoggedIn) {
+        return { success: true, guestMode: true };
+      }
+      
+      // If logged in, make API call
       const response = await api.post('/add-cart', {
         vegetable_id,
         quantity
       });
       return response.data;
     } catch (error) {
+      // If 401, user might have logged out, allow guest mode
+      if (error.response?.status === 401) {
+        return { success: true, guestMode: true };
+      }
       return rejectWithValue(error.response?.data || 'Failed to add item to cart');
     }
   }
@@ -19,11 +38,50 @@ export const addToCart = createAsyncThunk(
 
 export const fetchCart = createAsyncThunk(
   'cart/fetchCart',
-  async (_, { rejectWithValue }) => {
+  async (_, { rejectWithValue, getState }) => {
     try {
+      const state = getState();
+      const isLoggedIn = state.auth.isLoggedIn;
+      
+      // If not logged in, fetch guest cart from AsyncStorage
+      if (!isLoggedIn) {
+        const guestCart = await getGuestCart();
+        const totalAmount = guestCart.reduce((sum, item) => 
+          sum + (parseFloat(item.subtotal) || 0), 0
+        );
+        return {
+          success: true,
+          data: {
+            cart_items: guestCart,
+            addresses: [],
+            payment_settings: [],
+            total_amount: totalAmount
+          },
+          guestMode: true
+        };
+      }
+      
+      // If logged in, fetch from API
       const response = await api.get('/cart');
       return response.data;
     } catch (error) {
+      // If 401, user might have logged out, fetch guest cart
+      if (error.response?.status === 401) {
+        const guestCart = await getGuestCart();
+        const totalAmount = guestCart.reduce((sum, item) => 
+          sum + (parseFloat(item.subtotal) || 0), 0
+        );
+        return {
+          success: true,
+          data: {
+            cart_items: guestCart,
+            addresses: [],
+            payment_settings: [],
+            total_amount: totalAmount
+          },
+          guestMode: true
+        };
+      }
       return rejectWithValue(error.response?.data || 'Failed to fetch cart');
     }
   }
@@ -31,7 +89,7 @@ export const fetchCart = createAsyncThunk(
 
 export const updateCartQuantity = createAsyncThunk(
   'cart/updateQuantity',
-  async ({ id, quantity }, { rejectWithValue }) => {
+  async ({ id, quantity }, { rejectWithValue, getState }) => {
     try {
       // Validate quantity before API call
       if (quantity < 1) {
@@ -46,6 +104,15 @@ export const updateCartQuantity = createAsyncThunk(
         throw new Error('Quantity must be a valid whole number');
       }
       
+      const state = getState();
+      const isLoggedIn = state.auth.isLoggedIn;
+      
+      // If not logged in, just return success (guest mode - stored locally)
+      if (!isLoggedIn) {
+        return { id, success: true, guestMode: true };
+      }
+      
+      // If logged in, make API call
       const response = await api.patch(`/cart/${id}`, { quantity });
       
       return { id, ...response.data };
@@ -65,6 +132,9 @@ export const updateCartQuantity = createAsyncThunk(
       } else if (error.response?.status === 400) {
         // Bad request error
         errorMessage = 'Invalid request. Please check the quantity value.';
+      } else if (error.response?.status === 401) {
+        // User logged out, allow guest mode
+        return { id, success: true, guestMode: true };
       }
       
       return rejectWithValue({ message: errorMessage, error: errorMessage });
@@ -74,14 +144,89 @@ export const updateCartQuantity = createAsyncThunk(
 
 export const removeFromCart = createAsyncThunk(
   'cart/removeFromCart',
-  async (id, { rejectWithValue }) => {
+  async (id, { rejectWithValue, getState }) => {
     try {
+      const state = getState();
+      const isLoggedIn = state.auth.isLoggedIn;
+      
+      // If not logged in, just return success (guest mode - stored locally)
+      if (!isLoggedIn) {
+        return { id, success: true, guestMode: true };
+      }
+      
+      // If logged in, make API call
       const response = await api.delete(`/cart/${id}`);
       
       // Return the removed item ID for local state update
       return { id };
     } catch (error) {
+      // If 401, user might have logged out, allow guest mode
+      if (error.response?.status === 401) {
+        return { id, success: true, guestMode: true };
+      }
       return rejectWithValue(error.response?.data || 'Failed to remove item from cart');
+    }
+  }
+);
+
+// Load guest cart from AsyncStorage
+export const loadGuestCart = createAsyncThunk(
+  'cart/loadGuestCart',
+  async (_, { rejectWithValue }) => {
+    try {
+      const guestCart = await getGuestCart();
+      const totalAmount = guestCart.reduce((sum, item) => 
+        sum + (parseFloat(item.subtotal) || 0), 0
+      );
+      return {
+        cartItems: guestCart,
+        totalAmount
+      };
+    } catch (error) {
+      return rejectWithValue('Failed to load guest cart');
+    }
+  }
+);
+
+// Sync guest cart to server after login
+export const syncGuestCartToServer = createAsyncThunk(
+  'cart/syncGuestCartToServer',
+  async (_, { rejectWithValue, getState }) => {
+    try {
+      const state = getState();
+      const guestCart = await getGuestCart();
+      
+      if (guestCart.length === 0) {
+        return { success: true, synced: false };
+      }
+      
+      // Add each guest cart item to server
+      const syncPromises = guestCart.map(async (item) => {
+        try {
+          await api.post('/add-cart', {
+            vegetable_id: item.vegetable_id,
+            quantity: item.quantity_kg || item.quantity || 1
+          });
+        } catch (error) {
+          console.error(`Failed to sync cart item ${item.vegetable_id}:`, error);
+        }
+      });
+      
+      await Promise.all(syncPromises);
+      
+      // Clear guest cart after successful sync
+      await clearGuestCart();
+      
+      // Fetch updated cart from server
+      const response = await api.get('/cart');
+      
+      return {
+        success: true,
+        synced: true,
+        data: response.data
+      };
+    } catch (error) {
+      return rejectWithValue(error.response?.data || 'Failed to sync guest cart');
     }
   }
 );
@@ -130,16 +275,39 @@ const cartSlice = createSlice({
         existingItem.quantity_kg = (existingItem.quantity_kg || 0) + quantity;
         existingItem.subtotal = parseFloat(existingItem.price_per_kg) * existingItem.quantity_kg;
       } else {
+        // Handle images - preserve both formats for compatibility
+        let veg_images = [];
+        let images = [];
+        
+        if (vegetable?.images && Array.isArray(vegetable.images)) {
+          // Store images array as is (with image_path structure)
+          images = vegetable.images;
+          // Also create veg_images array with full URLs for backward compatibility
+          veg_images = vegetable.images.map(img => {
+            if (typeof img === 'string') {
+              return img.startsWith('http') ? img : `https://kisancart.in/storage/${img}`;
+            } else if (img?.image_path) {
+              return `https://kisancart.in/storage/${img.image_path}`;
+            }
+            return img;
+          });
+        } else if (vegetable?.veg_images && Array.isArray(vegetable.veg_images)) {
+          veg_images = vegetable.veg_images;
+        }
+        
+        // Create new item with all vegetable data, ensuring images are properly stored
         const newItem = {
-          id: Date.now(), // Temporary ID
-          vegetable_id,
+          ...vegetable, // Spread all vegetable properties first
+          id: Date.now(), // Temporary ID (overwrite if exists)
+          vegetable_id: vegetable_id || vegetable?.id, // Ensure vegetable_id is set
           quantity_kg: quantity,
           price_per_kg: vegetable?.price_per_kg || 0,
           subtotal: (vegetable?.price_per_kg || 0) * quantity,
           name: vegetable?.name || 'Unknown Item',
           unit_type: vegetable?.unit_type || 'kg',
-          veg_images: vegetable?.veg_images || [],
-          ...vegetable
+          // Ensure images are stored in both formats for compatibility
+          images: images.length > 0 ? images : (vegetable?.images || []),
+          veg_images: veg_images.length > 0 ? veg_images : (vegetable?.veg_images || []),
         };
         state.cartItems.push(newItem);
       }
@@ -148,6 +316,13 @@ const cartSlice = createSlice({
       state.totalAmount = state.cartItems.reduce((sum, item) => 
         sum + (parseFloat(item.subtotal) || 0), 0
       );
+    },
+    // Save cart to AsyncStorage (for guest mode)
+    saveCartToStorage: (state) => {
+      // This will be called after state updates to save to AsyncStorage
+      saveGuestCart(state.cartItems).catch(err => {
+        console.error('Failed to save guest cart:', err);
+      });
     },
     // Remove item from cart immediately for badge updates
     removeItemFromCart: (state, action) => {
@@ -204,6 +379,13 @@ const cartSlice = createSlice({
         state.paymentSettings = action.payload.data.payment_settings || [];
         state.totalAmount = action.payload.data.total_amount || 0;
         state.error = null;
+        
+        // Save to AsyncStorage if in guest mode
+        if (action.payload.guestMode) {
+          saveGuestCart(state.cartItems).catch(err => {
+            console.error('Failed to save guest cart:', err);
+          });
+        }
       })
       .addCase(fetchCart.rejected, (state, action) => {
         state.loading = false;
@@ -280,10 +462,56 @@ const cartSlice = createSlice({
         state.removeLoading = false;
         state.removeError = action.payload;
       });
+
+    // Load guest cart
+    builder
+      .addCase(loadGuestCart.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(loadGuestCart.fulfilled, (state, action) => {
+        state.loading = false;
+        state.cartItems = action.payload.cartItems || [];
+        state.totalAmount = action.payload.totalAmount || 0;
+        state.error = null;
+      })
+      .addCase(loadGuestCart.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      });
+
+    // Sync guest cart to server
+    builder
+      .addCase(syncGuestCartToServer.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(syncGuestCartToServer.fulfilled, (state, action) => {
+        state.loading = false;
+        if (action.payload.synced && action.payload.data) {
+          state.cartItems = action.payload.data.data.cart_items || [];
+          state.addresses = action.payload.data.data.addresses || [];
+          state.paymentSettings = action.payload.data.data.payment_settings || [];
+          state.totalAmount = action.payload.data.data.total_amount || 0;
+        }
+        state.error = null;
+      })
+      .addCase(syncGuestCartToServer.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      });
   },
 });
 
-export const { clearCartErrors, clearCart, updateLocalQuantity, addItemToCart, removeItemFromCart, updateItemQuantity } = cartSlice.actions;
+export const { 
+  clearCartErrors, 
+  clearCart, 
+  updateLocalQuantity, 
+  addItemToCart, 
+  removeItemFromCart, 
+  updateItemQuantity,
+  saveCartToStorage 
+} = cartSlice.actions;
 
 // Selectors
 export const selectCart = (state) => state.cart;

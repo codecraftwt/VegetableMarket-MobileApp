@@ -139,7 +139,10 @@ const ProductDetailScreen = ({ navigation, route }) => {
 
   const handleWishlistToggle = async () => {
     try {
-      const result = await dispatch(toggleWishlistItem(completeProduct.id)).unwrap();
+      const result = await dispatch(toggleWishlistItem({ 
+        vegetableId: completeProduct.id, 
+        vegetable: completeProduct 
+      })).unwrap();
 
       if (result.wishlisted) {
         setWishlistMessage(`${completeProduct.name} added to wishlist!`);

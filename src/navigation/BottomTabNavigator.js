@@ -2,7 +2,8 @@ import React, { useEffect } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { View, Text, StyleSheet } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
-import { fetchCart } from '../redux/slices/cartSlice';
+import { fetchCart, loadGuestCart } from '../redux/slices/cartSlice';
+import { fetchWishlist, loadGuestWishlist } from '../redux/slices/wishlistSlice';
 import ProfileScreen from '../screens/customer/Profile/ProfileScreen';
 import DashboardScreen from '../screens/customer/Dashboard/DashboardScreen';
 import CartScreen from '../screens/customer/Cart/CartScreen';
@@ -39,12 +40,21 @@ const CartIconWithBadge = ({ focused, color, size }) => {
 
 const BottomTabNavigator = () => {
   const dispatch = useDispatch();
-   const insets = useSafeAreaInsets();
+  const insets = useSafeAreaInsets();
+  const { isLoggedIn } = useSelector(state => state.auth);
 
-  // Fetch cart data when the tab navigator loads
+  // Fetch cart and wishlist data when the tab navigator loads
   useEffect(() => {
-    dispatch(fetchCart());
-  }, [dispatch]);
+    if (isLoggedIn) {
+      // If logged in, fetch from server
+      dispatch(fetchCart());
+      dispatch(fetchWishlist());
+    } else {
+      // If not logged in, load from AsyncStorage (guest mode)
+      dispatch(loadGuestCart());
+      dispatch(loadGuestWishlist());
+    }
+  }, [dispatch, isLoggedIn]);
 
   return (
     <Tab.Navigator

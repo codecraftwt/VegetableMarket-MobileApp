@@ -7,8 +7,10 @@ import Icon from 'react-native-vector-icons/FontAwesome';
 import { p } from '../../../utils/Responsive';
 import { fontSizes } from '../../../utils/fonts';
 import { useDispatch, useSelector } from 'react-redux';
+import { useFocusEffect } from '@react-navigation/native';
 import { fetchWishlist, removeWishlistItem } from '../../../redux/slices/wishlistSlice';
 import { addToCart, addItemToCart, clearCartErrors, fetchCart } from '../../../redux/slices/cartSlice';
+import { fetchVegetables } from '../../../redux/slices/vegetablesSlice';
 
 const WishlistScreen = ({ navigation }) => {
   const dispatch = useDispatch();
@@ -61,10 +63,24 @@ const WishlistScreen = ({ navigation }) => {
     return 'This product is temporarily out of stock. Please check back later.';
   }, []);
   
-  // Fetch wishlist only once when component mounts
+  const { isLoggedIn } = useSelector(state => state.auth);
+  const { vegetables } = useSelector(state => state.vegetables || { vegetables: [] });
+
+  // Fetch wishlist and vegetables when component mounts and when logged in status changes
   useEffect(() => {
     dispatch(fetchWishlist());
-  }, [dispatch]);
+    // Also fetch vegetables to ensure we have complete product data for merging
+    if (!vegetables || vegetables.length === 0) {
+      dispatch(fetchVegetables());
+    }
+  }, [dispatch, isLoggedIn]);
+
+  // Refresh wishlist when screen comes into focus to ensure fresh data
+  useFocusEffect(
+    React.useCallback(() => {
+      dispatch(fetchWishlist());
+    }, [dispatch])
+  );
 
   // Handle remove error
   useEffect(() => {
@@ -98,6 +114,9 @@ const WishlistScreen = ({ navigation }) => {
     try {
       await dispatch(removeWishlistItem(itemToRemove.id)).unwrap();
           
+      // Refresh wishlist to get updated data (especially important for guest mode)
+      dispatch(fetchWishlist());
+      
       setShowConfirmModal(false);
       setItemToRemove(null);
       setSuccessMessage('Item removed from wishlist!');
@@ -108,7 +127,7 @@ const WishlistScreen = ({ navigation }) => {
       setErrorMessage(errorMsg);
       setShowErrorModal(true);
     }
-  }, [itemToRemove, dispatch, items, extractErrorMessage]);
+  }, [itemToRemove, dispatch, extractErrorMessage]);
 
   const handleCancelRemove = useCallback(() => {
     setShowConfirmModal(false);
@@ -218,23 +237,69 @@ const WishlistScreen = ({ navigation }) => {
           contentContainerStyle={styles.scrollContent}
         >
           <View style={styles.itemsList}>
-            {items.map((item) => (
-              <View key={item.id} style={styles.productCardContainer}>
-                <ProductCard
-                  item={item}
-                  onPress={() => handleProductPress(item)}
-                  onAddToCart={handleAddToCart}
-                  showAddToCart={true}
-                  showWishlist={true}
-                  showDeleteButton={true}
-                  onDelete={handleRemoveFromWishlist}
-                  isDeleteLoading={removeLoading && itemToRemove?.id === item.id}
-                  isAddToCartLoading={addLoading}
-                  size="medium"
-                  navigation={navigation}
-                />
-              </View>
-            ))}
+            {items.map((item) => {
+              // Normalize item ID - could be id or vegetable_id
+              const itemId = item.id || item.vegetable_id;
+              
+              // Try to get complete vegetable data from vegetables list if available
+              // This ensures we have complete product data with images
+              const completeItem = vegetables && vegetables.length > 0 
+                ? vegetables.find(v => {
+                    const vId = v.id;
+                    return vId === itemId || 
+                           vId === item.id || 
+                           vId === item.vegetable_id ||
+                           vId === parseInt(itemId) ||
+                           vId === parseInt(item.id) ||
+                           vId === parseInt(item.vegetable_id);
+                  })
+                : null;
+              
+              // Merge wishlist item with complete vegetable data
+              // Use complete vegetable data as base for complete structure, then override with wishlist item data
+              const mergedItem = completeItem ? {
+                ...completeItem, // Complete vegetable data as base
+                ...item, // Wishlist item data takes precedence for wishlist-specific fields
+                // Ensure IDs are set correctly
+                id: itemId || completeItem.id,
+                vegetable_id: item.vegetable_id || item.id || completeItem.id,
+                // Ensure images are properly structured
+                images: item.images && item.images.length > 0 
+                  ? item.images 
+                  : (completeItem.images || []),
+              } : {
+                ...item,
+                // Ensure IDs are set
+                id: itemId,
+                vegetable_id: item.vegetable_id || item.id,
+              };
+              
+              // Ensure merged item has at least basic required fields
+              if (!mergedItem.name) {
+                mergedItem.name = 'Unknown Product';
+              }
+              if (!mergedItem.price_per_kg && !mergedItem.price) {
+                mergedItem.price_per_kg = 0;
+              }
+              
+              return (
+                <View key={mergedItem.id || item.id || itemId} style={styles.productCardContainer}>
+                  <ProductCard
+                    item={mergedItem}
+                    onPress={() => handleProductPress(mergedItem)}
+                    onAddToCart={handleAddToCart}
+                    showAddToCart={true}
+                    showWishlist={true}
+                    showDeleteButton={true}
+                    onDelete={handleRemoveFromWishlist}
+                    isDeleteLoading={removeLoading && (itemToRemove?.id === mergedItem.id || itemToRemove?.id === itemId)}
+                    isAddToCartLoading={addLoading}
+                    size="medium"
+                    navigation={navigation}
+                  />
+                </View>
+              );
+            })}
           </View>
         </ScrollView>
       )}

@@ -26,6 +26,7 @@ const CheckoutScreen = ({ navigation }) => {
   const dispatch = useDispatch();
   const { totalAmount, loading, cartItems, addresses: cartAddresses, paymentSettings } = useSelector(state => state.cart);
   const { user, profile, loading: profileLoading } = useSelector(state => state.profile);
+  const { isLoggedIn } = useSelector(state => state.auth);
   
 
   const { 
@@ -71,8 +72,21 @@ const CheckoutScreen = ({ navigation }) => {
   // Use addresses from cart instead of profile
   const addresses = cartAddresses || [];
 
+  // Check if user is logged in, if not redirect to login
+  useEffect(() => {
+    if (!isLoggedIn) {
+      navigation.replace('Login', { 
+        redirectTo: 'Checkout',
+        message: 'Please login or register to proceed with checkout'
+      });
+      return;
+    }
+  }, [isLoggedIn, navigation]);
+
   // Fetch cart and profile when component mounts
   useEffect(() => {
+    if (!isLoggedIn) return;
+    
     dispatch(fetchCart());
     dispatch(fetchProfile()); // Fetch profile to ensure user data is available
     
@@ -80,7 +94,7 @@ const CheckoutScreen = ({ navigation }) => {
     return () => {
       dispatch(clearOrderData());
     };
-  }, [dispatch, clearOrderData]);
+  }, [dispatch, clearOrderData, isLoggedIn]);
 
   // Reset state when screen comes into focus (e.g., when navigating back from MyOrdersScreen)
   useFocusEffect(

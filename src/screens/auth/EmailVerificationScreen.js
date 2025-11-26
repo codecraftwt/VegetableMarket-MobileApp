@@ -13,10 +13,20 @@ const EmailVerificationScreen = () => {
   const navigation = useNavigation();
   const { user, emailVerified, verificationLoading, resendLoading, resendMessage, verificationError } = useSelector(state => state.auth);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [emailSentInitially, setEmailSentInitially] = useState(false);
 
   const pollStatus = useCallback(() => {
     dispatch(checkEmailVerified());
   }, [dispatch]);
+
+  // Automatically send verification email when screen loads (first time only)
+  useEffect(() => {
+    // Send verification email automatically when screen loads if not already verified
+    if (!emailVerified && !emailSentInitially && user?.email) {
+      setEmailSentInitially(true);
+      dispatch(resendVerificationEmail());
+    }
+  }, [dispatch, emailVerified, emailSentInitially, user?.email]);
 
   useEffect(() => {
     // Initial check
@@ -58,7 +68,12 @@ const EmailVerificationScreen = () => {
           <View style={styles.card}>
           <Text style={styles.title}>Verify your email</Text>
           <Text style={styles.subtitle}>
-            We sent a verification link to {user?.email}. Please check your inbox and tap the link to continue.
+            {resendLoading && !emailSentInitially
+              ? `Sending verification link to ${user?.email}...`
+              : emailSentInitially || resendMessage
+              ? `A verification link has been sent to ${user?.email}. Please check your inbox (and spam folder) and tap the link to continue.`
+              : `We're sending a verification link to ${user?.email}. Please check your inbox and tap the link to continue.`
+            }
           </Text>
 
           <View style={styles.statusRow}>

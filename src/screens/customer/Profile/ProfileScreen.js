@@ -19,6 +19,7 @@ import { fontSizes } from '../../../utils/fonts';
 import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '../../../redux/slices/authSlice';
 import { fetchProfile, updateProfile, deleteProfile } from '../../../redux/slices/profileSlice';
+import { fetchWishlist, loadGuestWishlist } from '../../../redux/slices/wishlistSlice';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import { requestCameraPermissionAndroid, requestStoragePermissionAndroid } from '../../../utils/permissions';
 
@@ -26,6 +27,8 @@ const ProfileScreen = ({ navigation }) => {
   const dispatch = useDispatch();
   const profileState = useSelector(state => state.profile);
   const { user, address, profile, loading, deleteProfileLoading, deleteProfileError } = profileState;
+  const { isLoggedIn } = useSelector(state => state.auth);
+  const { items: wishlistItems } = useSelector(state => state.wishlist);
   const [showPhotoModal, setShowPhotoModal] = useState(false);
 
   // Modal states
@@ -38,8 +41,14 @@ const ProfileScreen = ({ navigation }) => {
   const [isProcessingImage, setIsProcessingImage] = useState(false);
 
   useEffect(() => {
-    dispatch(fetchProfile());
-  }, [dispatch]);
+    if (isLoggedIn) {
+      dispatch(fetchProfile());
+      dispatch(fetchWishlist());
+    } else {
+      // Load guest wishlist when not logged in
+      dispatch(loadGuestWishlist());
+    }
+  }, [dispatch, isLoggedIn]);
 
   // Handle delete profile success
   useEffect(() => {
@@ -72,6 +81,11 @@ const ProfileScreen = ({ navigation }) => {
   const handleFavoritesPress = () => {
     // Navigate to Wishlist screen
     navigation.navigate('Wishlist');
+  };
+
+  const handleLoginPress = () => {
+    // Navigate to Login screen
+    navigation.navigate('Login');
   };
 
   const handleHelpCenterPress = () => {
@@ -452,6 +466,56 @@ const ProfileScreen = ({ navigation }) => {
     </View>
   );
 
+  const GuestProfileHeader = () => (
+    <View style={styles.profileHeader}>
+      <View style={styles.avatarContainer}>
+        <View style={styles.avatar}>
+          <Icon name="user-circle" size={60} color="#019a34" />
+        </View>
+      </View>
+      <Text style={styles.userName}>Guest User</Text>
+      <Text style={styles.userEmail}>Login to access your profile</Text>
+    </View>
+  );
+
+  const GuestActionsSection = () => (
+    <View style={styles.section}>
+      <Text style={styles.sectionTitle}>My Favorites</Text>
+
+      <TouchableOpacity
+        style={styles.actionItem}
+        onPress={handleFavoritesPress}
+      >
+        <View style={styles.actionIcon}>
+          <Icon name="heart" size={20} color="#019a34" />
+        </View>
+        <View style={styles.actionContent}>
+          <Text style={styles.actionTitle}>Favorites</Text>
+          <Text style={styles.actionSubtitle}>
+            {wishlistItems?.length > 0 
+              ? `${wishlistItems.length} saved item${wishlistItems.length !== 1 ? 's' : ''}`
+              : 'Your saved items'}
+          </Text>
+        </View>
+        <Icon name="chevron-right" size={16} color="#999" />
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={[styles.actionItem, styles.loginActionItem]}
+        onPress={handleLoginPress}
+      >
+        <View style={[styles.actionIcon, styles.loginIcon]}>
+          <Icon name="sign-in" size={20} color="#fff" />
+        </View>
+        <View style={styles.actionContent}>
+          <Text style={[styles.actionTitle, styles.loginTitle]}>Login / Register</Text>
+          <Text style={styles.actionSubtitle}>Sign in to access all features</Text>
+        </View>
+        <Icon name="chevron-right" size={16} color="#019a34" />
+      </TouchableOpacity>
+    </View>
+  );
+
   const QuickActionsSection = () => (
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>Quick Actions</Text>
@@ -583,7 +647,14 @@ const ProfileScreen = ({ navigation }) => {
         navigation={navigation}
       />
 
-      {loading ? (
+      {!isLoggedIn ? (
+        // Guest User View
+        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+          <GuestProfileHeader />
+          <GuestActionsSection />
+        </ScrollView>
+      ) : loading ? (
+        // Loading State (Logged In)
         <View style={styles.content}>
           {/* Skeleton loader for profile header */}
           <View style={styles.skeletonProfileHeader}>
@@ -613,6 +684,7 @@ const ProfileScreen = ({ navigation }) => {
           </View>
         </View>
       ) : profileState.error ? (
+        // Error State (Logged In)
         <View style={styles.errorContainer}>
           <Icon name="exclamation-triangle" size={50} color="#dc3545" />
           <Text style={styles.errorText}>Failed to load profile</Text>
@@ -621,6 +693,7 @@ const ProfileScreen = ({ navigation }) => {
           </TouchableOpacity>
         </View>
       ) : (
+        // Logged In User View
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
           <ProfileHeader />
           <QuickActionsSection />
@@ -805,6 +878,18 @@ const styles = StyleSheet.create({
   },
   logoutTitle: {
     color: '#dc3545', // Red color for destructive action
+  },
+  loginActionItem: {
+    marginTop: p(8),
+    backgroundColor: '#f0f8f0',
+    borderRadius: p(8),
+    paddingHorizontal: p(12),
+  },
+  loginIcon: {
+    backgroundColor: '#019a34',
+  },
+  loginTitle: {
+    color: '#019a34',
   },
   // Skeleton Loader Styles
   skeletonProfileHeader: {

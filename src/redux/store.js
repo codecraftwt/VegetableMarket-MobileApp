@@ -1,6 +1,7 @@
 import { configureStore, combineReducers } from '@reduxjs/toolkit';
 import { persistStore, persistReducer } from 'redux-persist';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { saveGuestCart, saveGuestWishlist } from '../utils/guestStorage';
 import authReducer from './slices/authSlice';
 import profileReducer from './slices/profileSlice';
 import addressesReducer from './slices/addressesSlice';
@@ -48,6 +49,50 @@ const rootReducer = combineReducers({
   otp: otpReducer,
 });
 
+// Middleware to save guest cart and wishlist to AsyncStorage
+const guestStorageMiddleware = (store) => (next) => (action) => {
+  const result = next(action);
+  
+  // Only process cart and wishlist actions
+  if (action.type?.startsWith('cart/') || action.type?.startsWith('wishlist/')) {
+    const state = store.getState();
+    const isLoggedIn = state.auth?.isLoggedIn || false;
+    
+    // Save to AsyncStorage only when not logged in (guest mode)
+    if (!isLoggedIn) {
+      if (action.type?.startsWith('cart/')) {
+        const cartItems = state.cart?.cartItems || [];
+        // Save guest cart after cart-related actions
+        if (action.type.includes('addItemToCart') || 
+            action.type.includes('removeItemFromCart') || 
+            action.type.includes('updateItemQuantity') ||
+            action.type.includes('addToCart') ||
+            action.type.includes('removeFromCart') ||
+            action.type.includes('updateCartQuantity')) {
+          saveGuestCart(cartItems).catch(err => {
+            console.error('Failed to save guest cart:', err);
+          });
+        }
+      }
+      
+      if (action.type?.startsWith('wishlist/')) {
+        const wishlistItems = state.wishlist?.items || [];
+        // Save guest wishlist after wishlist-related actions
+        if (action.type.includes('toggleWishlistItem') || 
+            action.type.includes('removeWishlistItem') ||
+            action.type.includes('addWishlistItemLocally') ||
+            action.type.includes('removeWishlistItemLocally')) {
+          saveGuestWishlist(wishlistItems).catch(err => {
+            console.error('Failed to save guest wishlist:', err);
+          });
+        }
+      }
+    }
+  }
+  
+  return result;
+};
+
 // Configure store
 const store = configureStore({
   reducer: rootReducer,
@@ -56,7 +101,7 @@ const store = configureStore({
       serializableCheck: {
         ignoredActions: ['persist/PERSIST', 'persist/REHYDRATE'],
       },
-    }),
+    }).concat(guestStorageMiddleware),
 });
 
 // Create persistor

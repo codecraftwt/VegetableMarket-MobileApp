@@ -236,10 +236,29 @@ const CartScreen = ({ navigation }) => {
   // Cart Item Component
   const CartItem = ({ item }) => {
     const getProductImage = () => {
-      // Check if item has veg_images and if it's a valid URL
-      if (item.veg_images && item.veg_images.length > 0 && item.veg_images[0]) {
-        if (typeof item.veg_images[0] === 'string' && item.veg_images[0].startsWith('http')) {
-          return { uri: item.veg_images[0] };
+      // First try images array with image_path structure (API format)
+      if (item.images && Array.isArray(item.images) && item.images.length > 0) {
+        const firstImage = item.images[0];
+        if (firstImage?.image_path) {
+          return { uri: `https://kisancart.in/storage/${firstImage.image_path}` };
+        } else if (typeof firstImage === 'string') {
+          // If it's already a string URL
+          return { uri: firstImage.startsWith('http') ? firstImage : `https://kisancart.in/storage/${firstImage}` };
+        }
+      }
+      
+      // Fallback to veg_images array (legacy format)
+      if (item.veg_images && Array.isArray(item.veg_images) && item.veg_images.length > 0 && item.veg_images[0]) {
+        const firstVegImage = item.veg_images[0];
+        if (typeof firstVegImage === 'string') {
+          if (firstVegImage.startsWith('http')) {
+            return { uri: firstVegImage };
+          } else {
+            // Assume it's a path
+            return { uri: `https://kisancart.in/storage/${firstVegImage}` };
+          }
+        } else if (firstVegImage?.image_path) {
+          return { uri: `https://kisancart.in/storage/${firstVegImage.image_path}` };
         }
       }
       // Fallback to local image if no valid image URL

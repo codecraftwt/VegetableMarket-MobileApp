@@ -98,10 +98,12 @@ const OnboardingScreen = () => {
     const handleFinish = async () => {
         try {
             await AsyncStorage.setItem('@onboarding_completed', 'true');
-            navigation.replace('Login');
+            // Navigate directly to Dashboard (guest mode enabled)
+            navigation.replace('App');
         } catch (error) {
             console.error('Error saving onboarding status:', error);
-            navigation.replace('Login');
+            // Navigate directly to Dashboard even on error
+            navigation.replace('App');
         }
     };
 

@@ -15,9 +15,12 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useDispatch, useSelector } from 'react-redux';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { p } from '../../utils/Responsive';
 import { loginUser, clearError } from '../../redux/slices/authSlice';
+import { syncGuestCartToServer } from '../../redux/slices/cartSlice';
+import { syncGuestWishlistToServer } from '../../redux/slices/wishlistSlice';
 import ErrorModal from '../../components/ErrorModal';
 
 // Font sizes constant
@@ -35,8 +38,9 @@ const fontSizes = {
 const LoginScreen = () => {
   const navigation = useNavigation();
   const dispatch = useDispatch();
+  const insets = useSafeAreaInsets();
   const { loading, error, isLoggedIn, user, emailVerified } = useSelector(state => state.auth);
-  
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -54,9 +58,13 @@ const LoginScreen = () => {
     }
   }, [dispatch, error]);
 
-  // Handle successful login navigation
+  // Handle successful login navigation and sync guest data
   React.useEffect(() => {
     if (isLoggedIn && user) {
+      // Sync guest cart and wishlist to server
+      dispatch(syncGuestCartToServer());
+      dispatch(syncGuestWishlistToServer());
+
       // Check user role and navigate accordingly
       if (user.role_id === 2) {
         // Farmer role
@@ -66,10 +74,16 @@ const LoginScreen = () => {
         navigation.replace('DeliveryApp');
       } else {
         // Customer or other roles (role_id === 3)
-        navigation.replace('App');
+        // Check if there's a redirect parameter
+        const redirectTo = navigation.getState()?.routes?.find(r => r.name === 'Login')?.params?.redirectTo;
+        if (redirectTo) {
+          navigation.replace(redirectTo);
+        } else {
+          navigation.replace('App');
+        }
       }
     }
-  }, [isLoggedIn, user, navigation]);
+  }, [isLoggedIn, user, navigation, dispatch]);
 
   const validateForm = () => {
     const newErrors = {};
@@ -103,7 +117,7 @@ const LoginScreen = () => {
 
     try {
       const result = await dispatch(loginUser({ email, password })).unwrap();
-      
+
       if (result.success) {
         // Login successful, navigation will be handled by the auth state change
         console.log('Login successful:', result.message);
@@ -150,6 +164,11 @@ const LoginScreen = () => {
     setErrorMessage('');
   };
 
+  const handleSkip = () => {
+    // Navigate to App (Dashboard) when user skips login
+    navigation.replace('App');
+  };
+
   return (
     <>
       <StatusBar barStyle="light-content" backgroundColor="#019a34" />
@@ -164,12 +183,23 @@ const LoginScreen = () => {
           style={styles.content}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
+          {/* Skip Button */}
+          <View style={[styles.skipContainer, { top: (insets?.top || 0) + p(10) }]}>
+            <TouchableOpacity
+              style={styles.skipButton}
+              onPress={handleSkip}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.skipText}>Skip</Text>
+            </TouchableOpacity>
+          </View>
+
           <ScrollView
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
           >
-                         <View style={styles.formContainer}>
+            <View style={styles.formContainer}>
               <Text style={styles.title}>Welcome Back!</Text>
               <Text style={styles.subtitle}>
                 Sign in to access your fresh vegetable marketplace
@@ -252,7 +282,6 @@ const LoginScreen = () => {
                 )}
               </TouchableOpacity>
 
-
               <TouchableOpacity
                 style={styles.forgotPassword}
                 onPress={handleForgotPassword}
@@ -260,14 +289,26 @@ const LoginScreen = () => {
               >
                 <Text style={styles.linkText}>Forgot Password?</Text>
               </TouchableOpacity>
+
               <View style={styles.signupContainer}>
                 <Text style={styles.signupText}>Don't have an account?</Text>
-                <TouchableOpacity activeOpacity={0.7} onPress={() => navigation.navigate('Register')}>
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={() => navigation.navigate('Register')}
+                >
                   <Text style={styles.signupLink}> Sign Up</Text>
                 </TouchableOpacity>
-                             </View>
-             </View>
-           </ScrollView>
+              </View>
+
+              <TouchableOpacity
+                style={styles.skipLinkContainer}
+                onPress={handleSkip}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.skipLinkText}>Continue as Guest</Text>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
         </KeyboardAvoidingView>
       </ImageBackground>
 
@@ -282,159 +323,188 @@ const LoginScreen = () => {
       />
     </>
   );
-};
+}
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+    },
+    overlay: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: '#019a34',
+    },
+    content: {
+      flex: 1,
+    },
+    scrollContent: {
+      flexGrow: 1,
+      justifyContent: 'center',
+      padding: p(16),
+    },
+    formContainer: {
+      backgroundColor: '#ffffff',
+      borderRadius: p(32),
+      padding: p(24),
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 20 },
+      shadowOpacity: 0.25,
+      shadowRadius: p(30),
+      elevation: 20,
+      borderWidth: 1,
+      borderColor: 'rgba(255, 255, 255, 0.4)',
+    },
+    title: {
+      fontSize: fontSizes['2xl'],
+      fontFamily: 'Montserrat-Bold',
+      color: '#019a34',
+      marginBottom: 10,
+      textAlign: 'center',
+      letterSpacing: 0.4,
+    },
+    subtitle: {
+      fontSize: fontSizes.xs,
+      fontFamily: 'Poppins-Regular',
+      color: '#666',
+      textAlign: 'center',
+      marginBottom: p(16),
+      lineHeight: p(20),
+      paddingHorizontal: p(12),
+    },
+    inputContainer: {
+      marginBottom: p(20),
+    },
+    inputLabel: {
+      fontSize: fontSizes.xs,
+      fontFamily: 'Poppins-SemiBold',
+      color: '#019a34',
+      marginBottom: p(8),
+      marginLeft: p(6),
+    },
+    input: {
+      height: p(52),
+      backgroundColor: '#f8f9fa',
+      borderWidth: 2,
+      borderColor: '#e1e5e9',
+      borderRadius: p(20),
+      paddingHorizontal: p(18),
+      fontSize: fontSizes.sm,
+      fontFamily: 'Poppins-Regular',
+      color: '#333',
+      position: 'relative',
+    },
+    inputFocused: {
+      borderColor: '#019a34',
+      borderWidth: 2.5,
+      backgroundColor: '#fff',
+      shadowColor: '#019a34',
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: 0.2,
+      shadowRadius: 12,
+      elevation: 8,
+    },
+    inputError: {
+      borderColor: '#ff4757',
+      borderWidth: 2.5,
+      backgroundColor: '#fff5f5',
+    },
+    errorText: {
+      color: '#ff4757',
+      fontSize: fontSizes.xs,
+      fontFamily: 'Poppins-Regular',
+      marginTop: p(6),
+      marginLeft: p(6),
+    },
+    passwordInputWrapper: {
+      position: 'relative',
+    },
+    passwordInput: {
+      paddingRight: p(50),
+    },
+    eyeIcon: {
+      position: 'absolute',
+      right: p(18),
+      top: '50%',
+      transform: [{ translateY: -10 }],
+      padding: p(6),
+      zIndex: 1,
+      paddingTop: p(0),
+    },
+    loginButton: {
+      backgroundColor: '#019a34',
+      height: p(52),
+      borderRadius: p(20),
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginTop: p(10),
+      shadowColor: '#019a34',
+      shadowOffset: { width: 0, height: 10 },
+      shadowOpacity: 0.35,
+      shadowRadius: 18,
+      elevation: 12,
+    },
+    loginButtonDisabled: {
+      backgroundColor: '#7fb892',
+      shadowOpacity: 0.1,
+    },
+    buttonText: {
+      color: 'white',
+      fontSize: fontSizes.base,
+      fontFamily: 'Poppins-SemiBold',
+      letterSpacing: 0.6,
+    },
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#019a34',
-  },
-  content: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    padding: p(16),
-  },
-  formContainer: {
-    backgroundColor: '#ffffff',
-    borderRadius: p(32),
-    padding: p(24),
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 20 },
-    shadowOpacity: 0.25,
-    shadowRadius: p(30),
-    elevation: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.4)',
-  },
-  title: {
-    fontSize: fontSizes['2xl'],
-    fontFamily: 'Montserrat-Bold',
-    color: '#019a34',
-    marginBottom: 10,
-    textAlign: 'center',
-    letterSpacing: 0.4,
-  },
-  subtitle: {
-    fontSize: fontSizes.xs,
-    fontFamily: 'Poppins-Regular',
-    color: '#666',
-    textAlign: 'center',
-    marginBottom: p(16),
-    lineHeight: p(20),
-    paddingHorizontal: p(12),
-  },
-  inputContainer: {
-    marginBottom: p(20),
-  },
-  inputLabel: {
-    fontSize: fontSizes.xs,
-    fontFamily: 'Poppins-SemiBold',
-    color: '#019a34',
-    marginBottom: p(8),
-    marginLeft: p(6),
-  },
-  input: {
-    height: p(52),
-    backgroundColor: '#f8f9fa',
-    borderWidth: 2,
-    borderColor: '#e1e5e9',
-    borderRadius: p(20),
-    paddingHorizontal: p(18),
-    fontSize: fontSizes.sm,
-    fontFamily: 'Poppins-Regular',
-    color: '#333',
-    position: 'relative',
-  },
-  inputFocused: {
-    borderColor: '#019a34',
-    borderWidth: 2.5,
-    backgroundColor: '#fff',
-    shadowColor: '#019a34',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  inputError: {
-    borderColor: '#ff4757',
-    borderWidth: 2.5,
-    backgroundColor: '#fff5f5',
-  },
-  errorText: {
-    color: '#ff4757',
-    fontSize: fontSizes.xs,
-    fontFamily: 'Poppins-Regular',
-    marginTop: p(6),
-    marginLeft: p(6),
-  },
-  passwordInputWrapper: {
-    position: 'relative',
-  },
-  passwordInput: {
-    paddingRight: p(50),
-  },
-  eyeIcon: {
-    position: 'absolute',
-    right: p(18),
-    top: '50%',
-    transform: [{ translateY: -10 }],
-    padding: p(6),
-    zIndex: 1,
-    paddingTop: p(0),
-  },
-  loginButton: {
-    backgroundColor: '#019a34',
-    height: p(52),
-    borderRadius: p(20),
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: p(10),
-    shadowColor: '#019a34',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.35,
-    shadowRadius: 18,
-    elevation: 12,
-  },
-  loginButtonDisabled: {
-    backgroundColor: '#7fb892',
-    shadowOpacity: 0.1,
-  },
-  buttonText: {
-    color: 'white',
-    fontSize: fontSizes.base,
-    fontFamily: 'Poppins-SemiBold',
-    letterSpacing: 0.6,
-  },
-
-  forgotPassword: {
-    alignSelf: 'flex-end',
-    marginVertical: p(16),
-  },
-  linkText: {
-    color: '#019a34',
-    fontFamily: 'Poppins-Medium',
-    fontSize: fontSizes.xs,
-  },
-  signupContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  signupText: {
-    color: '#666',
-    fontSize: fontSizes.xs,
-    fontFamily: 'Poppins-Regular',
-  },
-  signupLink: {
-    color: '#019a34',
-    fontFamily: 'Poppins-SemiBold',
-    fontSize: fontSizes.xs,
-  },
-});
+    forgotPassword: {
+      alignSelf: 'flex-end',
+      marginVertical: p(16),
+    },
+    linkText: {
+      color: '#019a34',
+      fontFamily: 'Poppins-Medium',
+      fontSize: fontSizes.xs,
+    },
+    signupContainer: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+    },
+    signupText: {
+      color: '#666',
+      fontSize: fontSizes.xs,
+      fontFamily: 'Poppins-Regular',
+    },
+    signupLink: {
+      color: '#019a34',
+      fontFamily: 'Poppins-SemiBold',
+      fontSize: fontSizes.xs,
+    },
+    skipContainer: {
+      position: 'absolute',
+      right: p(16),
+      zIndex: 10,
+    },
+    skipButton: {
+      paddingVertical: p(8),
+      paddingHorizontal: p(16),
+      borderRadius: p(20),
+      backgroundColor: 'rgba(255, 255, 255, 0.9)',
+      borderWidth: 1,
+      borderColor: 'rgba(255, 255, 255, 0.5)',
+    },
+    skipText: {
+      color: '#019a34',
+      fontFamily: 'Poppins-SemiBold',
+      fontSize: fontSizes.sm,
+      letterSpacing: 0.5,
+    },
+    skipLinkContainer: {
+      marginTop: p(16),
+      alignItems: 'center',
+      paddingVertical: p(8),
+    },
+    skipLinkText: {
+      color: '#019a34',
+      fontFamily: 'Poppins-Medium',
+      fontSize: fontSizes.sm,
+      textDecorationLine: 'underline',
+    },
+  });
 
 export default LoginScreen;

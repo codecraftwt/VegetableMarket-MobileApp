@@ -1,20 +1,42 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import api from '../../api/axiosInstance';
+import { 
+  saveGuestWishlist, 
+  getGuestWishlist, 
+  clearGuestWishlist 
+} from '../../utils/guestStorage';
 
 // Async thunk for fetching wishlist items
 export const fetchWishlist = createAsyncThunk(
   'wishlist/fetchWishlist',
   async (_, { rejectWithValue, getState }) => {
     try {      
-      // Get the current state to access the token
       const state = getState();
-      const token = state.auth.token;
+      const isLoggedIn = state.auth.isLoggedIn;
       
-      // For GET requests, we can include the token as a query parameter
-      // or the Bearer token in headers should be sufficient
+      // If not logged in, fetch guest wishlist from AsyncStorage
+      if (!isLoggedIn) {
+        const guestWishlist = await getGuestWishlist();
+        return {
+          success: true,
+          data: guestWishlist,
+          guestMode: true
+        };
+      }
+      
+      // If logged in, fetch from API
       const response = await api.get('/wishlist');
       return response.data;
     } catch (error) {
+      // If 401, user might have logged out, fetch guest wishlist
+      if (error.response?.status === 401) {
+        const guestWishlist = await getGuestWishlist();
+        return {
+          success: true,
+          data: guestWishlist,
+          guestMode: true
+        };
+      }
       console.error('Fetch wishlist error:', error);
       return rejectWithValue(error.response?.data || 'Failed to fetch wishlist');
     }
@@ -42,13 +64,65 @@ export const fetchPopularItems = createAsyncThunk(
 // Async thunk for toggling wishlist item (add/remove)
 export const toggleWishlistItem = createAsyncThunk(
   'wishlist/toggleWishlistItem',
-  async (vegetableId, { rejectWithValue, getState }) => {
+  async (vegetableIdOrObject, { rejectWithValue, getState }) => {
+    // Handle both cases: just ID or object with { vegetableId, vegetable }
+    const vegetableId = typeof vegetableIdOrObject === 'object' 
+      ? vegetableIdOrObject.vegetableId 
+      : vegetableIdOrObject;
+    const vegetable = typeof vegetableIdOrObject === 'object' 
+      ? vegetableIdOrObject.vegetable 
+      : null;
     try {      
-      // Get the current state to access the token
       const state = getState();
-      const token = state.auth.token;
+      const isLoggedIn = state.auth.isLoggedIn;
       
-      // Prepare the payload with both vegetable_id and _token
+      // If not logged in, handle locally (guest mode)
+      if (!isLoggedIn) {
+        const guestWishlist = await getGuestWishlist();
+        const existingItem = guestWishlist.find(item => 
+          (item.id === vegetableId) || (item.vegetable_id === vegetableId)
+        );
+        
+        let wishlisted;
+        if (existingItem) {
+          // Remove from wishlist
+          const updatedWishlist = guestWishlist.filter(item => 
+            (item.id !== vegetableId) && (item.vegetable_id !== vegetableId)
+          );
+          await saveGuestWishlist(updatedWishlist);
+          wishlisted = false;
+        } else {
+          // Add to wishlist - ensure complete vegetable data is stored
+          const newItem = {
+            ...vegetable, // Spread all vegetable properties first
+            id: vegetableId, // Ensure id is set correctly
+            vegetable_id: vegetableId || vegetable?.id, // Ensure vegetable_id is set
+            // Ensure essential fields are present
+            name: vegetable?.name || 'Unknown Item',
+            price_per_kg: vegetable?.price_per_kg,
+            unit_type: vegetable?.unit_type || 'kg',
+            images: vegetable?.images || [],
+          };
+          guestWishlist.push(newItem);
+          await saveGuestWishlist(guestWishlist);
+          wishlisted = true;
+        }
+        
+        // Reload guest wishlist to get complete data
+        const updatedGuestWishlist = await getGuestWishlist();
+        
+        return { 
+          success: true, 
+          vegetableId, 
+          wishlisted,
+          vegetable: vegetable, // Return vegetable data for display
+          guestWishlist: updatedGuestWishlist, // Return updated wishlist with complete data
+          guestMode: true
+        };
+      }
+      
+      // If logged in, make API call
+      const token = state.auth.token;
       const payload = {
         vegetable_id: vegetableId,
         _token: token
@@ -57,6 +131,60 @@ export const toggleWishlistItem = createAsyncThunk(
       const response = await api.post('/wishlist/toggle', payload);
       return { ...response.data, vegetableId };
     } catch (error) {
+      // If 401, user might have logged out, handle in guest mode
+      if (error.response?.status === 401) {
+        const guestWishlist = await getGuestWishlist();
+        const existingItem = guestWishlist.find(item => 
+          (item.id === vegetableId) || (item.vegetable_id === vegetableId)
+        );
+        
+        let wishlisted;
+        if (existingItem) {
+          const updatedWishlist = guestWishlist.filter(item => 
+            (item.id !== vegetableId) && (item.vegetable_id !== vegetableId)
+          );
+          await saveGuestWishlist(updatedWishlist);
+          wishlisted = false;
+        } else {
+          // Try to get vegetable data from state if available
+          const state = getState();
+          const vegetables = state.vegetables?.vegetables || [];
+          const vegetable = vegetables.find(v => v.id === vegetableId);
+          
+          const newItem = {
+            id: vegetableId,
+            vegetable_id: vegetableId,
+            name: vegetable?.name || 'Unknown Item',
+            price_per_kg: vegetable?.price_per_kg,
+            unit_type: vegetable?.unit_type || 'kg',
+            images: vegetable?.images || [],
+            description: vegetable?.description,
+            category_id: vegetable?.category_id,
+            category: vegetable?.category,
+            farmer_id: vegetable?.farmer_id,
+            farmer: vegetable?.farmer,
+            stock_kg: vegetable?.stock_kg,
+            quantity_available: vegetable?.quantity_available,
+            is_organic: vegetable?.is_organic,
+            ...vegetable
+          };
+          guestWishlist.push(newItem);
+          await saveGuestWishlist(guestWishlist);
+          wishlisted = true;
+        }
+        
+        // Reload guest wishlist to get complete data
+        const updatedGuestWishlist = await getGuestWishlist();
+        
+        return { 
+          success: true, 
+          vegetableId, 
+          wishlisted,
+          vegetable: vegetable, // Return vegetable data
+          guestWishlist: updatedGuestWishlist, // Return updated wishlist with complete data
+          guestMode: true
+        };
+      }
       console.error('Toggle wishlist error:', error);
       return rejectWithValue(error.response?.data || 'Failed to toggle wishlist item');
     }
@@ -68,12 +196,25 @@ export const removeWishlistItem = createAsyncThunk(
   'wishlist/removeWishlistItem',
   async (vegetableId, { rejectWithValue, getState }) => {
     try {      
-      // Get the current state to access the token
       const state = getState();
-      const token = state.auth.token;
+      const isLoggedIn = state.auth.isLoggedIn;
       
-      // For DELETE requests, we'll use the Bearer token in headers
-      // and include the _token in the request body if needed
+      // If not logged in, handle locally (guest mode)
+      if (!isLoggedIn) {
+        const guestWishlist = await getGuestWishlist();
+        const updatedWishlist = guestWishlist.filter(item => 
+          (item.id !== vegetableId) && (item.vegetable_id !== vegetableId)
+        );
+        await saveGuestWishlist(updatedWishlist);
+        return { 
+          success: true, 
+          vegetableId,
+          guestMode: true
+        };
+      }
+      
+      // If logged in, make API call
+      const token = state.auth.token;
       const response = await api.delete(`/wishlist/${vegetableId}`, {
         data: {
           _token: token
@@ -81,8 +222,81 @@ export const removeWishlistItem = createAsyncThunk(
       });
       return { ...response.data, vegetableId };
     } catch (error) {
+      // If 401, user might have logged out, handle in guest mode
+      if (error.response?.status === 401) {
+        const guestWishlist = await getGuestWishlist();
+        const updatedWishlist = guestWishlist.filter(item => 
+          (item.id !== vegetableId) && (item.vegetable_id !== vegetableId)
+        );
+        await saveGuestWishlist(updatedWishlist);
+        return { 
+          success: true, 
+          vegetableId,
+          guestMode: true
+        };
+      }
       console.error('Remove wishlist error:', error);
       return rejectWithValue(error.response?.data || 'Failed to remove wishlist item');
+    }
+  }
+);
+
+// Load guest wishlist from AsyncStorage
+export const loadGuestWishlist = createAsyncThunk(
+  'wishlist/loadGuestWishlist',
+  async (_, { rejectWithValue }) => {
+    try {
+      const guestWishlist = await getGuestWishlist();
+      return {
+        items: guestWishlist
+      };
+    } catch (error) {
+      return rejectWithValue('Failed to load guest wishlist');
+    }
+  }
+);
+
+// Sync guest wishlist to server after login
+export const syncGuestWishlistToServer = createAsyncThunk(
+  'wishlist/syncGuestWishlistToServer',
+  async (_, { rejectWithValue, getState }) => {
+    try {
+      const state = getState();
+      const guestWishlist = await getGuestWishlist();
+      
+      if (guestWishlist.length === 0) {
+        return { success: true, synced: false };
+      }
+      
+      // Add each guest wishlist item to server
+      const token = state.auth.token;
+      const syncPromises = guestWishlist.map(async (item) => {
+        try {
+          const vegetableId = item.id || item.vegetable_id;
+          await api.post('/wishlist/toggle', {
+            vegetable_id: vegetableId,
+            _token: token
+          });
+        } catch (error) {
+          console.error(`Failed to sync wishlist item ${item.id || item.vegetable_id}:`, error);
+        }
+      });
+      
+      await Promise.all(syncPromises);
+      
+      // Clear guest wishlist after successful sync
+      await clearGuestWishlist();
+      
+      // Fetch updated wishlist from server
+      const response = await api.get('/wishlist');
+      
+      return {
+        success: true,
+        synced: true,
+        data: response.data
+      };
+    } catch (error) {
+      return rejectWithValue(error.response?.data || 'Failed to sync guest wishlist');
     }
   }
 );
@@ -130,6 +344,45 @@ const wishlistSlice = createSlice({
       }
       state.itemStatus[vegetableId] = isWishlisted;
     },
+    addWishlistItemLocally: (state, action) => {
+      const { vegetableId, vegetable } = action.payload;
+      const existingItem = state.items.find(item => 
+        (item.id === vegetableId) || (item.vegetable_id === vegetableId)
+      );
+      
+      if (!existingItem) {
+        state.items.push({
+          id: vegetableId,
+          vegetable_id: vegetableId,
+          ...vegetable
+        });
+      }
+      
+      // Update item status
+      if (!state.itemStatus) {
+        state.itemStatus = {};
+      }
+      state.itemStatus[vegetableId] = true;
+    },
+    removeWishlistItemLocally: (state, action) => {
+      const { vegetableId } = action.payload;
+      state.items = state.items.filter(item => 
+        (item.id !== vegetableId) && (item.vegetable_id !== vegetableId)
+      );
+      
+      // Update item status
+      if (!state.itemStatus) {
+        state.itemStatus = {};
+      }
+      state.itemStatus[vegetableId] = false;
+    },
+    // Save wishlist to AsyncStorage (for guest mode)
+    saveWishlistToStorage: (state) => {
+      // This will be called after state updates to save to AsyncStorage
+      saveGuestWishlist(state.items).catch(err => {
+        console.error('Failed to save guest wishlist:', err);
+      });
+    },
   },
   extraReducers: (builder) => {
     // Fetch Wishlist
@@ -140,8 +393,37 @@ const wishlistSlice = createSlice({
       })
       .addCase(fetchWishlist.fulfilled, (state, action) => {
         state.loading = false;
-        state.items = action.payload.data || [];
+        let items = action.payload.data || [];
+        
+        // Normalize wishlist items - handle nested vegetable structure from API
+        items = items.map(item => {
+          // If item has nested vegetable object (API structure), flatten it
+          if (item.vegetable) {
+            return {
+              ...item.vegetable,
+              id: item.vegetable.id || item.vegetable_id || item.id,
+              vegetable_id: item.vegetable_id || item.vegetable.id || item.id,
+              // Preserve wishlist-specific fields
+              wishlist_id: item.id,
+            };
+          }
+          // If item is already flat, use it as is
+          return {
+            ...item,
+            id: item.id || item.vegetable_id,
+            vegetable_id: item.vegetable_id || item.id,
+          };
+        });
+        
+        state.items = items;
         state.error = null;
+        
+        // Save to AsyncStorage if in guest mode
+        if (action.payload.guestMode) {
+          saveGuestWishlist(state.items).catch(err => {
+            console.error('Failed to save guest wishlist:', err);
+          });
+        }
       })
       .addCase(fetchWishlist.rejected, (state, action) => {
         state.loading = false;
@@ -170,7 +452,7 @@ const wishlistSlice = createSlice({
       })
       .addCase(toggleWishlistItem.fulfilled, (state, action) => {
         state.toggleLoading = false;
-        const { vegetableId, wishlisted } = action.payload;
+        const { vegetableId, wishlisted, vegetable, guestMode } = action.payload;
         
         // Update the item status tracking
         if (!state.itemStatus) {
@@ -178,23 +460,38 @@ const wishlistSlice = createSlice({
         }
         state.itemStatus[vegetableId] = wishlisted;
         
-        if (wishlisted) {
-          // Item was added to wishlist - add it to our state
-          // Check if item already exists to avoid duplicates
-          const existingItem = state.items.find(item => item.id === vegetableId);
-          if (!existingItem) {
-            // Create a minimal item object for the wishlist
-            // The full item data will be available when the wishlist is fetched
-            state.items.push({
-              id: vegetableId,
-              isWishlisted: true,
-              // Add other minimal required fields
-              name: `Item ${vegetableId}`, // This will be updated when full data is fetched
-            });
-          }
+        // If in guest mode, use the complete guest wishlist data
+        if (guestMode && action.payload.guestWishlist) {
+          // Use the complete guest wishlist data returned from the action
+          state.items = action.payload.guestWishlist || [];
+        } else if (guestMode) {
+          // If guest mode but no wishlist data in payload, reload from AsyncStorage
+          getGuestWishlist().then(guestWishlist => {
+            state.items = guestWishlist || [];
+          }).catch(err => {
+            console.error('Failed to reload guest wishlist in reducer:', err);
+          });
         } else {
-          // Item was removed from wishlist - remove it from our state
-          state.items = state.items.filter(item => item.id !== vegetableId);
+          // For logged-in users, handle state updates normally
+          if (wishlisted) {
+            // Item was added - for logged-in users, wait for fetchWishlist
+            // Don't add minimal item here
+          } else {
+            // Item was removed from wishlist - remove it from our state
+            state.items = state.items.filter(item => 
+              (item.id !== vegetableId) && (item.vegetable_id !== vegetableId)
+            );
+          }
+        }
+        
+        // If in guest mode, refresh from AsyncStorage to get complete data
+        if (guestMode) {
+          // Load guest wishlist to ensure we have complete data
+          getGuestWishlist().then(guestWishlist => {
+            state.items = guestWishlist || [];
+          }).catch(err => {
+            console.error('Failed to refresh guest wishlist:', err);
+          });
         }
         
         state.toggleError = null;
@@ -219,8 +516,49 @@ const wishlistSlice = createSlice({
         state.removeLoading = false;
         state.removeError = action.payload;
       });
+
+    // Load guest wishlist
+    builder
+      .addCase(loadGuestWishlist.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(loadGuestWishlist.fulfilled, (state, action) => {
+        state.loading = false;
+        state.items = action.payload.items || [];
+        state.error = null;
+      })
+      .addCase(loadGuestWishlist.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      });
+
+    // Sync guest wishlist to server
+    builder
+      .addCase(syncGuestWishlistToServer.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(syncGuestWishlistToServer.fulfilled, (state, action) => {
+        state.loading = false;
+        if (action.payload.synced && action.payload.data) {
+          state.items = action.payload.data.data || [];
+        }
+        state.error = null;
+      })
+      .addCase(syncGuestWishlistToServer.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      });
   },
 });
 
-export const { clearWishlist, updateWishlistStatus, setWishlistItemStatus } = wishlistSlice.actions;
+export const { 
+  clearWishlist, 
+  updateWishlistStatus, 
+  setWishlistItemStatus,
+  addWishlistItemLocally,
+  removeWishlistItemLocally,
+  saveWishlistToStorage
+} = wishlistSlice.actions;
 export default wishlistSlice.reducer;
