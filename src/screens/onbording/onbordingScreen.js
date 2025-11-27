@@ -366,14 +366,14 @@ const styles = StyleSheet.create({
     },
     footer: {
         paddingHorizontal: scale(24),
-        paddingBottom: scale(40),
+         paddingBottom: Platform.OS === 'ios' ? scale(40) : scale(70),
         alignItems: 'center',
         justifyContent: 'flex-end',
-        height: SCREEN_HEIGHT * 0.2,
+        height: SCREEN_HEIGHT * 0.24,
     },
     paginationContainer: {
         flexDirection: 'row',
-        marginBottom: scale(30),
+        marginBottom: Platform.OS === 'ios' ? scale(30) : scale(40),
     },
     paginationDot: {
         height: 8,
@@ -383,7 +383,8 @@ const styles = StyleSheet.create({
     nextButton: {
         backgroundColor: THEME_COLOR,
         borderRadius: scale(18),
-        height: scale(50),
+        // height: scale(48),
+        height: Platform.OS === 'ios' ? scale(50) : scale(48),
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
