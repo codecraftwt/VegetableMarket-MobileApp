@@ -2,9 +2,12 @@ import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated, Easing, Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useDispatch } from 'react-redux';
+import { checkAuthStatus } from '../../redux/slices/authSlice';
 
 const SplashScreen = () => {
   const navigation = useNavigation();
+  const dispatch = useDispatch();
 
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -85,6 +88,39 @@ const SplashScreen = () => {
         // Check if onboarding has been completed
         const onboardingCompleted = await AsyncStorage.getItem('@onboarding_completed');
 
+        // If onboarding not completed, keep previous behavior
+        if (onboardingCompleted !== 'true') {
+          timer = setTimeout(() => {
+            Animated.parallel([
+              Animated.timing(fadeAnim, {
+                toValue: 0,
+                duration: 600,
+                useNativeDriver: true,
+                easing: Easing.in(Easing.ease),
+              }),
+              Animated.timing(logoOpacity, {
+                toValue: 0,
+                duration: 600,
+                useNativeDriver: true,
+                easing: Easing.in(Easing.ease),
+              }),
+            ]).start(() => {
+              navigation.replace('Onboarding');
+            });
+          }, 2000);
+          return;
+        }
+
+        // Onboarding is completed: check auth status to restore user session
+        let authData = null;
+        try {
+          const resultAction = await dispatch(checkAuthStatus());
+          // If fulfilled, payload will contain { user, token } or null
+          authData = resultAction?.payload || null;
+        } catch (e) {
+          authData = null;
+        }
+
         // Navigate after splash animation
         timer = setTimeout(() => {
           Animated.parallel([
@@ -101,13 +137,24 @@ const SplashScreen = () => {
               easing: Easing.in(Easing.ease),
             }),
           ]).start(() => {
-            // Navigate based on onboarding status
-            if (onboardingCompleted === 'true') {
-              // Onboarding completed - go directly to Dashboard (guest mode enabled)
-              navigation.replace('App');
+            // If we have a valid authenticated user, route based on role
+            const user = authData?.user;
+            const roleId = user?.role_id;
+
+            if (user && roleId) {
+              if (roleId === 2) {
+                // Farmer
+                navigation.replace('FarmerApp');
+              } else if (roleId === 4) {
+                // Delivery agent
+                navigation.replace('DeliveryApp');
+              } else {
+                // Customer or any other supported role
+                navigation.replace('App');
+              }
             } else {
-              // Show onboarding if not completed
-              navigation.replace('Onboarding');
+              // No stored user/token – go to guest customer app
+              navigation.replace('App');
             }
           });
         }, 2000); // Splash duration
