@@ -71,12 +71,12 @@ const DeliveryProfileScreen = ({ navigation }) => {
         setSuccessMessage(result.message || 'Your profile has been deleted successfully.');
         setShowSuccessModal(true);
 
-        // Navigate to login after successful deletion
+        // Navigate to customer dashboard (guest mode) after successful deletion
         setTimeout(() => {
           dispatch(logout());
           navigation.reset({
             index: 0,
-            routes: [{ name: 'Login' }],
+            routes: [{ name: 'App' }],
           });
         }, 2000);
       }
@@ -94,7 +94,7 @@ const DeliveryProfileScreen = ({ navigation }) => {
     dispatch(logout());
     navigation.reset({
       index: 0,
-      routes: [{ name: 'Login' }],
+      routes: [{ name: 'App' }],
     });
   };
 

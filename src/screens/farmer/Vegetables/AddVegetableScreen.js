@@ -503,20 +503,22 @@ const AddVegetableScreen = ({ navigation }) => {
               <Text style={styles.sectionTitle}>
                 <Icon name="dollar" size={16} color="#019a34" /> Pricing & Stock
               </Text>
-              <View style={styles.rowContainer}>
-                <View style={styles.halfWidth}>
-                  {renderFormField('Price *', 'price', '₹0.00', 'numeric')}
+              <View style={styles.pricingStockContainer}>
+                <View style={styles.pricingRow}>
+                  <View style={styles.pricingField}>
+                    {renderFormField('Price *', 'price', '₹0.00', 'numeric')}
+                  </View>
+                  <View style={styles.pricingField}>
+                    {renderPickerField('Unit Type', 'unit_type', unitTypes.map(type => ({ id: type, name: type })))}
+                  </View>
                 </View>
-                <View style={styles.halfWidth}>
-                  {renderPickerField('Unit Type', 'unit_type', unitTypes.map(type => ({ id: type, name: type })))}
-                </View>
-              </View>
-              <View style={styles.rowContainer}>
-                <View style={styles.halfWidth}>
-                  {renderFormField('Total Stock *', 'stock', '0', 'numeric')}
-                </View>
-                <View style={styles.halfWidth}>
-                  {renderFormField('Available Stock *', 'availablestock', '0', 'numeric')}
+                <View style={styles.stockRow}>
+                  <View style={styles.stockField}>
+                    {renderFormField('Total Stock *', 'stock', '0', 'numeric')}
+                  </View>
+                  <View style={styles.stockField}>
+                    {renderFormField('Available Stock *', 'availablestock', '0', 'numeric')}
+                  </View>
                 </View>
               </View>
             </View>
@@ -525,29 +527,31 @@ const AddVegetableScreen = ({ navigation }) => {
               <Text style={styles.sectionTitle}>
                 <Icon name="star" size={16} color="#019a34" /> Quality & Details
               </Text>
-              <View style={styles.rowContainer}>
-                <View style={styles.halfWidth}>
-                  {renderPickerField('Organic', 'is_organic', [
-                    { id: '0', name: 'No' },
-                    { id: '1', name: 'Yes' }
-                  ])}
+              <View style={styles.qualityDetailsContainer}>
+                <View style={styles.qualityRow}>
+                  <View style={styles.qualityField}>
+                    {renderPickerField('Organic', 'is_organic', [
+                      { id: '0', name: 'No' },
+                      { id: '1', name: 'Yes' }
+                    ])}
+                  </View>
+                  <View style={styles.qualityField}>
+                    {renderPickerField('Grade', 'grade', grades.map(grade => ({ id: grade, name: grade })))}
+                  </View>
                 </View>
-                <View style={styles.halfWidth}>
-                  {renderPickerField('Grade', 'grade', grades.map(grade => ({ id: grade, name: grade })))}
+                <View style={styles.harvestDateContainer}>
+                  <Text style={styles.inputLabel}>Harvest Date</Text>
+                  <TouchableOpacity
+                    style={styles.datePickerButton}
+                    onPress={() => setShowDatePicker(true)}
+                  >
+                    <Icon name="calendar" size={16} color="#019a34" />
+                    <Text style={styles.datePickerText}>
+                      {formatDate(formData.harvest_date)}
+                    </Text>
+                    <Icon name="chevron-down" size={14} color="#666" />
+                  </TouchableOpacity>
                 </View>
-              </View>
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Harvest Date</Text>
-                <TouchableOpacity
-                  style={styles.datePickerButton}
-                  onPress={() => setShowDatePicker(true)}
-                >
-                  <Icon name="calendar" size={16} color="#019a34" />
-                  <Text style={styles.datePickerText}>
-                    {formatDate(formData.harvest_date)}
-                  </Text>
-                  <Icon name="chevron-down" size={14} color="#666" />
-                </TouchableOpacity>
               </View>
             </View>
 
@@ -698,16 +702,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: p(8),
+    width: '100%',
   },
   pickerOption: {
-    paddingHorizontal: p(16),
+    paddingHorizontal: p(12),
     paddingVertical: p(10),
     borderRadius: p(25),
     borderWidth: 1.5,
     borderColor: '#e1e5e9',
     backgroundColor: '#fff',
-    minWidth: p(60),
+    minWidth: p(50),
     alignItems: 'center',
+    flexShrink: 1,
   },
   pickerOptionSelected: {
     backgroundColor: '#019a34',
@@ -830,13 +836,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: p(16),
+    paddingVertical: p(14),
     gap: p(8),
   },
   submitButtonText: {
     color: '#fff',
     fontSize: fontSizes.lg,
-    fontFamily: 'Poppins-Bold',
+    fontWeight:'600',
   },
   // Category loading and error styles
   loadingContainer: {
@@ -880,6 +886,47 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-Regular',
     color: '#333',
     flex: 1,
+  },
+  // Pricing & Stock responsive styles
+  pricingStockContainer: {
+    width: '100%',
+  },
+  pricingRow: {
+    flexDirection: 'row',
+    gap: p(12),
+    marginBottom: p(16),
+    flexWrap: 'wrap',
+  },
+  pricingField: {
+    flex: 1,
+    minWidth: p(140),
+  },
+  stockRow: {
+    flexDirection: 'row',
+    gap: p(12),
+    flexWrap: 'wrap',
+  },
+  stockField: {
+    flex: 1,
+    minWidth: p(140),
+  },
+  // Quality & Details responsive styles
+  qualityDetailsContainer: {
+    width: '100%',
+  },
+  qualityRow: {
+    flexDirection: 'row',
+    gap: p(12),
+    marginBottom: p(16),
+    flexWrap: 'wrap',
+  },
+  qualityField: {
+    flex: 1,
+    minWidth: p(140),
+  },
+  harvestDateContainer: {
+    width: '100%',
+    marginTop: p(4),
   },
 });
 

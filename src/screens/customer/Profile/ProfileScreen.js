@@ -107,12 +107,12 @@ const ProfileScreen = ({ navigation }) => {
         setSuccessMessage(result.message || 'Your profile has been deleted successfully.');
         setShowSuccessModal(true);
 
-        // Navigate to login after successful deletion
+        // Navigate to customer dashboard (guest mode) after successful deletion
         setTimeout(() => {
           dispatch(logout());
           navigation.reset({
             index: 0,
-            routes: [{ name: 'Login' }],
+            routes: [{ name: 'App' }],
           });
         }, 2000);
       }
@@ -129,7 +129,7 @@ const ProfileScreen = ({ navigation }) => {
     dispatch(logout());
     navigation.reset({
       index: 0,
-      routes: [{ name: 'Login' }],
+      routes: [{ name: 'App' }],
     });
   };
 
@@ -508,7 +508,7 @@ const ProfileScreen = ({ navigation }) => {
           <Icon name="sign-in" size={20} color="#fff" />
         </View>
         <View style={styles.actionContent}>
-          <Text style={[styles.actionTitle, styles.loginTitle]}>Login / Register</Text>
+          <Text style={[styles.actionTitle, styles.loginTitle]}>Login or Register</Text>
           <Text style={styles.actionSubtitle}>Sign in to access all features</Text>
         </View>
         <Icon name="chevron-right" size={16} color="#019a34" />

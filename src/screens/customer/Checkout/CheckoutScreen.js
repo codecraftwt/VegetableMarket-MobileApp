@@ -27,28 +27,28 @@ const CheckoutScreen = ({ navigation }) => {
   const { totalAmount, loading, cartItems, addresses: cartAddresses, paymentSettings } = useSelector(state => state.cart);
   const { user, profile, loading: profileLoading } = useSelector(state => state.profile);
   const { isLoggedIn } = useSelector(state => state.auth);
-  
 
-  const { 
-    orderData, 
-    razorpayOrderId, 
-    razorpayKey, 
-    razorpayAmount, 
-    razorpayCurrency, 
-    razorpayName, 
-    razorpayEmail, 
+
+  const {
+    orderData,
+    razorpayOrderId,
+    razorpayKey,
+    razorpayAmount,
+    razorpayCurrency,
+    razorpayName,
+    razorpayEmail,
     razorpayContact,
     couponData,
     discountAmount,
     finalAmount,
-    placeOrderLoading, 
+    placeOrderLoading,
     error: orderError,
     success: orderSuccess,
     paymentVerified,
     paymentVerificationError,
     paymentVerificationLoading
   } = useSelector(state => state.orders);
-  
+
   // Local state
   const [selectedAddress, setSelectedAddress] = useState(null);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(null);
@@ -61,7 +61,7 @@ const CheckoutScreen = ({ navigation }) => {
   const [addressToSetPrimary, setAddressToSetPrimary] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
-  
+
   // Coupon state
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState(null);
@@ -75,7 +75,7 @@ const CheckoutScreen = ({ navigation }) => {
   // Check if user is logged in, if not redirect to login
   useEffect(() => {
     if (!isLoggedIn) {
-      navigation.replace('Login', { 
+      navigation.replace('Login', {
         redirectTo: 'Checkout',
         message: 'Please login or register to proceed with checkout'
       });
@@ -86,10 +86,10 @@ const CheckoutScreen = ({ navigation }) => {
   // Fetch cart and profile when component mounts
   useEffect(() => {
     if (!isLoggedIn) return;
-    
+
     dispatch(fetchCart());
     dispatch(fetchProfile()); // Fetch profile to ensure user data is available
-    
+
     // Cleanup function
     return () => {
       dispatch(clearOrderData());
@@ -106,21 +106,21 @@ const CheckoutScreen = ({ navigation }) => {
       setShowConfirmPaymentModal(false);
       setShowAddAddressModal(false);
       setShowAddPaymentModal(false);
-      
+
       // Clear messages
       setSuccessMessage('');
       setErrorMessage('');
-      
+
       // Clear coupon state
       setCouponCode('');
       setAppliedCoupon(null);
       setCouponError('');
       setLocalDiscountAmount(0);
       setLocalFinalAmount(0);
-      
+
       // Clear order data from Redux
       dispatch(clearOrderData());
-      
+
       // Reset address and payment selections to defaults
       if (addresses && addresses.length > 0) {
         setSelectedAddress(addresses[0]); // Select first address by default
@@ -153,7 +153,7 @@ const CheckoutScreen = ({ navigation }) => {
     // Normalize payment method for comparison
     const normalizedPaymentMethod = selectedPaymentMethod?.payment_method?.trim().toUpperCase();
     const isRazorpayMethod = normalizedPaymentMethod === 'RAZORPAY' || normalizedPaymentMethod === 'RAZORPAYX';
-    
+
     if (orderSuccess && razorpayOrderId && isRazorpayMethod) {
       // Initialize Razorpay payment
       handleRazorpayPayment();
@@ -164,7 +164,7 @@ const CheckoutScreen = ({ navigation }) => {
       setShowSuccessModal(true);
       dispatch(clearOrderData());
     }
-    
+
     // Update local discount values with server response if available
     if (orderSuccess && discountAmount > 0) {
       setLocalDiscountAmount(discountAmount);
@@ -179,9 +179,9 @@ const CheckoutScreen = ({ navigation }) => {
       setShowSuccessModal(true);
       // Don't clear order data immediately, let user see the modal first
     }
-    
+
     // Handle payment verification errors
-    if (paymentVerificationError) {      
+    if (paymentVerificationError) {
       // Check if this is a backend error or payment verification error
       if (paymentVerificationError.status === 500 || paymentVerificationError.status === 400) {
         console.error('Backend error during payment verification');
@@ -189,7 +189,7 @@ const CheckoutScreen = ({ navigation }) => {
       } else {
         setErrorMessage(paymentVerificationError.message || 'Payment verification failed. Please contact support.');
       }
-      
+
       setShowErrorModal(true);
       // Clear the error after showing it
       dispatch(clearOrderData());
@@ -200,15 +200,15 @@ const CheckoutScreen = ({ navigation }) => {
   useEffect(() => {
     if (orderError) {
       console.error('Order error details:', orderError);
-      
+
       let errorMessage = 'Failed to place order. Please try again.';
-      
+
       if (typeof orderError === 'object' && orderError.message) {
         errorMessage = orderError.message;
       } else if (typeof orderError === 'string') {
         errorMessage = orderError;
       }
-      
+
       // Add more specific error messages based on common validation errors
       if (errorMessage.toLowerCase().includes('validation')) {
         errorMessage = 'Please check your order details and try again.';
@@ -217,7 +217,7 @@ const CheckoutScreen = ({ navigation }) => {
       } else if (errorMessage.toLowerCase().includes('payment')) {
         errorMessage = 'Please select a valid payment method.';
       }
-      
+
       setErrorMessage(errorMessage);
       setShowErrorModal(true);
     }
@@ -238,21 +238,21 @@ const CheckoutScreen = ({ navigation }) => {
       setShowErrorModal(true);
       return;
     }
-    
+
     // Additional safety check
     if (!selectedPaymentMethod.payment_method) {
       setErrorMessage('Invalid payment method selected');
       setShowErrorModal(true);
       return;
     }
-    
+
     // Show confirmation modal before processing payment
     setShowConfirmPaymentModal(true);
   };
 
   // Define the payment handler function outside of the main function
   const handlePaymentSuccess = useCallback((response) => {
-    
+
     // Validate payment response
     if (!response.razorpay_payment_id || !response.razorpay_order_id || !response.razorpay_signature) {
       console.error('Invalid Razorpay response:', response);
@@ -260,7 +260,7 @@ const CheckoutScreen = ({ navigation }) => {
       setShowErrorModal(true);
       return;
     }
-    
+
     // Validate required data
     if (!selectedAddress || !selectedAddress.id) {
       console.error('Selected address is null or missing ID');
@@ -268,17 +268,17 @@ const CheckoutScreen = ({ navigation }) => {
       setShowErrorModal(true);
       return;
     }
-    
+
     // Try to get user data from profile or use fallback
     const currentUser = user || profile?.user || { id: razorpayEmail }; // Fallback to email if no user ID
-    
+
     if (!currentUser || !currentUser.id) {
       console.error('User is null or missing ID. User object:', currentUser);
       setErrorMessage('User session expired. Please login again.');
       setShowErrorModal(true);
       return;
     }
-    
+
     // Validate that the order_id from response matches our expected order_id
     if (response.razorpay_order_id !== razorpayOrderId) {
       console.error('ORDER ID MISMATCH!');
@@ -288,7 +288,7 @@ const CheckoutScreen = ({ navigation }) => {
       setShowErrorModal(true);
       return;
     }
-    
+
     // Payment successful, verify with backend
     // CRITICAL: Use the order_id from Razorpay response, not from Redux state
     const paymentData = {
@@ -333,9 +333,9 @@ const CheckoutScreen = ({ navigation }) => {
         final_amount: localFinalAmount || finalAmount || totalAmount
       })
     };
-    
+
     try {
-      dispatch(verifyRazorpayPayment(paymentData));      
+      dispatch(verifyRazorpayPayment(paymentData));
       // Show loading state for payment verification
       setSuccessMessage('Payment successful! Verifying payment and creating your order...');
       setShowSuccessModal(true);
@@ -352,7 +352,7 @@ const CheckoutScreen = ({ navigation }) => {
       setShowErrorModal(true);
       return;
     }
-    
+
     const options = {
       description: 'Vegetable Market Order',
       image: 'https://your-logo-url.com/logo.png',
@@ -419,27 +419,27 @@ const CheckoutScreen = ({ navigation }) => {
 
   const handleConfirmPayment = () => {
     setShowConfirmPaymentModal(false);
-    
+
     // Validate required data before proceeding
     if (!selectedAddress || !selectedAddress.id) {
       setErrorMessage('Please select a valid delivery address');
       setShowErrorModal(true);
       return;
     }
-    
+
     if (!selectedPaymentMethod || !selectedPaymentMethod.payment_method) {
       setErrorMessage('Please select a valid payment method');
       setShowErrorModal(true);
       return;
     }
-    
+
     // Place order with coupon code if applied
     // Normalize payment method - convert RAZORPAYX to RAZORPAY
     let normalizedPaymentMethod = selectedPaymentMethod.payment_method.trim().toUpperCase();
     if (normalizedPaymentMethod === 'RAZORPAYX') {
       normalizedPaymentMethod = 'RAZORPAY';
     }
-    
+
     const orderData = {
       address_id: selectedAddress.id,
       payment_method: normalizedPaymentMethod,
@@ -489,24 +489,24 @@ const CheckoutScreen = ({ navigation }) => {
       setCouponError('Please enter a coupon code');
       return;
     }
-    
+
     // Check minimum order amount for coupon (₹100)
     const minimumOrderAmount = 100;
     if (totalAmount < minimumOrderAmount) {
       setCouponError(`Minimum order amount for this coupon is ₹${minimumOrderAmount}.00`);
       return;
     }
-    
+
     // Calculate local discount (10% for "save10" coupon)
     let discountPercent = 0;
     if (couponCode.trim().toLowerCase() === 'save10') {
       discountPercent = 0.10; // 10% discount
     }
-    
+
     if (discountPercent > 0) {
       const discount = totalAmount * discountPercent;
       const finalAmount = totalAmount - discount;
-      
+
       setAppliedCoupon(couponCode.trim());
       setLocalDiscountAmount(discount);
       setLocalFinalAmount(finalAmount);
@@ -630,7 +630,7 @@ const CheckoutScreen = ({ navigation }) => {
     return (
       <SafeAreaView style={styles.container}>
         <StatusBar backgroundColor="#019a34" barStyle="light-content" />
-        <CommonHeader 
+        <CommonHeader
           screenName="Checkout"
           showBackButton={true}
           onBackPress={handleBackPress}
@@ -640,9 +640,9 @@ const CheckoutScreen = ({ navigation }) => {
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#019a34" />
           <Text style={styles.loadingText}>
-            {placeOrderLoading ? 'Processing order...' : 
-             paymentVerificationLoading ? 'Verifying payment and creating order...' : 
-             'Loading checkout...'}
+            {placeOrderLoading ? 'Processing order...' :
+              paymentVerificationLoading ? 'Verifying payment and creating order...' :
+                'Loading checkout...'}
           </Text>
         </View>
       </SafeAreaView>
@@ -654,7 +654,7 @@ const CheckoutScreen = ({ navigation }) => {
     return (
       <SafeAreaView style={styles.container}>
         <StatusBar backgroundColor="#019a34" barStyle="light-content" />
-        <CommonHeader 
+        <CommonHeader
           screenName="Checkout"
           showBackButton={true}
           onBackPress={handleBackPress}
@@ -676,17 +676,17 @@ const CheckoutScreen = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar backgroundColor="#019a34" barStyle="light-content" />
-      
-      <CommonHeader 
+
+      <CommonHeader
         screenName="Checkout"
         showBackButton={true}
         onBackPress={handleBackPress}
         showNotification={true}
         navigation={navigation}
       />
-      
-      <ScrollView 
-        style={styles.content} 
+
+      <ScrollView
+        style={styles.content}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
@@ -698,17 +698,17 @@ const CheckoutScreen = ({ navigation }) => {
               <Text style={styles.addNewButton}>Add New</Text>
             </TouchableOpacity>
           </View>
-          
+
           <Text style={styles.sectionInstruction}>
             Tap to select • Long press to set as primary
           </Text>
-          
+
           {addresses.length > 0 ? (
             addresses.map((addr) => (
-              <TouchableOpacity 
+              <TouchableOpacity
                 key={addr.id}
                 style={[
-                  styles.addressCard, 
+                  styles.addressCard,
                   selectedAddress?.id === addr.id && styles.selectedAddressCard
                 ]}
                 onPress={() => handleAddressSelect(addr)}
@@ -746,7 +746,7 @@ const CheckoutScreen = ({ navigation }) => {
               </TouchableOpacity>
             </View>
           )}
-          
+
           {/* Selection Status */}
           {!selectedAddress && addresses.length > 0 && (
             <View style={styles.selectionWarning}>
@@ -764,13 +764,13 @@ const CheckoutScreen = ({ navigation }) => {
               <Text style={styles.addNewButton}>Add New</Text>
             </TouchableOpacity>
           </View>
-          
+
           {paymentSettings.length > 0 ? (
             paymentSettings.map((payment) => (
-              <TouchableOpacity 
+              <TouchableOpacity
                 key={payment.id}
                 style={[
-                  styles.paymentCard, 
+                  styles.paymentCard,
                   selectedPaymentMethod?.id === payment.id && styles.selectedPaymentCard,
                   payment.status !== 'active' && styles.disabledPaymentCard
                 ]}
@@ -785,7 +785,7 @@ const CheckoutScreen = ({ navigation }) => {
                     <Text style={styles.paymentType}>{formatPaymentMethod(payment.payment_method)}</Text>
                     <View style={styles.paymentStatusContainer}>
                       <View style={[
-                        styles.paymentStatusDot, 
+                        styles.paymentStatusDot,
                         { backgroundColor: payment.status === 'active' ? '#28a745' : '#dc3545' }
                       ]} />
                       <Text style={[
@@ -812,7 +812,7 @@ const CheckoutScreen = ({ navigation }) => {
               <Text style={styles.noPaymentText}>No payment methods available</Text>
             </View>
           )}
-          
+
           {/* Selection Status */}
           {!selectedPaymentMethod && paymentSettings.length > 0 && (
             <View style={styles.selectionWarning}>
@@ -853,14 +853,14 @@ const CheckoutScreen = ({ navigation }) => {
                 autoCorrect={false}
               />
               {!appliedCoupon ? (
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.applyCouponButton}
                   onPress={handleApplyCoupon}
                 >
                   <Text style={styles.applyCouponButtonText}>Apply</Text>
                 </TouchableOpacity>
               ) : (
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.removeCouponButton}
                   onPress={handleRemoveCoupon}
                 >
@@ -892,7 +892,7 @@ const CheckoutScreen = ({ navigation }) => {
             <Text style={styles.sectionTitle}>Order Summary</Text>
             <Text style={styles.cartItemsCount}>{cartItems.length} item{cartItems.length !== 1 ? 's' : ''}</Text>
           </View>
-          
+
           {/* Cart Items */}
           {cartItems.map((item, index) => (
             <View key={item.id} style={styles.cartItemRow}>
@@ -905,9 +905,9 @@ const CheckoutScreen = ({ navigation }) => {
               <Text style={styles.cartItemSubtotal}>₹{item.subtotal}</Text>
             </View>
           ))}
-          
+
           <View style={styles.summaryDivider} />
-          
+
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Subtotal</Text>
             <Text style={styles.summaryValue}>₹{totalAmount.toFixed(2)}</Text>
@@ -939,11 +939,11 @@ const CheckoutScreen = ({ navigation }) => {
             ₹{appliedCoupon && localFinalAmount > 0 ? localFinalAmount.toFixed(2) : totalAmount.toFixed(2)}
           </Text>
         </View>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[
-            styles.paymentButton, 
+            styles.paymentButton,
             (!selectedAddress || !selectedPaymentMethod || placeOrderLoading || paymentVerificationLoading) && styles.paymentButtonDisabled
-          ]} 
+          ]}
           onPress={handlePayment}
           disabled={!selectedAddress || !selectedPaymentMethod || placeOrderLoading || paymentVerificationLoading}
         >
@@ -958,7 +958,7 @@ const CheckoutScreen = ({ navigation }) => {
       {/* Success Modal */}
       <SuccessModal
         visible={showSuccessModal}
-        onClose={() => {}} // Prevent closing on outside click
+        onClose={() => { }} // Prevent closing on outside click
         title="Order Confirmed!"
         message={successMessage}
         buttonText="Continue"
@@ -979,8 +979,8 @@ const CheckoutScreen = ({ navigation }) => {
         visible={showErrorModal}
         onClose={handleErrorModalClose}
         title={paymentVerificationError ? "Payment Verification Failed" : "Error"}
-        message={paymentVerificationError ? 
-          `${errorMessage}\n\nYour payment was successful, but we couldn't verify it. Click 'Retry' to try again or contact support if the issue persists.` : 
+        message={paymentVerificationError ?
+          `${errorMessage}\n\nYour payment was successful, but we couldn't verify it. Click 'Retry' to try again or contact support if the issue persists.` :
           errorMessage}
         buttonText={paymentVerificationError ? "Retry" : "OK"}
         onButtonPress={paymentVerificationError ? handleRetryPaymentVerification : handleErrorModalClose}
@@ -1371,7 +1371,7 @@ const styles = StyleSheet.create({
     elevation: 4,
     borderTopWidth: 1,
     borderTopColor: '#f0f0f0',
-    marginBottom:32
+    marginBottom: 32
   },
   totalContainer: {
     flexDirection: 'column',
@@ -1441,7 +1441,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-Regular',
     marginLeft: p(8),
   },
-  
+
   // Coupon Section Styles
   couponContainer: {
     marginTop: p(12),
@@ -1523,7 +1523,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-Regular',
     marginLeft: p(6),
   },
-  
+
   // Discount Row Styles
   discountRow: {
     backgroundColor: '#d4edda',

@@ -10,6 +10,7 @@ import {
   Image,
   Linking,
   Alert,
+  Platform,
 } from 'react-native';
 import SkeletonLoader from '../../../components/SkeletonLoader';
 import CommonHeader from '../../../components/CommonHeader';
@@ -37,7 +38,7 @@ const ProductDetailScreen = ({ navigation, route }) => {
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [wishlistMessage, setWishlistMessage] = useState('');
-  
+
   // Get product data from navigation params or use default
   const product = route.params?.product || {
     id: 1,
@@ -65,12 +66,12 @@ const ProductDetailScreen = ({ navigation, route }) => {
     if (foundProduct) {
       return foundProduct;
     }
-    
+
     // If not found in vegetables list, check if current product has complete data
     if (product.category && product.farmer) {
       return product;
     }
-    
+
     // If current product is incomplete, enhance it with better fallbacks
     return {
       ...product,
@@ -107,6 +108,16 @@ const ProductDetailScreen = ({ navigation, route }) => {
   };
 
   const handleAddToCart = async () => {
+    // Check if the product is out of stock
+    if (isOutOfStock()) {
+      Alert.alert(
+        'Product Unavailable',
+        'This product is out of stock. Please check back later.',
+        [{ text: 'OK', style: 'default' }]
+      );
+      return;
+    }
+
     try {
       // Update cart state immediately for badge
       dispatch(addItemToCart({
@@ -120,9 +131,9 @@ const ProductDetailScreen = ({ navigation, route }) => {
       setShowSuccessModal(true);
 
       // Make API call in background
-      dispatch(addToCart({ 
-        vegetable_id: completeProduct.id, 
-        quantity: quantity 
+      dispatch(addToCart({
+        vegetable_id: completeProduct.id,
+        quantity: quantity
       })).unwrap().then(() => {
       }).catch((error) => {
         console.error('ProductDetailScreen: Add to cart API error:', error);
@@ -139,9 +150,9 @@ const ProductDetailScreen = ({ navigation, route }) => {
 
   const handleWishlistToggle = async () => {
     try {
-      const result = await dispatch(toggleWishlistItem({ 
-        vegetableId: completeProduct.id, 
-        vegetable: completeProduct 
+      const result = await dispatch(toggleWishlistItem({
+        vegetableId: completeProduct.id,
+        vegetable: completeProduct
       })).unwrap();
 
       if (result.wishlisted) {
@@ -181,10 +192,10 @@ const ProductDetailScreen = ({ navigation, route }) => {
 
   const RelatedProducts = () => {
     const relatedItems = vegetables
-      .filter(item => 
-        item.id !== completeProduct.id && 
-        (item.category?.id === completeProduct.category?.id || 
-         item.category?.name?.toLowerCase() === completeProduct.category?.name?.toLowerCase())
+      .filter(item =>
+        item.id !== completeProduct.id &&
+        (item.category?.id === completeProduct.category?.id ||
+          item.category?.name?.toLowerCase() === completeProduct.category?.name?.toLowerCase())
       )
       .slice(0, 8);
 
@@ -193,8 +204,26 @@ const ProductDetailScreen = ({ navigation, route }) => {
     };
 
     const handleRelatedAddToCart = async (item) => {
+      // Check if the product is out of stock
+      const quantityAvailable = item?.quantity_available;
+      const isOutOfStock = (
+        quantityAvailable === 0 ||
+        quantityAvailable === null ||
+        quantityAvailable === undefined ||
+        String(quantityAvailable) === '0'
+      );
+
+      if (isOutOfStock) {
+        Alert.alert(
+          'Product Unavailable',
+          'This product is out of stock. Please check back later.',
+          [{ text: 'OK', style: 'default' }]
+        );
+        return;
+      }
+
       try {
-          dispatch(addItemToCart({
+        dispatch(addItemToCart({
           vegetable_id: item.id,
           quantity: 1,
           vegetable: item
@@ -205,9 +234,9 @@ const ProductDetailScreen = ({ navigation, route }) => {
         setShowSuccessModal(true);
 
         // Make API call in background
-        dispatch(addToCart({ 
-          vegetable_id: item.id, 
-          quantity: 1 
+        dispatch(addToCart({
+          vegetable_id: item.id,
+          quantity: 1
         })).unwrap().then(() => {
         }).catch((error) => {
           console.error('Related product add to cart API error:', error);
@@ -280,7 +309,13 @@ const ProductDetailScreen = ({ navigation, route }) => {
   };
 
   const isOutOfStock = () => {
-    return completeProduct?.quantity_available == 0;
+    const quantityAvailable = completeProduct?.quantity_available;
+    return (
+      quantityAvailable === 0 ||
+      quantityAvailable === null ||
+      quantityAvailable === undefined ||
+      String(quantityAvailable) === '0'
+    );
   };
 
   const handlePhonePress = () => {
@@ -304,8 +339,8 @@ const ProductDetailScreen = ({ navigation, route }) => {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar backgroundColor="#019a34" barStyle="light-content" />
-      
-      <CommonHeader 
+
+      <CommonHeader
         screenName="Details"
         showBackButton={true}
         onBackPress={handleBackPress}
@@ -313,7 +348,7 @@ const ProductDetailScreen = ({ navigation, route }) => {
         onNotificationPress={handleNotificationPress}
         navigation={navigation}
       />
-      
+
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {vegetablesLoading ? (
           <>
@@ -321,19 +356,19 @@ const ProductDetailScreen = ({ navigation, route }) => {
             <View style={styles.imageSection}>
               <SkeletonLoader type="banner" width="100%" height={p(250)} borderRadius={p(20)} />
             </View>
-            
+
             {/* Skeleton loader for product information */}
             <View style={styles.productCard}>
               {/* Product Name Skeleton */}
               <SkeletonLoader type="text" width="80%" height={p(24)} style={styles.skeletonProductName} />
-              
+
               {/* Star Rating Skeleton */}
               <View style={styles.skeletonStarRating}>
                 {[1, 2, 3, 4, 5].map((star) => (
                   <SkeletonLoader key={star} type="category" width={p(16)} height={p(16)} borderRadius={p(8)} />
                 ))}
               </View>
-              
+
               {/* Price and Quantity Skeleton */}
               <View style={styles.priceQuantityRow}>
                 <SkeletonLoader type="text" width="40%" height={p(20)} />
@@ -343,7 +378,7 @@ const ProductDetailScreen = ({ navigation, route }) => {
                   <SkeletonLoader type="category" width={p(40)} height={p(40)} borderRadius={p(20)} />
                 </View>
               </View>
-              
+
               {/* Product Details Skeleton */}
               <View style={styles.detailsSection}>
                 <SkeletonLoader type="text" width="50%" height={p(20)} style={styles.skeletonDetailsTitle} />
@@ -351,7 +386,7 @@ const ProductDetailScreen = ({ navigation, route }) => {
                 <SkeletonLoader type="text" width="90%" height={p(16)} style={styles.skeletonDetailsText} />
                 <SkeletonLoader type="text" width="70%" height={p(16)} style={styles.skeletonDetailsText} />
               </View>
-              
+
               {/* Farmer Information Skeleton */}
               <View style={styles.farmerSection}>
                 <SkeletonLoader type="text" width="60%" height={p(20)} style={styles.skeletonFarmerTitle} />
@@ -365,7 +400,7 @@ const ProductDetailScreen = ({ navigation, route }) => {
                   <SkeletonLoader type="text" width="40%" height={p(16)} />
                 </View>
               </View>
-              
+
               {/* Related Products Skeleton */}
               <View style={styles.relatedSection}>
                 <SkeletonLoader type="text" width="50%" height={p(20)} style={styles.skeletonRelatedTitle} />
@@ -393,14 +428,14 @@ const ProductDetailScreen = ({ navigation, route }) => {
                 onPress={handleWishlistToggle}
                 disabled={wishlistLoading}
               >
-                <Icon 
-                  name={isInWishlist ? "heart" : "heart-o"} 
-                  size={18} 
-                  color={isInWishlist ? "#dc3545" : "#fff"} 
+                <Icon
+                  name={isInWishlist ? "heart" : "heart-o"}
+                  size={18}
+                  color={isInWishlist ? "#dc3545" : "#fff"}
                 />
               </TouchableOpacity>
             </View>
-            
+
             {/* Product Information Card */}
             <View style={styles.productCard}>
               <Text style={styles.productName}>{completeProduct?.name || 'Unknown Product'}</Text>
@@ -477,18 +512,24 @@ const ProductDetailScreen = ({ navigation, route }) => {
           </>
         )}
       </ScrollView>
-      
+
       {/* Bottom Fixed Bar */}
       <View style={styles.bottomBar}>
         <View style={styles.totalSection}>
           <Text style={styles.totalLabel}>Total Price</Text>
           <Text style={styles.totalPrice}>{getTotalPrice()}</Text>
         </View>
-        <TouchableOpacity style={styles.addToCartButton} onPress={handleAddToCart} disabled={addLoading}>
+        <TouchableOpacity
+          style={[styles.addToCartButton, (addLoading || isOutOfStock()) && styles.addToCartButtonDisabled]}
+          onPress={handleAddToCart}
+          disabled={addLoading || isOutOfStock()}
+        >
           {addLoading ? (
             <SkeletonLoader type="text" width={p(80)} height={p(16)} borderRadius={p(8)} />
           ) : (
-            <Text style={styles.addToCartText}>Add to Cart</Text>
+            <Text style={styles.addToCartText}>
+              {isOutOfStock() ? 'Out of Stock' : 'Add to Cart'}
+            </Text>
           )}
         </TouchableOpacity>
       </View>
@@ -542,7 +583,6 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
   },
-  
   // Product Image Section
   imageSection: {
     backgroundColor: '#f0f8f0',
@@ -572,7 +612,7 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 3,
   },
-  
+
   // Product Information Card
   productCard: {
     backgroundColor: '#f6fbf7',
@@ -597,7 +637,7 @@ const styles = StyleSheet.create({
     marginBottom: p(12),
     gap: p(3),
   },
-  
+
   // Price and Quantity Row
   priceQuantityRow: {
     flexDirection: 'row',
@@ -636,7 +676,7 @@ const styles = StyleSheet.create({
     marginHorizontal: p(12),
     fontFamily: 'Poppins-SemiBold',
   },
-  
+
   // Product Details Section
   detailsSection: {
     marginBottom: p(20),
@@ -657,7 +697,7 @@ const styles = StyleSheet.create({
     color: '#019a34',
     fontFamily: 'Poppins-SemiBold',
   },
-  
+
   // Farmer Section
   farmerSection: {
     marginBottom: p(20),
@@ -704,7 +744,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-Regular',
     fontStyle: 'italic',
   },
-  
+
   // Related Products Section
   relatedSection: {
     marginBottom: p(16),
@@ -727,7 +767,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-Regular',
     fontStyle: 'italic',
   },
-  
+
   // Bottom Fixed Bar
   bottomBar: {
     backgroundColor: '#fff',
@@ -738,7 +778,7 @@ const styles = StyleSheet.create({
     paddingVertical: p(12),
     borderTopWidth: 1,
     borderTopColor: '#e9ecef',
-    marginBottom: 44,
+    marginBottom: Platform.OS === 'android' ? 44 : 0,
   },
   totalSection: {
     flex: 1,
@@ -764,6 +804,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 6,
     elevation: 2,
+  },
+  addToCartButtonDisabled: {
+    backgroundColor: 'grey',
+    opacity: 0.5
   },
   addToCartText: {
     color: '#fff',

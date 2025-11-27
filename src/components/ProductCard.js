@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,16 +8,34 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
-import SkeletonLoader from './SkeletonLoader';
+import { useDispatch, useSelector } from 'react-redux';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import Icon1 from 'react-native-vector-icons/Feather';
-import { p } from '../utils/Responsive';
-import { fontSizes } from '../utils/fonts';
-import { useDispatch, useSelector } from 'react-redux';
-import { addToCart } from '../redux/slices/cartSlice';
-import { toggleWishlistItem } from '../redux/slices/wishlistSlice';
+import SkeletonLoader from './SkeletonLoader';
 import SuccessModal from './SuccessModal';
 import ErrorModal from './ErrorModal';
+import { p } from '../utils/Responsive';
+import { fontSizes } from '../utils/fonts';
+import { addToCart } from '../redux/slices/cartSlice';
+import { toggleWishlistItem } from '../redux/slices/wishlistSlice';
+
+// Constants
+const IMAGE_BASE_URL = 'https://kisancart.in/storage/';
+const DEFAULT_IMAGE = require('../assets/vegebg.png');
+const MODAL_TITLES = {
+  WISHLIST_UPDATED: 'Wishlist Updated!',
+  ADDED_TO_CART: 'Added to Cart!',
+  ADD_TO_CART_FAILED: 'Add to Cart Failed',
+};
+const ALERT_TITLES = {
+  PRODUCT_UNAVAILABLE: 'Out of Stock',
+  ADD_TO_CART_FAILED: 'Add to Cart Failed',
+};
+const CARD_SIZES = {
+  small: { width: 120, height: 180, imageHeight: 80 },
+  medium: { width: 162, height: 214, imageHeight: 120 },
+  large: { width: 200, height: 280, imageHeight: 160 },
+};
 
 const ProductCard = ({
   item,
@@ -25,7 +43,7 @@ const ProductCard = ({
   onAddToCart,
   showAddToCart = true,
   showWishlist = true,
-  showDeleteButton = false, 
+  showDeleteButton = false,
   onDelete,
   isDeleteLoading = false,
   size = 'medium',
@@ -33,7 +51,8 @@ const ProductCard = ({
   isHighlighted = false,
 }) => {
   const dispatch = useDispatch();
-  const wishlistState = useSelector(state => state.wishlist);
+  const { items: wishlistItems, itemStatus } = useSelector(state => state.wishlist);
+  
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
@@ -42,274 +61,186 @@ const ProductCard = ({
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [isTogglingWishlist, setIsTogglingWishlist] = useState(false);
 
-  // Helper function to get product image
-  const getProductImage = () => {
-    if (item?.images && item.images.length > 0) {
-      // Use the first image from the API
-      return {
-        uri: `https://kisancart.in/storage/${item.images[0].image_path}`,
-      };
+  // Memoized helper functions
+  const productImage = useMemo(() => {
+    if (item?.images?.length > 0) {
+      return { uri: `${IMAGE_BASE_URL}${item.images[0].image_path}` };
     }
-    // Fallback to local image
-    return require('../assets/vegebg.png');
-  };
+    return DEFAULT_IMAGE;
+  }, [item?.images]);
 
-  // Helper function to get product price
-  const getPriceDisplay = () => {
-    if (item.price_per_kg) {
+  const priceDisplay = useMemo(() => {
+    if (item?.price_per_kg) {
       return `₹${parseFloat(item.price_per_kg).toFixed(2)}`;
     }
     return item?.price || '₹0.00';
-  };
+  }, [item?.price_per_kg, item?.price]);
 
-  // Helper function to get product unit
-  const getProductUnit = () => {
+  const productUnit = useMemo(() => {
     return item?.unit_type || item?.unit || 'kg';
-  };
+  }, [item?.unit_type, item?.unit]);
+
+  const isOutOfStock = useMemo(() => {
+    const quantityAvailable = item?.quantity_available;
+    return (
+      quantityAvailable === 0 ||
+      quantityAvailable === null ||
+      quantityAvailable === undefined ||
+      String(quantityAvailable) === '0'
+    );
+  }, [item?.quantity_available]);
 
   // Check if item is in wishlist
-  const isInWishlist = () => {
-    // First check the itemStatus tracking (for real-time updates)
-    if (wishlistState.itemStatus && wishlistState.itemStatus.hasOwnProperty(item.id)) {
-      return wishlistState.itemStatus[item.id];
+  const isInWishlist = useMemo(() => {
+    if (itemStatus?.hasOwnProperty(item?.id)) {
+      return itemStatus[item.id];
     }
-    // Fallback to checking the items array
-    const inItems = wishlistState.items.some(wishlistItem => wishlistItem.id === item.id);
-    return inItems;
-  };
-
-  // Get wishlist loading state for this specific item
-  const isWishlistLoading = () => {
-    return isTogglingWishlist;
-  };
+    return wishlistItems.some(wishlistItem => wishlistItem.id === item?.id);
+  }, [item?.id, itemStatus, wishlistItems]);
 
   // Handle wishlist toggle
-  const handleWishlistToggle = async (e) => {
+  const handleWishlistToggle = useCallback(async (e) => {
     e.stopPropagation();
     try {
       setIsTogglingWishlist(true);
-      const result = await dispatch(toggleWishlistItem({ 
-        vegetableId: item.id, 
-        vegetable: item 
+      const result = await dispatch(toggleWishlistItem({
+        vegetableId: item.id,
+        vegetable: item
       })).unwrap();
-      
-      if (result.wishlisted) {
-        setSuccessTitle('Wishlist Updated!');
-        setSuccessMessage(`${item.name} added to wishlist!`);
-        setShowSuccessModal(true);
-      } else {
-        setSuccessTitle('Wishlist Updated!');
-        setSuccessMessage(`${item.name} removed from wishlist!`);
-        setShowSuccessModal(true);
-      }
+
+      setSuccessTitle(MODAL_TITLES.WISHLIST_UPDATED);
+      setSuccessMessage(
+        result.wishlisted
+          ? `${item.name} added to wishlist!`
+          : `${item.name} removed from wishlist!`
+      );
+      setShowSuccessModal(true);
     } catch (error) {
-      const errorMsg = extractErrorMessage(error);
-      setErrorMessage(errorMsg);
+      setErrorMessage(extractErrorMessage(error));
       setShowErrorModal(true);
     } finally {
       setIsTogglingWishlist(false);
     }
-  };
+  }, [dispatch, item, extractErrorMessage]);
 
   // Helper function to extract error message from various error structures
-  const extractErrorMessage = (error) => {
+  const extractErrorMessage = useCallback((error) => {
     if (!error) {
       return 'Failed to add item to cart. Please try again.';
     }
 
-    // If it's a string, return it directly
     if (typeof error === 'string') {
       return error;
     }
 
-    // If it's an object, try to extract message
     if (typeof error === 'object') {
-      // Check for message property (most common)
-      if (error.message && typeof error.message === 'string') {
+      if (error?.message && typeof error.message === 'string') {
         return error.message;
       }
-
-      // Check for error property
-      if (error.error && typeof error.error === 'string') {
+      if (error?.error && typeof error.error === 'string') {
         return error.error;
       }
-
-      // Check for data.message (nested structure)
-      if (error.data && error.data.message && typeof error.data.message === 'string') {
+      if (error?.data?.message && typeof error.data.message === 'string') {
         return error.data.message;
       }
-
-      // If it's an object but no clear message, return default
-      return 'This product is temporarily out of stock. Please check back later.';
     }
 
-    // Fallback
     return 'This product is temporarily out of stock. Please check back later.';
-  };
+  }, []);
 
-  const handleAddToCart = async e => {
+  const handleAddToCart = useCallback(async (e) => {
     e.stopPropagation();
+
+    if (isOutOfStock) {
+      Alert.alert(
+        ALERT_TITLES.PRODUCT_UNAVAILABLE,
+        'This product is currently out of stock. Please check back later.',
+        [{ text: 'OK', style: 'default' }]
+      );
+      return;
+    }
+
     if (onAddToCart) {
-      // Use the provided onAddToCart function with individual loading
       try {
-        setIsAddingToCart(true); // Start individual loading
+        setIsAddingToCart(true);
         await onAddToCart(item);
-        // The parent component will handle the success modal
       } catch (error) {
-        // Handle error if onAddToCart throws
         console.error('ProductCard: Add to cart error:', error);
-
-        const errorMsg = extractErrorMessage(error);
-
-        // Show alert instead of modal for out of stock errors
-        Alert.alert(
-          'Product Unavailable',
-          errorMsg,
-          [{ text: 'OK', style: 'default' }]
-        );
       } finally {
         setIsAddingToCart(false);
       }
     } else {
-      // Default add to cart behavior
       try {
         setIsAddingToCart(true);
         await dispatch(
           addToCart({
             vegetable_id: item.id,
             quantity: 1,
-          }),
+          })
         ).unwrap();
 
-        // Show success modal
-        setSuccessTitle('Added to Cart!');
+        setSuccessTitle(MODAL_TITLES.ADDED_TO_CART);
         setSuccessMessage(`${item.name} added to cart successfully!`);
         setShowSuccessModal(true);
       } catch (error) {
-        // Show error alert
         console.error('ProductCard: Add to cart error:', error);
-
-        const errorMsg = extractErrorMessage(error);
-
-        // Show alert instead of modal for out of stock errors
         Alert.alert(
-          'Product Unavailable',
-          errorMsg,
+          ALERT_TITLES.ADD_TO_CART_FAILED,
+          extractErrorMessage(error),
           [{ text: 'OK', style: 'default' }]
         );
       } finally {
         setIsAddingToCart(false);
       }
     }
-  };
+  }, [isOutOfStock, onAddToCart, item, dispatch, extractErrorMessage]);
 
-  const handleSuccessModalClose = () => {
+  // Modal handlers
+  const handleSuccessModalClose = useCallback(() => {
     setShowSuccessModal(false);
-  };
+  }, []);
 
-  const handleErrorModalClose = () => {
+  const handleErrorModalClose = useCallback(() => {
     setShowErrorModal(false);
-  };
+  }, []);
 
-  const handleViewWishlist = () => {
+  const handleViewWishlist = useCallback(() => {
     setShowSuccessModal(false);
-    if (navigation) {
-      navigation.navigate('Wishlist');
-    } else {
-      console.log('ProductCard: No navigation prop available');
-    }
-  };
+    navigation?.navigate('Wishlist');
+  }, [navigation]);
 
-  const handleViewCart = () => {
+  const handleViewCart = useCallback(() => {
     setShowSuccessModal(false);
-    if (navigation) {
-      navigation.navigate('App', { screen: 'CartTab' });
-    } else {
-      console.log('ProductCard: No navigation prop available');
-    }
-  };
+    navigation?.navigate('App', { screen: 'CartTab' });
+  }, [navigation]);
 
-  // const StarRating = ({ rating }) => {
-  //   const stars = [];
-  //   const fullStars = Math.floor(rating);
-  //   const hasHalfStar = rating % 1 !== 0;
-
-  //   // Add full stars
-  //   for (let i = 0; i < fullStars; i++) {
-  //     stars.push(
-  //       <Icon key={`full-${i}`} name="star" size={12} color="#FF9800" />,
-  //     );
-  //   }
-
-  //   // Add half star if needed
-  //   if (hasHalfStar) {
-  //     stars.push(
-  //       <Icon key={`half`} name="star-half-o" size={12} color="#FF9800" />,
-  //     );
-  //   }
-
-  //   // Add empty stars to complete 5 stars
-  //   const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
-  //   for (let i = 0; i < emptyStars; i++) {
-  //     stars.push(
-  //       <Icon key={`empty-${i}`} name="star-o" size={12} color="#FF9800" />,
-  //     );
-  //   }
-
-  //   return <View style={styles.starRating}>{stars}</View>;
-  // };
-
-  const getCardStyles = () => {
-    switch (size) {
-      case 'small':
-        return {
-          width: p(120),
-          height: p(180),
-        };
-      case 'large':
-        return {
-          width: p(200),
-          height: p(280),
-        };
-      default: // medium
-        return {
-          width: p(160),
-          height: p(210),
-        };
-    }
-  };
-
-  const getImageHeight = () => {
-    switch (size) {
-      case 'small':
-        return p(80);
-      case 'large':
-        return p(160);
-      default: // medium
-        return p(120);
-    }
-  };
-
-  const cardStyles = getCardStyles();
-  const imageHeight = getImageHeight();
+  // Memoized card dimensions
+  const cardDimensions = useMemo(() => {
+    const sizeConfig = CARD_SIZES[size] || CARD_SIZES.medium;
+    return {
+      width: p(sizeConfig.width),
+      height: p(sizeConfig.height),
+      imageHeight: p(sizeConfig.imageHeight),
+    };
+  }, [size]);
 
   return (
     <>
       <TouchableOpacity
         style={[
           styles.productCard,
-          cardStyles,
+          { width: cardDimensions.width, height: cardDimensions.height },
           isHighlighted && styles.highlightedCard
         ]}
         onPress={onPress}
         activeOpacity={0.8}
       >
         {/* Product Image */}
-        <View style={[styles.imageContainer, { height: imageHeight }]}>
+        <View style={[styles.imageContainer, { height: cardDimensions.imageHeight }]}>
           <Image
-            source={getProductImage()}
+            source={productImage}
             style={styles.productImage}
-            defaultSource={require('../assets/vegebg.png')}
+            defaultSource={DEFAULT_IMAGE}
           />
 
           {/* Wishlist Heart Icon */}
@@ -323,9 +254,9 @@ const ProductCard = ({
                 <SkeletonLoader type="category" width={16} height={16} borderRadius={8} />
               ) : (
                 <Icon
-                  name={isInWishlist() ? "heart" : "heart-o"}
+                  name={isInWishlist ? "heart" : "heart-o"}
                   size={16}
-                  color={isInWishlist() ? "#dc3545" : "#666"}
+                  color={isInWishlist ? "#dc3545" : "#666"}
                 />
               )}
             </TouchableOpacity>
@@ -355,10 +286,14 @@ const ProductCard = ({
               </TouchableOpacity>
             )}
           </View>
-          {/* <StarRating rating={item?.rating || 0} /> */}
           <Text style={styles.productPrice}>
-            {getPriceDisplay()}/{getProductUnit()}
+            {priceDisplay}/{productUnit}
           </Text>
+
+          {isOutOfStock && (
+            <Text style={styles.stockText}>Out of stock</Text>
+          )}
+
         </View>
 
         {/* Add to Cart Button */}
@@ -386,15 +321,15 @@ const ProductCard = ({
         buttonText="OK"
         onButtonPress={handleSuccessModalClose}
         showSecondaryButton={true}
-        secondaryButtonText={successTitle === 'Wishlist Updated!' ? 'View Wishlist' : 'View Cart'}
-        onSecondaryButtonPress={successTitle === 'Wishlist Updated!' ? handleViewWishlist : handleViewCart}
+        secondaryButtonText={successTitle === MODAL_TITLES.WISHLIST_UPDATED ? 'View Wishlist' : 'View Cart'}
+        onSecondaryButtonPress={successTitle === MODAL_TITLES.WISHLIST_UPDATED ? handleViewWishlist : handleViewCart}
       />
 
       {/* Error Modal */}
       <ErrorModal
         visible={showErrorModal}
         onClose={handleErrorModalClose}
-        title="Add to Cart Failed"
+        title={MODAL_TITLES.ADD_TO_CART_FAILED}
         message={errorMessage}
         buttonText="OK"
         onButtonPress={handleErrorModalClose}
@@ -411,6 +346,7 @@ const styles = StyleSheet.create({
     borderRadius: p(8),
     padding: p(8),
     marginRight: p(12),
+    marginBottom: p(4),
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
@@ -419,7 +355,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#f0f0f0',
     position: 'relative',
-    marginBottom: p(4),
   },
   highlightedCard: {
     borderColor: '#019a34',
@@ -478,6 +413,12 @@ const styles = StyleSheet.create({
     textAlign: 'left',
     fontFamily: 'Poppins-Bold',
     marginTop: p(4),
+  },
+  stockText: {
+    fontSize: fontSizes.xm,
+    fontWeight: '600',
+    color: 'red',
+    marginVertical: p(2)
   },
   addToCartButton: {
     position: 'absolute',

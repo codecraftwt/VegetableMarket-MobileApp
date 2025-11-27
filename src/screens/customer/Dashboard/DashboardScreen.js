@@ -228,7 +228,7 @@ const DashboardScreen = ({ navigation }) => {
     if (completeVegetable) {
       return completeVegetable;
     }
-    
+
     return {
       ...vegetable,
       // Ensure we have all necessary fields with better fallbacks
@@ -275,7 +275,7 @@ const DashboardScreen = ({ navigation }) => {
   // Handle add to cart
   const handleAddToCart = useCallback(
     async item => {
-      try {  
+      try {
         // Update cart state immediately for badge
         dispatch(addItemToCart({
           vegetable_id: item.id,
