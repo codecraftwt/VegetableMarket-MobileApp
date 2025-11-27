@@ -195,9 +195,18 @@ export const syncGuestCartToServer = createAsyncThunk(
     try {
       const state = getState();
       const guestCart = await getGuestCart();
-      
+
+      // Check if user is logged in and has role_id 3 (customer)
+      const userRoleId = state.auth.user?.role_id;
+
+      if (userRoleId !== 3) {
+        // If role_id is not 3, don't sync data and return early
+        return { success: true, synced: false, message: 'User is not a customer' };
+      }
+
       if (guestCart.length === 0) {
         return { success: true, synced: false };
+        // return { success: true, synced: false, reason: 'empty_cart' };
       }
       
       // Add each guest cart item to server

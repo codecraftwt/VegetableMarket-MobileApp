@@ -61,9 +61,11 @@ const LoginScreen = () => {
   // Handle successful login navigation and sync guest data
   React.useEffect(() => {
     if (isLoggedIn && user) {
-      // Sync guest cart and wishlist to server
-      dispatch(syncGuestCartToServer());
-      dispatch(syncGuestWishlistToServer());
+      // Sync guest cart and wishlist to server only for role_id 3 (customer)
+      if (user.role_id === 3) {
+        dispatch(syncGuestCartToServer());
+        dispatch(syncGuestWishlistToServer());
+      }
 
       // Check user role and navigate accordingly
       if (user.role_id === 2) {
@@ -503,7 +505,7 @@ const LoginScreen = () => {
       color: '#019a34',
       fontFamily: 'Poppins-Medium',
       fontSize: fontSizes.sm,
-      textDecorationLine: 'underline',
+      textDecorationLine: 'none',
     },
   });
 

@@ -18,7 +18,7 @@ import CategoryItem from '../../../components/CategoryItem';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchVegetables, fetchVegetableCategories } from '../../../redux/slices/vegetablesSlice';
 import { addToCart, fetchCart, addItemToCart } from '../../../redux/slices/cartSlice';
-import { fetchWishlist } from '../../../redux/slices/wishlistSlice';
+import { fetchWishlist, loadGuestWishlist } from '../../../redux/slices/wishlistSlice';
 import SuccessModal from '../../../components/SuccessModal';
 import ErrorModal from '../../../components/ErrorModal';
 import { useFocusEffect } from '@react-navigation/native';
@@ -32,6 +32,7 @@ const BucketScreen = ({ navigation, route }) => {
   const [errorMessage, setErrorMessage] = useState('');
   const dispatch = useDispatch();
   const { vegetables, categories, loading, categoriesLoading } = useSelector(state => state.vegetables);
+  const { isLoggedIn } = useSelector(state => state.auth);
   // const { addLoading } = useSelector(state => state.cart);
   const wishlistState = useSelector(state => state.wishlist);
 
@@ -66,9 +67,10 @@ const BucketScreen = ({ navigation, route }) => {
       setSearchQuery('');
       
       // Refresh wishlist state to ensure UI is up to date
-      // Only fetch if not already loading
-      if (!wishlistState.loading) {
+      if (isLoggedIn) {
         dispatch(fetchWishlist());
+      } else {
+        dispatch(loadGuestWishlist());
       }
     }, [dispatch]) // Remove wishlistState.loading from dependencies to prevent infinite loop
   );

@@ -29,7 +29,7 @@ const ONBOARDING_DATA = [
         id: 1,
         title: 'Fresh Groceries',
         subtitle: '& Organic Food',
-        description: 'Get affordable organic vegetables, fruits,and more directly from local farmers.',
+        description: 'Get affordable organic vegetables, fruits, and more directly from local farmers.',
         image: require('../../assets/vegiee1.png'),
         bgColor: '#F2F9F5',
     },

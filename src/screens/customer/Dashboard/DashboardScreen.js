@@ -23,7 +23,7 @@ import {
   fetchVegetables,
   fetchVegetableCategories,
 } from '../../../redux/slices/vegetablesSlice';
-import { fetchPopularItems, fetchWishlist } from '../../../redux/slices/wishlistSlice';
+import { fetchPopularItems, fetchWishlist, loadGuestWishlist } from '../../../redux/slices/wishlistSlice';
 import { addToCart, fetchCart, addItemToCart } from '../../../redux/slices/cartSlice';
 import SuccessModal from '../../../components/SuccessModal';
 import ErrorModal from '../../../components/ErrorModal';
@@ -184,6 +184,7 @@ const DashboardScreen = ({ navigation }) => {
   const { popularItems, popularLoading, popularError } = useSelector(
     state => state.wishlist,
   );
+  const { isLoggedIn } = useSelector(state => state.auth);
 
   // Add wishlist items from Redux store
   const { items: wishlistItems } = useSelector(state => state.wishlist);
@@ -206,13 +207,17 @@ const DashboardScreen = ({ navigation }) => {
     dispatch(fetchWishlist()); // Fetch wishlist to show accurate heart icons
   }, [dispatch]);
 
-  // Clear search query when user comes back to DashboardScreen
+  // Clear search query and refresh data when user comes back to DashboardScreen
   useFocusEffect(
     useCallback(() => {
       setSearchQuery('');
-      // Optionally refresh wishlist data when screen comes into focus
-      dispatch(fetchWishlist());
-    }, [dispatch]),
+      // Always refresh wishlist data when screen comes into focus to ensure UI is up to date
+      if (isLoggedIn) {
+        dispatch(fetchWishlist());
+      } else {
+        dispatch(loadGuestWishlist());
+      }
+    }, [dispatch, isLoggedIn]),
   );
 
   // Transform popular items data to match ProductCard format

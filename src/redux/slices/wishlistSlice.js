@@ -263,9 +263,19 @@ export const syncGuestWishlistToServer = createAsyncThunk(
     try {
       const state = getState();
       const guestWishlist = await getGuestWishlist();
-      
+
+      // Check if user is logged in and has role_id 3 (customer)2
+      const userRoleId = state.auth.user?.role_id;
+
+      if (userRoleId !== 3) {
+        // If role_id is not 3, don't sync data and return early
+        return { success: true, synced: false, message: 'User is not a customer' };
+      }
+
+
       if (guestWishlist.length === 0) {
         return { success: true, synced: false };
+        // return { success: true, synced: false, reason: 'empty_wishlist' };
       }
       
       // Add each guest wishlist item to server
@@ -526,6 +536,8 @@ const wishlistSlice = createSlice({
       .addCase(loadGuestWishlist.fulfilled, (state, action) => {
         state.loading = false;
         state.items = action.payload.items || [];
+        // Clear itemStatus when loading guest wishlist to reset wishlist indicators
+        state.itemStatus = {};
         state.error = null;
       })
       .addCase(loadGuestWishlist.rejected, (state, action) => {
@@ -542,7 +554,34 @@ const wishlistSlice = createSlice({
       .addCase(syncGuestWishlistToServer.fulfilled, (state, action) => {
         state.loading = false;
         if (action.payload.synced && action.payload.data) {
-          state.items = action.payload.data.data || [];
+          // Normalize wishlist items - handle nested vegetable structure from API
+          let items = action.payload.data.data || [];
+          items = items.map(item => {
+            // If item has nested vegetable object (API structure), flatten it
+            if (item.vegetable) {
+              return {
+                ...item.vegetable,
+                id: item.vegetable.id || item.vegetable_id || item.id,
+                vegetable_id: item.vegetable_id || item.vegetable.id || item.id,
+                wishlist_id: item.id,
+              };
+            }
+            return {
+              ...item,
+              id: item.id || item.vegetable_id,
+              vegetable_id: item.vegetable_id || item.id,
+            };
+          });
+          state.items = items;
+
+          // Rebuild itemStatus from synced items
+          state.itemStatus = {};
+          items.forEach(item => {
+            const vegetableId = item.id || item.vegetable_id;
+            if (vegetableId) {
+              state.itemStatus[vegetableId] = true;
+            }
+          });
         }
         state.error = null;
       })
@@ -550,6 +589,23 @@ const wishlistSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       });
+
+    // Clear wishlist when user logs out
+    builder
+      .addMatcher(
+        (action) => action.type === 'auth/logout' || action.type === 'auth/clearAuth',
+        (state) => {
+          // Clear wishlist items and item status when user logs out
+          state.items = [];
+          state.itemStatus = {};
+          state.error = null;
+          state.toggleError = null;
+          state.removeError = null;
+          // Note: Don't clear guest wishlist from AsyncStorage on logout
+          // It should only be cleared when successfully synced (in syncGuestWishlistToServer)
+          // This preserves guest wishlist when logging in with non-customer roles
+        }
+      );
   },
 });
 
