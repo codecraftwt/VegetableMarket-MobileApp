@@ -32,9 +32,9 @@ const ALERT_TITLES = {
   ADD_TO_CART_FAILED: 'Add to Cart Failed',
 };
 const CARD_SIZES = {
-  small: { width: 120, height: 180, imageHeight: 80 },
-  medium: { width: 162, height: 214, imageHeight: 120 },
-  large: { width: 200, height: 280, imageHeight: 160 },
+  small: { width: 120, height: 184, imageHeight: 80 },
+  medium: { width: 162, height: 221, imageHeight: 120 },
+  large: { width: 200, height: 284, imageHeight: 160 },
 };
 
 const ProductCard = ({
@@ -369,7 +369,7 @@ const styles = StyleSheet.create({
   imageContainer: {
     width: '100%',
     borderRadius: p(8),
-    marginBottom: p(12),
+    marginBottom: p(10),
     overflow: 'hidden',
     backgroundColor: '#f0f8f0',
     position: 'relative',
@@ -400,7 +400,7 @@ const styles = StyleSheet.create({
     color: '#1a1a1a',
     textAlign: 'left',
     fontFamily: 'Poppins-Bold',
-    flex: 1,
+    // flex: 1,
   },
   // starRating: {
   //   flexDirection: 'row',
@@ -412,13 +412,20 @@ const styles = StyleSheet.create({
     color: '#019a34',
     textAlign: 'left',
     fontFamily: 'Poppins-Bold',
-    marginTop: p(4),
+    // marginTop: p(4),
   },
   stockText: {
-    fontSize: fontSizes.xm,
-    fontWeight: '600',
-    color: 'red',
-    marginVertical: p(2)
+    fontSize: 12,
+    fontFamily: 'Poppins-SemiBold',
+    color: '#dc3545',
+    marginTop: p(4),
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(220, 53, 69, 0.08)',
+    paddingHorizontal: p(6),
+    paddingVertical: p(1.2),
+    borderRadius: p(4),
+    maxWidth: '100%',
+    flexShrink: 1,
   },
   addToCartButton: {
     position: 'absolute',
