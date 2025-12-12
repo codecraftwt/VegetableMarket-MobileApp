@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,7 +6,6 @@ import {
   SafeAreaView,
   StatusBar,
   ScrollView,
-  FlatList,
   TouchableOpacity,
 } from 'react-native';
 import SkeletonLoader from '../../../components/SkeletonLoader';
@@ -32,8 +31,6 @@ const BucketScreen = ({ navigation, route }) => {
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const dispatch = useDispatch();
-  const listRef = useRef(null);
-  const lastOffsetRef = useRef(0);
   const { vegetables, categories, loading, categoriesLoading } = useSelector(state => state.vegetables);
   const { isLoggedIn } = useSelector(state => state.auth);
   // const { addLoading } = useSelector(state => state.cart);
@@ -247,44 +244,31 @@ const BucketScreen = ({ navigation, route }) => {
           </TouchableOpacity>
         </View>
         {filteredVegetables.length > 0 ? (
-          <FlatList
-            ref={listRef}
-            data={filteredVegetables}
-            keyExtractor={item => String(item.id)}
-            numColumns={2}
+          <ScrollView 
+            style={styles.productsScrollView}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.productsScrollContent}
-            columnWrapperStyle={styles.vegetablesGrid}
-            onScroll={e => {
-              lastOffsetRef.current = e.nativeEvent.contentOffset.y;
-            }}
-            scrollEventThrottle={16}
-            onContentSizeChange={() => {
-              if (listRef.current && lastOffsetRef.current > 0) {
-                listRef.current.scrollToOffset({
-                  offset: lastOffsetRef.current,
-                  animated: false,
-                });
-              }
-            }}
-            renderItem={({ item }) => (
-              <View style={styles.productCardWrapper}>
-                <ProductCard
-                  item={item}
-                  onPress={() => handleProductPress(item)}
-                  onAddToCart={handleAddToCart}
-                  showWishlist={true}
-                  size="medium"
-                  navigation={navigation}
-                  isHighlighted={!!searchQuery && (
-                    item.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                    item.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                    item.category?.name?.toLowerCase().includes(searchQuery.toLowerCase())
-                  )}
-                />
-              </View>
-            )}
-          />
+          >
+            <View style={styles.vegetablesGrid}>
+              {filteredVegetables.map(item => (
+                <View key={item.id} style={styles.productCardWrapper}>
+                  <ProductCard
+                    item={item}
+                    onPress={() => handleProductPress(item)}
+                    onAddToCart={handleAddToCart}
+                    showWishlist={true}
+                    size="medium"
+                    navigation={navigation}
+                    isHighlighted={searchQuery && (
+                      item.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                      item.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                      item.category?.name?.toLowerCase().includes(searchQuery.toLowerCase())
+                    )}
+                  />
+                </View>
+              ))}
+            </View>
+          </ScrollView>
         ) : (
           <View style={styles.emptyState}>
             <Icon name="shopping-bag" size={80} color="#ccc" />

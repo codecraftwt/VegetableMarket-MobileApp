@@ -21,7 +21,7 @@ const CategoryItem = ({
       case 'vegetables':
         return { icon: 'leaf', color: '#4CAF50' };
       case 'fruits':
-        return { icon: 'apple', color: '#FF9800' };
+        return { icon: 'apple-alt', color: '#FF9800', useIcon1: true };
       case 'meat':
         return { icon: 'cutlery', color: '#F44336' };
       case 'dairy':
@@ -48,7 +48,7 @@ const CategoryItem = ({
           iconFontSize: 32,
           textFontSize: fontSizes.base,
           marginRight: p(25),
-         
+
         };
       default: // medium
         return {
