@@ -21,7 +21,7 @@ export const registerUser = createAsyncThunk(
       const apiData = {
         ...userData,
         role_id: roleId,
-        password_confirmation: userData.confirmPassword, // API expects password_confirmation
+        password_confirmation: userData.confirmPassword,
         // Remove confirmPassword as it's not needed by API
         confirmPassword: undefined,
       };
@@ -29,9 +29,68 @@ export const registerUser = createAsyncThunk(
       const response = await api.post('register', apiData);
       return response.data;
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || 'Registration failed',
-      );
+      // Comprehensive error logging
+      // console.error('❌ [REGISTER] Error Details:', {
+      //   message: error.message,
+      //   response: error.response ? {
+      //     status: error.response.status,
+      //     statusText: error.response.statusText,
+      //     data: error.response.data,
+      //     headers: error.response.headers,
+      //   } : 'No response object',
+      //   request: error.request ? {
+      //     url: error.config?.url,
+      //     method: error.config?.method,
+      //     baseURL: error.config?.baseURL,
+      //     data: error.config?.data,
+      //   } : 'No request object',
+      //   config: error.config ? {
+      //     url: error.config.url,
+      //     method: error.config.method,
+      //     baseURL: error.config.baseURL,
+      //   } : 'No config object',
+      //   stack: error.stack,
+      // });
+
+      // Extract error message with fallbacks
+      let errorMessage = 'Registration failed';
+      if (error.response?.data) {
+        const errorData = error.response.data;
+        
+        // Handle Laravel validation errors (errors object with field-specific messages)
+        if (errorData.errors && typeof errorData.errors === 'object') {
+          const validationErrors = [];
+          Object.keys(errorData.errors).forEach(field => {
+            if (Array.isArray(errorData.errors[field])) {
+              validationErrors.push(...errorData.errors[field]);
+            } else {
+              validationErrors.push(errorData.errors[field]);
+            }
+          });
+          errorMessage = validationErrors.length > 0 
+            ? validationErrors.join(', ') 
+            : 'Validation failed. Please check your input.';
+        }
+        // Try different possible error message formats
+        else if (errorData.message) {
+          errorMessage = errorData.message;
+        } else if (errorData.error) {
+          errorMessage = errorData.error;
+        } else if (typeof errorData === 'string') {
+          errorMessage = errorData;
+        } else {
+          errorMessage = JSON.stringify(errorData);
+        }
+      } else if (error.request) {
+        errorMessage = 'Network error: Unable to reach server. Please check your internet connection.';
+        console.error('❌ [REGISTER] Network Error - Request made but no response received');
+      } else {
+        errorMessage = error.message || 'Registration failed';
+        console.error('❌ [REGISTER] Request setup error');
+      }
+
+      console.error('❌ [REGISTER] Final Error Message:', errorMessage);
+      return rejectWithValue(errorMessage);
     }
   },
 );

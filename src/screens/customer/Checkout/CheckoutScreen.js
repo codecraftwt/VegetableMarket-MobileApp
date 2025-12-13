@@ -155,8 +155,18 @@ const CheckoutScreen = ({ navigation }) => {
     const isRazorpayMethod = normalizedPaymentMethod === 'RAZORPAY' || normalizedPaymentMethod === 'RAZORPAYX';
 
     if (orderSuccess && razorpayOrderId && isRazorpayMethod) {
-      // Initialize Razorpay payment
-      handleRazorpayPayment();
+      // Add a small delay to ensure state is fully updated and prevent race conditions
+      const timeoutId = setTimeout(() => {
+        try {
+          handleRazorpayPayment();
+        } catch (error) {
+          setErrorMessage('Failed to open payment gateway. Please try again.');
+          setShowErrorModal(true);
+        }
+      }, 200);
+      
+      // Cleanup timeout on unmount
+      return () => clearTimeout(timeoutId);
     } else if (orderSuccess && !isRazorpayMethod) {
       // For non-Razorpay methods (COD, UPI_AT_DOOR), show success directly
       const paymentMethodName = formatPaymentMethod(selectedPaymentMethod?.payment_method);
@@ -170,7 +180,7 @@ const CheckoutScreen = ({ navigation }) => {
       setLocalDiscountAmount(discountAmount);
       setLocalFinalAmount(finalAmount);
     }
-  }, [orderSuccess, razorpayOrderId, selectedPaymentMethod, dispatch, handleRazorpayPayment, setSuccessMessage, setShowSuccessModal, discountAmount, finalAmount]);
+  }, [orderSuccess, razorpayOrderId, selectedPaymentMethod, dispatch, handleRazorpayPayment, discountAmount, finalAmount]);
 
   // Handle payment verification
   useEffect(() => {
@@ -344,60 +354,30 @@ const CheckoutScreen = ({ navigation }) => {
       setErrorMessage('Failed to verify payment. Please contact support.');
       setShowErrorModal(true);
     }
-  }, [razorpayOrderId, user, selectedAddress, totalAmount, cartItems, dispatch, setErrorMessage, setShowErrorModal, setSuccessMessage]);
+  }, [razorpayOrderId, user, profile, selectedAddress, totalAmount, cartItems, dispatch, appliedCoupon, couponData, localDiscountAmount, localFinalAmount, discountAmount, finalAmount]);
 
   const handleRazorpayPayment = useCallback(() => {
     if (!razorpayKey || !razorpayOrderId || !razorpayAmount) {
+      // console.error('Razorpay configuration error - missing required fields');
       setErrorMessage('Razorpay configuration error. Please try again.');
       setShowErrorModal(true);
       return;
     }
 
+    // iOS-compatible Razorpay options (removed Android-specific config)
     const options = {
       description: 'Vegetable Market Order',
-      image: 'https://your-logo-url.com/logo.png',
       currency: razorpayCurrency || 'INR',
       key: razorpayKey,
       amount: razorpayAmount,
       name: razorpayName || 'Vegetable Market',
       order_id: razorpayOrderId,
       prefill: {
-        email: razorpayEmail || user?.email,
-        contact: razorpayContact || user?.phone,
-        name: razorpayName || user?.name,
+        email: razorpayEmail || user?.email || '',
+        contact: razorpayContact || user?.phone || '',
+        name: razorpayName || user?.name || '',
       },
       theme: { color: '#019a34' },
-      // Test mode configuration
-      config: {
-        display: {
-          blocks: {
-            banks: {
-              name: 'Pay using UPI',
-              instruments: [
-                {
-                  method: 'card'
-                },
-                {
-                  method: 'netbanking'
-                },
-                {
-                  method: 'wallet'
-                }
-              ]
-            }
-          }
-        }
-      },
-      modal: {
-        ondismiss: function () {
-          // Payment modal dismissed
-          console.log('=== RAZORPAY MODAL DISMISSED ===');
-        }
-      },
-      // Add additional debugging
-      notes: {
-        address: 'Vegetable Market Order'
-      }
     };
 
     try {
@@ -406,16 +386,30 @@ const CheckoutScreen = ({ navigation }) => {
           handlePaymentSuccess(response);
         })
         .catch((error) => {
-          console.error('Razorpay payment failed:', error);
-          setErrorMessage('Payment failed. Please try again.');
+          // console.error('Razorpay payment error:', error);
+          // console.error('Error code:', error.code);
+          // console.error('Error description:', error.description);
+          
+          // Handle specific error cases
+          let errorMessage = 'Payment failed. Please try again.';
+          if (error.code === 'BAD_REQUEST_ERROR') {
+            errorMessage = 'Invalid payment details. Please check and try again.';
+          } else if (error.code === 'NETWORK_ERROR') {
+            errorMessage = 'Network error. Please check your internet connection.';
+          } else if (error.description) {
+            errorMessage = error.description;
+          }
+          
+          setErrorMessage(errorMessage);
           setShowErrorModal(true);
         });
     } catch (error) {
-      console.error('Razorpay error:', error);
+      // console.error('Razorpay initialization error:', error);
+      // console.error('Error stack:', error.stack);
       setErrorMessage('Failed to open payment gateway. Please try again.');
       setShowErrorModal(true);
     }
-  }, [razorpayKey, razorpayOrderId, razorpayAmount, razorpayCurrency, razorpayName, razorpayEmail, razorpayContact, user, selectedAddress, totalAmount, cartItems, dispatch]);
+  }, [razorpayKey, razorpayOrderId, razorpayAmount, razorpayCurrency, razorpayName, razorpayEmail, razorpayContact, user, handlePaymentSuccess, setErrorMessage, setShowErrorModal]);
 
   const handleConfirmPayment = () => {
     setShowConfirmPaymentModal(false);

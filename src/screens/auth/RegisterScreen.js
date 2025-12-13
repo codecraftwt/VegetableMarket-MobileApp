@@ -76,7 +76,13 @@ const RegisterScreen = () => {
   // Handle registration errors
   useEffect(() => {
     if (error) {
-      setErrorMessage(error);
+      // Handle different error formats
+      let displayError = error;
+      if (typeof error === 'object' && error !== null) {
+        displayError = error.message || error.error || JSON.stringify(error);
+      }
+      
+      setErrorMessage(displayError);
       setShowErrorModal(true);
       dispatch(clearError());
     }
@@ -154,7 +160,14 @@ const RegisterScreen = () => {
     hasNavigated.current = false;
     
     // Dispatch the register action
-    dispatch(registerUser(formData));
+    dispatch(registerUser(formData))
+      .unwrap()
+      .then((result) => {
+        console.log('✅ [RegisterScreen] Registration successful:', result);
+      })
+      .catch((error) => {
+        console.error('❌ [RegisterScreen] Registration failed:', error);
+        });
   };
 
   const handleFocus = field => {

@@ -332,7 +332,7 @@ const DashboardScreen = ({ navigation }) => {
       <StatusBar backgroundColor="#019a34" barStyle="light-content" />
 
       <CommonHeader
-        screenName="Kissan Cart"
+        screenName="Kisan Cart"
         showBackButton={false}
         showNotification={true}
         onNotificationPress={handleNotificationPress}
