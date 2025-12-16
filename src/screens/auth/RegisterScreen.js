@@ -249,6 +249,7 @@ const RegisterScreen = () => {
                     styles.input,
                     isFocused.name && styles.inputFocused,
                     errors.name && styles.inputError,
+                    //  { paddingTop: 4 },
                   ]}
                   placeholder="Enter your full name"
                   placeholderTextColor="#888"
@@ -259,8 +260,9 @@ const RegisterScreen = () => {
                   autoCapitalize="words"
                   autoCorrect={false}
                   editable={!loading}
-                  returnKeyType="next"
-                  maxLength={50}
+                  // returnKeyType="next"
+                  // maxLength={50}
+                  // textAlignVertical="center"
                 />
                 {errors.name && (
                   <Text style={styles.errorText}>{errors.name}</Text>
@@ -274,6 +276,7 @@ const RegisterScreen = () => {
                     styles.input,
                     isFocused.email && styles.inputFocused,
                     errors.email && styles.inputError,
+                    // { paddingTop: 4 },
                   ]}
                   placeholder="Enter your email"
                   placeholderTextColor="#888"
@@ -285,8 +288,9 @@ const RegisterScreen = () => {
                   autoCapitalize="none"
                   autoCorrect={false}
                   editable={!loading}
-                  returnKeyType="next"
-                  maxLength={100}
+                  // returnKeyType="next"
+                  // maxLength={100}
+                  // textAlignVertical="center"
                 />
                 {errors.email && (
                   <Text style={styles.errorText}>{errors.email}</Text>
@@ -300,6 +304,7 @@ const RegisterScreen = () => {
                     styles.input,
                     isFocused.phone && styles.inputFocused,
                     errors.phone && styles.inputError,
+                    // { paddingTop: 4 },
                   ]}
                   placeholder="Enter your phone number"
                   placeholderTextColor="#888"
@@ -309,8 +314,9 @@ const RegisterScreen = () => {
                   onBlur={() => handleBlur('phone')}
                   keyboardType="phone-pad"
                   editable={!loading}
-                  returnKeyType="next"
+                  // returnKeyType="next"
                   maxLength={10}
+                  // textAlignVertical="center"
                 />
                 {errors.phone && (
                   <Text style={styles.errorText}>{errors.phone}</Text>
@@ -369,6 +375,7 @@ const RegisterScreen = () => {
                       styles.passwordInput,
                       isFocused.password && styles.inputFocused,
                       errors.password && styles.inputError,
+                      //  { alignSelf:'center' },
                     ]}
                     placeholder="Enter your password"
                     placeholderTextColor="#888"
@@ -378,8 +385,9 @@ const RegisterScreen = () => {
                     onBlur={() => handleBlur('password')}
                     secureTextEntry={!showPassword}
                     editable={!loading}
-                    returnKeyType="next"
-                    maxLength={50}
+                    // returnKeyType="next"
+                    // maxLength={50}
+                    // textAlignVertical="center"
                   />
                   <TouchableOpacity
                     style={styles.eyeIcon}
@@ -548,7 +556,7 @@ const styles = StyleSheet.create({
     marginLeft: p(4),
   },
   input: {
-    height: p(48),
+    height: p(51),
     backgroundColor: '#f8f9fa',
     borderWidth: 2,
     borderColor: '#e1e5e9',
@@ -558,6 +566,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-Regular',
     color: '#333',
     position: 'relative',
+    // textAlignVertical: 'center',
   },
   inputFocused: {
     borderColor: '#019a34',

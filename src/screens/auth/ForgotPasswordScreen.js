@@ -160,13 +160,13 @@ const ForgotPasswordScreen = () => {
             keyboardShouldPersistTaps="handled"
           >
             <View style={styles.formContainer}>
-              <TouchableOpacity
+              {/* <TouchableOpacity
                 style={[styles.backButton, { top: (insets?.top || 0) + p(10) }]}
                 onPress={() => navigation.goBack()}
                 activeOpacity={0.7}
               >
                 <Icon name="arrow-left" size={20} color="#019a34" />
-              </TouchableOpacity>
+              </TouchableOpacity> */}
 
               <Text style={styles.title}>Forgot Password?</Text>
               <Text style={styles.subtitle}>
@@ -299,19 +299,19 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.4)',
     position: 'relative',
   },
-  backButton: {
-    position: 'absolute',
-    left: p(16),
-    top: p(16),
-    padding: p(8),
-    zIndex: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    borderRadius: p(20),
-    width: p(40),
-    height: p(40),
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+  // backButton: {
+  //   position: 'absolute',
+  //   left: p(16),
+  //   top: p(16),
+  //   padding: p(8),
+  //   zIndex: 10,
+  //   backgroundColor: 'rgba(255, 255, 255, 0.9)',
+  //   borderRadius: p(20),
+  //   width: p(40),
+  //   height: p(40),
+  //   justifyContent: 'center',
+  //   alignItems: 'center',
+  // },
   title: {
     fontSize: fontSizes['2xl'],
     fontFamily: 'Montserrat-Bold',
