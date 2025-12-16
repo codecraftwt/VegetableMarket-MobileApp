@@ -193,6 +193,15 @@ const initialState = {
   verificationError: null,
   resendLoading: false,
   resendMessage: null,
+  // Forgot password related state
+  forgotPasswordLoading: false,
+  forgotPasswordError: null,
+  forgotPasswordMessage: null,
+  resendPasswordResetLoading: false,
+  resendPasswordResetMessage: null,
+  resetPasswordLoading: false,
+  resetPasswordError: null,
+  resetPasswordMessage: null,
 };
 
 const authSlice = createSlice({
@@ -207,6 +216,16 @@ const authSlice = createSlice({
       state.verificationError = null;
       state.resendLoading = false;
       state.resendMessage = null;
+    },
+    clearForgotPasswordState: state => {
+      state.forgotPasswordLoading = false;
+      state.forgotPasswordError = null;
+      state.forgotPasswordMessage = null;
+      state.resendPasswordResetLoading = false;
+      state.resendPasswordResetMessage = null;
+      state.resetPasswordLoading = false;
+      state.resetPasswordError = null;
+      state.resetPasswordMessage = null;
     },
     clearAuth: state => {
       state.user = null;
@@ -362,10 +381,77 @@ const authSlice = createSlice({
         state.resendLoading = false;
         state.verificationError = action.payload || 'Failed to resend verification email';
       });
+
+    // Forgot password
+    builder
+      .addCase(forgotPassword.pending, state => {
+        state.forgotPasswordLoading = true;
+        state.forgotPasswordError = null;
+        state.forgotPasswordMessage = null;
+      })
+      .addCase(forgotPassword.fulfilled, (state, action) => {
+        state.forgotPasswordLoading = false;
+        state.forgotPasswordMessage = action.payload.message || 'Password reset link sent to your email.';
+      })
+      .addCase(forgotPassword.rejected, (state, action) => {
+        state.forgotPasswordLoading = false;
+        state.forgotPasswordError = action.payload || 'Failed to send password reset link';
+      });
+
+    // Resend password reset link
+    builder
+      .addCase(resendPasswordReset.pending, state => {
+        state.resendPasswordResetLoading = true;
+        state.forgotPasswordError = null;
+        state.resendPasswordResetMessage = null;
+      })
+      .addCase(resendPasswordReset.fulfilled, (state, action) => {
+        state.resendPasswordResetLoading = false;
+        state.resendPasswordResetMessage = action.payload.message || 'Password reset link sent.';
+      })
+      .addCase(resendPasswordReset.rejected, (state, action) => {
+        state.resendPasswordResetLoading = false;
+        state.forgotPasswordError = action.payload || 'Failed to resend password reset link';
+      });
+
+    // Reset password
+    builder
+      .addCase(resetPassword.pending, state => {
+        state.resetPasswordLoading = true;
+        state.resetPasswordError = null;
+        state.resetPasswordMessage = null;
+      })
+      .addCase(resetPassword.fulfilled, (state, action) => {
+        state.resetPasswordLoading = false;
+        state.resetPasswordMessage = action.payload.message || 'Password reset successfully.';
+        
+        // If user data and token are returned, store them and mark as logged in
+        if (action.payload.user && action.payload.token) {
+          state.user = action.payload.user;
+          state.token = action.payload.token;
+          state.isLoggedIn = true;
+          state.emailVerified = action.payload.user?.email_verified ?? state.emailVerified;
+          state.error = null;
+          
+          // Store token in AsyncStorage
+          import('@react-native-async-storage/async-storage').then(AsyncStorage => {
+            try {
+              AsyncStorage.default.setItem('token', action.payload.token);
+              AsyncStorage.default.setItem('user', JSON.stringify(action.payload.user));
+            } catch (error) {
+              console.warn('Failed to store data in AsyncStorage:', error);
+            }
+          });
+        }
+      })
+      .addCase(resetPassword.rejected, (state, action) => {
+        state.resetPasswordLoading = false;
+        state.resetPasswordError = action.payload || 'Failed to reset password';
+      });
   },
 });
 
-export const { clearError, clearAuth, logout, clearVerificationState } = authSlice.actions;
+export const { clearError, clearAuth, logout, clearVerificationState, clearForgotPasswordState } = authSlice.actions;
 export default authSlice.reducer;
 
 // New thunks for email verification flow
@@ -407,6 +493,83 @@ export const resendVerificationEmail = createAsyncThunk(
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Resend failed');
+    }
+  }
+);
+
+// Forgot password thunks
+export const forgotPassword = createAsyncThunk(
+  'auth/forgotPassword',
+  async (email, { rejectWithValue }) => {
+    try {
+      const response = await api.post('forgot-password', { email });
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || 
+        error.response?.data?.error || 
+        'Failed to send password reset link'
+      );
+    }
+  }
+);
+
+export const resendPasswordReset = createAsyncThunk(
+  'auth/resendPasswordReset',
+  async (email, { rejectWithValue }) => {
+    try {
+      const response = await api.post('resend-password-reset', { email });
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || 
+        error.response?.data?.error || 
+        'Failed to resend password reset link'
+      );
+    }
+  }
+);
+
+export const resetPassword = createAsyncThunk(
+  'auth/resetPassword',
+  async (resetData, { rejectWithValue }) => {
+    try {
+      const response = await api.post('reset-password', resetData);
+
+      if (response.data.data && response.data.data.user && response.data.data.token) {
+        return {
+          ...response.data,
+          user: response.data.data.user,
+          token: response.data.data.token,
+        };
+      } else {
+        // Auto-login after password reset
+        try {
+          const loginResponse = await api.post('login', {
+            email: resetData.email.trim(),
+            password: resetData.password,
+          });
+          
+          if (loginResponse.data.data && loginResponse.data.data.user && loginResponse.data.data.token) {
+            return {
+              ...response.data,
+              user: loginResponse.data.data.user,
+              token: loginResponse.data.data.token,
+            };
+          }
+        } catch (loginError) {
+          // If auto-login fails, still return success but without user data
+          console.log('Auto-login after password reset failed:', loginError);
+        }
+      }
+      
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || 
+        error.response?.data?.error || 
+        'Failed to reset password'
+      );
     }
   }
 );

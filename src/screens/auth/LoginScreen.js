@@ -8,7 +8,6 @@ import {
   ImageBackground,
   KeyboardAvoidingView,
   Platform,
-  Alert,
   ActivityIndicator,
   ScrollView,
   StatusBar,
@@ -152,11 +151,7 @@ const LoginScreen = () => {
   };
 
   const handleForgotPassword = () => {
-    Alert.alert(
-      'Forgot Password',
-      'Password reset functionality will be implemented here.',
-      [{ text: 'OK' }],
-    );
+    navigation.navigate('ForgotPassword');
   };
 
   const handleCloseErrorModal = () => {

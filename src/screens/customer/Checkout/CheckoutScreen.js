@@ -61,6 +61,8 @@ const CheckoutScreen = ({ navigation }) => {
   const [addressToSetPrimary, setAddressToSetPrimary] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  const [paymentCancelled, setPaymentCancelled] = useState(false);
+  const [isSilentRefresh, setIsSilentRefresh] = useState(false);
 
   // Coupon state
   const [couponCode, setCouponCode] = useState('');
@@ -118,6 +120,12 @@ const CheckoutScreen = ({ navigation }) => {
       setLocalDiscountAmount(0);
       setLocalFinalAmount(0);
 
+      // Reset payment cancelled flag
+      setPaymentCancelled(false);
+
+      // Reset silent refresh flag
+      setIsSilentRefresh(false);
+
       // Clear order data from Redux
       dispatch(clearOrderData());
 
@@ -150,11 +158,16 @@ const CheckoutScreen = ({ navigation }) => {
 
   // Handle order placement and Razorpay integration
   useEffect(() => {
+    // Don't proceed if payment was cancelled
+    if (paymentCancelled) {
+      return;
+    }
+
     // Normalize payment method for comparison
     const normalizedPaymentMethod = selectedPaymentMethod?.payment_method?.trim().toUpperCase();
     const isRazorpayMethod = normalizedPaymentMethod === 'RAZORPAY' || normalizedPaymentMethod === 'RAZORPAYX';
 
-    if (orderSuccess && razorpayOrderId && isRazorpayMethod) {
+    if (orderSuccess && razorpayOrderId && isRazorpayMethod && !paymentCancelled) {
       // Add a small delay to ensure state is fully updated and prevent race conditions
       const timeoutId = setTimeout(() => {
         try {
@@ -162,12 +175,15 @@ const CheckoutScreen = ({ navigation }) => {
         } catch (error) {
           setErrorMessage('Failed to open payment gateway. Please try again.');
           setShowErrorModal(true);
+          // Clear order data on error
+          dispatch(clearOrderData());
+          setPaymentCancelled(true);
         }
       }, 200);
       
       // Cleanup timeout on unmount
       return () => clearTimeout(timeoutId);
-    } else if (orderSuccess && !isRazorpayMethod) {
+    } else if (orderSuccess && !isRazorpayMethod && !paymentCancelled) {
       // For non-Razorpay methods (COD, UPI_AT_DOOR), show success directly
       const paymentMethodName = formatPaymentMethod(selectedPaymentMethod?.payment_method);
       setSuccessMessage(`Order placed successfully using ${paymentMethodName}!`);
@@ -176,11 +192,11 @@ const CheckoutScreen = ({ navigation }) => {
     }
 
     // Update local discount values with server response if available
-    if (orderSuccess && discountAmount > 0) {
+    if (orderSuccess && discountAmount > 0 && !paymentCancelled) {
       setLocalDiscountAmount(discountAmount);
       setLocalFinalAmount(finalAmount);
     }
-  }, [orderSuccess, razorpayOrderId, selectedPaymentMethod, dispatch, handleRazorpayPayment, discountAmount, finalAmount]);
+  }, [orderSuccess, razorpayOrderId, selectedPaymentMethod, dispatch, handleRazorpayPayment, discountAmount, finalAmount, paymentCancelled]);
 
   // Handle payment verification
   useEffect(() => {
@@ -234,6 +250,11 @@ const CheckoutScreen = ({ navigation }) => {
   }, [orderError, setErrorMessage, setShowErrorModal]);
 
   const handleBackPress = () => {
+    // Clear order data if payment was cancelled to prevent showing success modal
+    if (paymentCancelled || (orderSuccess && razorpayOrderId)) {
+      dispatch(clearOrderData());
+      setPaymentCancelled(false);
+    }
     navigation.goBack();
   };
 
@@ -386,16 +407,20 @@ const CheckoutScreen = ({ navigation }) => {
           handlePaymentSuccess(response);
         })
         .catch((error) => {
-          // console.error('Razorpay payment error:', error);
-          // console.error('Error code:', error.code);
-          // console.error('Error description:', error.description);
+          // Mark payment as cancelled/failed
+          setPaymentCancelled(true);
+          
+          // Clear order data immediately when payment is cancelled/failed
+          dispatch(clearOrderData());
           
           // Handle specific error cases
-          let errorMessage = 'Payment failed. Please try again.';
+          let errorMessage = 'Payment cancelled. Please try again when ready.';
           if (error.code === 'BAD_REQUEST_ERROR') {
             errorMessage = 'Invalid payment details. Please check and try again.';
           } else if (error.code === 'NETWORK_ERROR') {
             errorMessage = 'Network error. Please check your internet connection.';
+          } else if (error.code === 'PAYMENT_CANCELLED' || error.code === 'USER_CANCELLED') {
+            errorMessage = 'Payment cancelled. You can try again when ready.';
           } else if (error.description) {
             errorMessage = error.description;
           }
@@ -406,6 +431,13 @@ const CheckoutScreen = ({ navigation }) => {
     } catch (error) {
       // console.error('Razorpay initialization error:', error);
       // console.error('Error stack:', error.stack);
+      
+      // Mark payment as cancelled/failed
+      setPaymentCancelled(true);
+      
+      // Clear order data on error
+      dispatch(clearOrderData());
+      
       setErrorMessage('Failed to open payment gateway. Please try again.');
       setShowErrorModal(true);
     }
@@ -426,6 +458,12 @@ const CheckoutScreen = ({ navigation }) => {
       setShowErrorModal(true);
       return;
     }
+
+    // Reset payment cancelled flag when user tries again
+    setPaymentCancelled(false);
+    
+    // Clear any previous order data to ensure fresh order placement
+    dispatch(clearOrderData());
 
     // Place order with coupon code if applied
     // Normalize payment method - convert RAZORPAYX to RAZORPAY
@@ -528,6 +566,40 @@ const CheckoutScreen = ({ navigation }) => {
 
   const handleErrorModalClose = () => {
     setShowErrorModal(false);
+    if (paymentCancelled) {
+      setIsSilentRefresh(true);
+      
+      // Clear order data
+      dispatch(clearOrderData());
+      
+      // Reset payment cancelled flag
+      setPaymentCancelled(false);
+      
+      Promise.all([
+        dispatch(fetchCart()),
+        dispatch(fetchProfile())
+      ]).finally(() => {
+        setTimeout(() => {
+          setIsSilentRefresh(false);
+        }, 200);
+      });
+      
+      // Reset local state to ensure clean slate
+      setSuccessMessage('');
+      setErrorMessage('');
+      setShowSuccessModal(false);
+      setShowConfirmPaymentModal(false);
+      
+      // Reset coupon state
+      setCouponCode('');
+      setAppliedCoupon(null);
+      setCouponError('');
+      setLocalDiscountAmount(0);
+      setLocalFinalAmount(0);
+      
+      setSelectedAddress(null);
+      setSelectedPaymentMethod(null);
+    }
   };
 
   const handleRetryPaymentVerification = () => {
@@ -620,7 +692,7 @@ const CheckoutScreen = ({ navigation }) => {
     }
   };
 
-  if (loading || placeOrderLoading || paymentVerificationLoading) {
+  if ((loading || placeOrderLoading || paymentVerificationLoading) && !isSilentRefresh) {
     return (
       <SafeAreaView style={styles.container}>
         <StatusBar backgroundColor="#019a34" barStyle="light-content" />

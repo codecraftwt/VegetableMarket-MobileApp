@@ -30,6 +30,8 @@ import TicketDetailsScreen from '../screens/customer/Profile/TicketDetailsScreen
 import MyFarmsScreen from '../screens/farmer/farm/MyFarmsScreen';
 import SalesReportScreen from '../screens/farmer/Sales/SalesReportScreen';
 import EmailVerificationScreen from '../screens/auth/EmailVerificationScreen';
+import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
+import ResetPasswordScreen from '../screens/auth/ResetPasswordScreen';
 import { Easing, StatusBar } from 'react-native';
 import StatusBarSpacer from '../components/StatusBarSpacer';
 import AddFarmScreen from '../screens/farmer/farm/AddFarmScreen';
@@ -98,6 +100,8 @@ const AppNavigator = () => {
     { name: 'Login', component: LoginScreen, transition: slideFromRight },
     { name: 'Register', component: RegisterScreen, transition: slideFromRight },
     { name: 'EmailVerification', component: EmailVerificationScreen, transition: slideFromRight },
+    { name: 'ForgotPassword', component: ForgotPasswordScreen, transition: slideFromRight },
+    { name: 'ResetPassword', component: ResetPasswordScreen, transition: slideFromRight },
     { name: 'App', component: BottomTabNavigator, transition: slideFromRight },
     { name: 'FarmerApp', component: FarmerBottomTabNavigator, transition: slideFromRight },
     { name: 'DeliveryApp', component: DeliveryBottomTabNavigator, transition: slideFromRight },
@@ -144,8 +148,24 @@ const AppNavigator = () => {
     { name: 'Onboarding', component: OnboardingScreen, transition: slideFromRight },
   ];
 
+  // Deep linking configuration
+  const linking = {
+    prefixes: ['vegetablemarket://', 'https://kisancart.in', 'https://www.kisancart.in'],
+    config: {
+      screens: {
+        ResetPassword: {
+          path: 'reset-password',
+        },
+        ForgotPassword: 'forgot-password',
+        Login: 'login',
+        Register: 'register',
+        Splash: '',
+      },
+    },
+  };
+
   return (
-    <NavigationContainer>
+    <NavigationContainer linking={linking}>
       <StatusBar backgroundColor="#019a34" barStyle="light-content" />
       <StatusBarSpacer backgroundColor="#019a34" />
       <Stack.Navigator
