@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   TextInput,
+  Platform,
 } from 'react-native';
 import CommonHeader from '../../../components/CommonHeader';
 import Icon from 'react-native-vector-icons/FontAwesome';
@@ -422,16 +423,15 @@ const CheckoutScreen = ({ navigation }) => {
           } else if (error.code === 'PAYMENT_CANCELLED' || error.code === 'USER_CANCELLED') {
             errorMessage = 'Payment cancelled. You can try again when ready.';
           } else if (error.description) {
-            errorMessage = error.description;
+            // errorMessage = error.description;
+            errorMessage = 'Payment cancelled by user. Please try again later.';
+            // console.log('Razorpay error description:', errorMessage);
           }
           
           setErrorMessage(errorMessage);
           setShowErrorModal(true);
         });
     } catch (error) {
-      // console.error('Razorpay initialization error:', error);
-      // console.error('Error stack:', error.stack);
-      
       // Mark payment as cancelled/failed
       setPaymentCancelled(true);
       
@@ -1437,7 +1437,8 @@ const styles = StyleSheet.create({
     elevation: 4,
     borderTopWidth: 1,
     borderTopColor: '#f0f0f0',
-    marginBottom: 32
+    // marginBottom: 32
+    marginBottom: Platform.OS === 'ios' ? 28 : 22
   },
   totalContainer: {
     flexDirection: 'column',
