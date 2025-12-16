@@ -30,6 +30,7 @@ const VegetableDetailsScreen = ({ navigation, route }) => {
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
   const [showActionModal, setShowActionModal] = useState(false);
   const [modalPosition, setModalPosition] = useState({ x: 0, y: 0 });
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   const { vegetableId } = route.params;
 
@@ -84,6 +85,11 @@ const VegetableDetailsScreen = ({ navigation, route }) => {
     return unsubscribe;
   }, [navigation, dispatch, vegetableId]);
 
+  // Reset image index when vegetable changes
+  useEffect(() => {
+    setCurrentImageIndex(0);
+  }, [vegetableId]);
+
   const handleNotificationPress = () => {
     navigation.navigate('Notification');
   };
@@ -124,6 +130,10 @@ const VegetableDetailsScreen = ({ navigation, route }) => {
     setShowActionModal(false);
   };
 
+  const handleImagePress = (index) => {
+    setCurrentImageIndex(index);
+  };
+
   const renderVegetableImage = () => {
     if (!vegetableData?.images || vegetableData.images.length === 0) {
       return (
@@ -135,18 +145,54 @@ const VegetableDetailsScreen = ({ navigation, route }) => {
     }
 
     return (
-      <View style={styles.imageContainer}>
-        <Image
-          source={{ 
-            uri: `https://kisancart.in/storage/${vegetableData.images[0].image_path}` 
-          }}
-          style={styles.vegetableImage}
-          resizeMode="cover"
-        />
-        {vegetableData.is_organic === 1 && (
-          <View style={styles.organicBadge}>
-            <Text style={styles.organicBadgeText}>Organic</Text>
-          </View>
+      <View style={styles.imageGalleryContainer}>
+        <View style={styles.imageContainer}>
+          <Image
+            source={{ 
+              uri: `https://kisancart.in/storage/${vegetableData.images[currentImageIndex].image_path}` 
+            }}
+            style={styles.vegetableImage}
+            resizeMode="cover"
+          />
+          {vegetableData.images.length > 1 && (
+            <View style={styles.imageCounter}>
+              <Text style={styles.imageCounterText}>
+                {currentImageIndex + 1} / {vegetableData.images.length}
+              </Text>
+            </View>
+          )}
+          {vegetableData.is_organic === 1 && (
+            <View style={styles.organicBadge}>
+              <Text style={styles.organicBadgeText}>Organic</Text>
+            </View>
+          )}
+        </View>
+        
+        {/* Thumbnail Images */}
+        {vegetableData.images.length > 1 && (
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false}
+            style={styles.thumbnailContainer}
+            contentContainerStyle={styles.thumbnailContent}
+          >
+            {vegetableData.images.map((image, index) => (
+              <TouchableOpacity
+                key={image.id || index}
+                style={[
+                  styles.thumbnail,
+                  index === currentImageIndex && styles.activeThumbnail
+                ]}
+                onPress={() => handleImagePress(index)}
+              >
+                <Image
+                  source={{ uri: `https://kisancart.in/storage/${image.image_path}` }}
+                  style={styles.thumbnailImage}
+                  resizeMode="cover"
+                />
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
         )}
       </View>
     );
@@ -375,6 +421,17 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: p(12),
   },
+  imageGalleryContainer: {
+    backgroundColor: '#fff',
+    borderRadius: p(8),
+    padding: p(12),
+    marginBottom: p(12),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+  },
   imageContainer: {
     position: 'relative',
     marginBottom: p(12),
@@ -383,6 +440,41 @@ const styles = StyleSheet.create({
     width: '100%',
     height: p(180),
     borderRadius: p(8),
+    backgroundColor: '#f0f0f0',
+  },
+  imageCounter: {
+    position: 'absolute',
+    top: p(10),
+    right: p(10),
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    paddingHorizontal: p(8),
+    paddingVertical: p(4),
+    borderRadius: p(12),
+  },
+  imageCounterText: {
+    color: '#fff',
+    fontSize: fontSizes.xs,
+    fontFamily: 'Poppins-SemiBold',
+  },
+  thumbnailContainer: {
+    marginTop: p(6),
+  },
+  thumbnailContent: {
+    paddingRight: p(12),
+  },
+  thumbnail: {
+    marginRight: p(10),
+    borderRadius: p(6),
+    overflow: 'hidden',
+  },
+  activeThumbnail: {
+    borderWidth: 2,
+    borderColor: '#019a34',
+  },
+  thumbnailImage: {
+    width: p(50),
+    height: p(50),
+    borderRadius: p(4),
     backgroundColor: '#f0f0f0',
   },
   organicBadge: {

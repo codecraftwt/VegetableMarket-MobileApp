@@ -38,6 +38,7 @@ const ProductDetailScreen = ({ navigation, route }) => {
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [wishlistMessage, setWishlistMessage] = useState('');
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   // Get product data from navigation params or use default
   const product = route.params?.product || {
@@ -91,6 +92,11 @@ const ProductDetailScreen = ({ navigation, route }) => {
     if (vegetables.length > 0 && (!product.category || !product.farmer)) {
     }
   }, [vegetables, product]);
+
+  // Reset image index when product changes
+  useEffect(() => {
+    setCurrentImageIndex(0);
+  }, [completeProduct?.id]);
 
   const handleBackPress = () => {
     navigation.goBack();
@@ -275,12 +281,25 @@ const ProductDetailScreen = ({ navigation, route }) => {
     );
   };
 
-  // Helper function to get product image
-  const getProductImage = () => {
+  // Helper function to get product images
+  const getProductImages = () => {
     if (completeProduct?.images && completeProduct.images.length > 0) {
-      return { uri: `https://kisancart.in/storage/${completeProduct.images[0].image_path}` };
+      return completeProduct.images.map(img => ({
+        uri: `https://kisancart.in/storage/${img.image_path}`
+      }));
     }
-    return completeProduct.image || require('../../../assets/vegebg.png');
+    return [completeProduct.image || require('../../../assets/vegebg.png')];
+  };
+
+  // Helper function to get current product image
+  const getProductImage = () => {
+    const images = getProductImages();
+    return images[currentImageIndex] || images[0];
+  };
+
+  // Handle image press to change current image
+  const handleImagePress = (index) => {
+    setCurrentImageIndex(index);
   };
 
   // Helper function to get product price
@@ -421,19 +440,59 @@ const ProductDetailScreen = ({ navigation, route }) => {
           <>
             {/* Product Image Section */}
             <View style={styles.imageSection}>
-              <Image source={getProductImage()} style={styles.productImage} />
-              {/* Wishlist Heart Icon */}
-              <TouchableOpacity
-                style={styles.wishlistButton}
-                onPress={handleWishlistToggle}
-                disabled={wishlistLoading}
-              >
-                <Icon
-                  name={isInWishlist ? "heart" : "heart-o"}
-                  size={18}
-                  color={isInWishlist ? "#dc3545" : "#fff"}
-                />
-              </TouchableOpacity>
+              <View style={styles.mainImageContainer}>
+                <Image source={getProductImage()} style={styles.productImage} />
+                {/* Top Row: Wishlist (left) and Image Counter (right) */}
+                <View style={styles.topRowContainer}>
+                  {/* Wishlist Heart Icon - Top Left */}
+                  <TouchableOpacity
+                    style={styles.wishlistButton}
+                    onPress={handleWishlistToggle}
+                    disabled={wishlistLoading}
+                  >
+                    <Icon
+                      name={isInWishlist ? "heart" : "heart-o"}
+                      size={18}
+                      color={isInWishlist ? "#dc3545" : "#fff"}
+                    />
+                  </TouchableOpacity>
+                  {/* Image Counter - Top Right */}
+                  {getProductImages().length > 1 && (
+                    <View style={styles.imageCounter}>
+                      <Text style={styles.imageCounterText}>
+                        {currentImageIndex + 1} / {getProductImages().length}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              </View>
+              
+              {/* Thumbnail Images */}
+              {getProductImages().length > 1 && (
+                <ScrollView 
+                  horizontal 
+                  showsHorizontalScrollIndicator={false}
+                  style={styles.thumbnailContainer}
+                  contentContainerStyle={styles.thumbnailContent}
+                >
+                  {completeProduct?.images?.map((image, index) => (
+                    <TouchableOpacity
+                      key={image.id || index}
+                      style={[
+                        styles.thumbnail,
+                        index === currentImageIndex && styles.activeThumbnail
+                      ]}
+                      onPress={() => handleImagePress(index)}
+                    >
+                      <Image
+                        source={{ uri: `https://kisancart.in/storage/${image.image_path}` }}
+                        style={styles.thumbnailImage}
+                        resizeMode="cover"
+                      />
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              )}
             </View>
 
             {/* Product Information Card */}
@@ -590,16 +649,26 @@ const styles = StyleSheet.create({
     marginBottom: p(0),
     position: 'relative',
   },
+  mainImageContainer: {
+    position: 'relative',
+    marginBottom: p(12),
+  },
   productImage: {
     width: '100%',
     height: p(250),
     borderRadius: p(8),
     resizeMode: 'cover',
   },
-  wishlistButton: {
+  topRowContainer: {
     position: 'absolute',
-    top: p(22),
-    right: p(25),
+    top: p(10),
+    left: p(10),
+    right: p(10),
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  wishlistButton: {
     width: p(32),
     height: p(32),
     borderRadius: p(16),
@@ -611,6 +680,38 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 2,
     elevation: 3,
+  },
+  imageCounter: {
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    paddingHorizontal: p(8),
+    paddingVertical: p(4),
+    borderRadius: p(12),
+  },
+  imageCounterText: {
+    color: '#fff',
+    fontSize: fontSizes.xs,
+    fontFamily: 'Poppins-SemiBold',
+  },
+  thumbnailContainer: {
+    marginTop: p(6),
+  },
+  thumbnailContent: {
+    paddingRight: p(16),
+  },
+  thumbnail: {
+    marginRight: p(10),
+    borderRadius: p(6),
+    overflow: 'hidden',
+  },
+  activeThumbnail: {
+    borderWidth: 2,
+    borderColor: '#019a34',
+  },
+  thumbnailImage: {
+    width: p(60),
+    height: p(60),
+    borderRadius: p(4),
+    backgroundColor: '#f0f0f0',
   },
 
   // Product Information Card

