@@ -40,6 +40,7 @@ const OrderDetailsScreen = ({ navigation, route }) => {
   const dispatch = useDispatch();
   const [refreshing, setRefreshing] = useState(false);
   const [order, setOrder] = useState(initialOrder);
+  console.log('order===>', initialOrder);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [showAcceptPartialModal, setShowAcceptPartialModal] = useState(false);
@@ -106,7 +107,7 @@ const OrderDetailsScreen = ({ navigation, route }) => {
 
   // Fetch OTP status when order is out for delivery
   useEffect(() => {
-    if (order.delivery_status === 'out for delivery' && order.order_id) {
+    if (normalizeStatus(order.delivery_status) === 'out for delivery' && order.order_id) {
       dispatch(getOTPStatus(order.order_id));
     }
   }, [order.delivery_status, order.order_id, dispatch]);
@@ -127,7 +128,7 @@ const OrderDetailsScreen = ({ navigation, route }) => {
         navigation.setParams({ order: updatedOrder });
 
         // Refresh OTP status if order is out for delivery
-        if (updatedOrder.delivery_status === 'out for delivery') {
+        if (normalizeStatus(updatedOrder.delivery_status) === 'out for delivery') {
           dispatch(getOTPStatus(updatedOrder.order_id));
         }
       }
@@ -202,6 +203,24 @@ const OrderDetailsScreen = ({ navigation, route }) => {
     Alert.alert('Info', 'UPI Link copied to clipboard');
   };
 
+  const handleContactSupport = () => {
+    const phoneNumber = '+919623448771';
+    const phoneUrl = `tel:${phoneNumber}`;
+
+    Linking.canOpenURL(phoneUrl)
+      .then(supported => {
+        if (supported) {
+          return Linking.openURL(phoneUrl);
+        } else {
+          Alert.alert('Error', 'Phone dialer not available on this device');
+        }
+      })
+      .catch(err => {
+        console.error('Error opening phone dialer:', err);
+        Alert.alert('Error', 'Failed to open phone dialer');
+      });
+  };
+
   const handleReviewOrder = () => {
     setShowReviewModal(true);
   };
@@ -223,8 +242,43 @@ const OrderDetailsScreen = ({ navigation, route }) => {
     }
   };
 
-  const getStatusIcon = (status) => {
-    switch (status.toLowerCase()) {
+  const normalizeStatus = (status = '') => {
+    return status
+      ?.toString()
+      .replace(/_/g, ' ')
+      .toLowerCase()
+      .trim();
+  };
+
+  const getFriendlyStatus = (status, context = 'generic') => {
+    const normalized = normalizeStatus(status);
+
+    switch (normalized) {
+      case 'ready for delivery':
+        return 'Ready for delivery';
+      case 'out for delivery':
+        return 'Out for delivery';
+      case 'pending':
+        return 'Pending';
+      case 'processing':
+        return 'Processing';
+      case 'delivered':
+        return 'Delivered';
+      case 'cancelled':
+        return 'Cancelled';
+      case 'partial':
+        return context === 'item' ? 'Partially delivered' : 'Partial';
+      default: {
+        if (!status) return 'Unknown';
+        const label = status.toString().replace(/_/g, ' ');
+        return label.charAt(0).toUpperCase() + label.slice(1);
+      }
+    }
+  };
+
+  const getStatusIcon = (status = '') => {
+    const normalized = normalizeStatus(status);
+    switch (normalized) {
       case 'pending':
         return 'clock-o';
       case 'processing':
@@ -240,8 +294,9 @@ const OrderDetailsScreen = ({ navigation, route }) => {
     }
   };
 
-  const getStatusColor = (status) => {
-    switch (status.toLowerCase()) {
+  const getStatusColor = (status = '') => {
+    const normalized = normalizeStatus(status);
+    switch (normalized) {
       case 'pending':
         return '#FF9800';
       case 'processing':
@@ -265,7 +320,8 @@ const OrderDetailsScreen = ({ navigation, route }) => {
 
   // Check if order is eligible for invoice download
   const isEligibleForInvoice = () => {
-    return order.delivery_status === 'delivered' || order.delivery_status === 'cancelled' || order.is_canceled;
+    const normalized = normalizeStatus(order.delivery_status);
+    return normalized === 'delivered' || normalized === 'cancelled' || order.is_canceled;
   };
 
   // Format OTP status for display
@@ -451,7 +507,7 @@ const OrderDetailsScreen = ({ navigation, route }) => {
   };
 
   const renderOTPSection = () => {
-    if (order?.delivery_status === 'out_for_delivery' && order?.delivery_otp) {
+    if (normalizeStatus(order?.delivery_status) === 'out for delivery' && order?.delivery_otp) {
       return (
         <View style={styles.otpContainer}>
           <Text style={styles.otpTitle}>Delivery OTP</Text>
@@ -531,7 +587,7 @@ const OrderDetailsScreen = ({ navigation, route }) => {
                 <Icon name="credit-card" size={20} color={getStatusColor(order.payment_status)} />
               </View>
               <View style={styles.statusContent}>
-                <Text style={styles.statusTitle}>Payment {order.payment_status}</Text>
+                <Text style={styles.statusTitle}>Payment {getFriendlyStatus(order.payment_status, 'payment')}</Text>
                 <Text style={styles.statusTime}>{order.created_at}</Text>
               </View>
             </View>
@@ -544,7 +600,7 @@ const OrderDetailsScreen = ({ navigation, route }) => {
                 <Icon name={getStatusIcon(order.delivery_status)} size={20} color={getStatusColor(order.delivery_status)} />
               </View>
               <View style={styles.statusContent}>
-                <Text style={styles.statusTitle}>{order.delivery_status}</Text>
+                <Text style={styles.statusTitle}>{getFriendlyStatus(order.delivery_status, 'delivery')}</Text>
                 <Text style={styles.statusTime}>{order.created_at}</Text>
               </View>
             </View>
@@ -565,7 +621,7 @@ const OrderDetailsScreen = ({ navigation, route }) => {
         </View>
 
         {/* OTP Status - Only show when order is out for delivery */}
-        {order.delivery_status === 'out for delivery' && (
+        {normalizeStatus(order.delivery_status) === 'out for delivery' && (
           <View style={styles.otpStatusCard}>
             <View style={styles.otpStatusHeader}>
               <Text style={styles.sectionTitle}>Delivery Verification</Text>
@@ -710,7 +766,7 @@ const OrderDetailsScreen = ({ navigation, route }) => {
                     styles.itemStatusText,
                     { color: getStatusColor(item.delivery_item_status) }
                   ]}>
-                    {item.delivery_item_status}
+                    {getFriendlyStatus(item.delivery_item_status, 'item')}
                   </Text>
                 </View>
               </View>
@@ -750,7 +806,7 @@ const OrderDetailsScreen = ({ navigation, route }) => {
 
         {/* Action Buttons */}
         <View style={styles.actionButtons}>
-          <TouchableOpacity style={styles.actionButton}>
+          <TouchableOpacity style={styles.actionButton} onPress={handleContactSupport}>
             <Icon name="phone" size={14} color="#fff" />
             <Text style={styles.actionButtonText}>Contact Support</Text>
           </TouchableOpacity>
@@ -775,7 +831,7 @@ const OrderDetailsScreen = ({ navigation, route }) => {
         </View>
 
         {/* Review Order Button - Only show for delivered orders that are not reviewed */}
-        {order.delivery_status === 'delivered' && !order.is_reviewed && (
+        {normalizeStatus(order.delivery_status) === 'delivered' && !order.is_reviewed && (
           <TouchableOpacity
             style={[styles.reviewOrderButton, submitReviewLoading && styles.buttonDisabled]}
             onPress={handleReviewOrder}
@@ -789,7 +845,7 @@ const OrderDetailsScreen = ({ navigation, route }) => {
         )}
 
         {/* Cancel Order Button - Only show for cancellable orders */}
-        {order.delivery_status !== 'delivered' && !order.is_canceled && (
+        {normalizeStatus(order.delivery_status) !== 'delivered' && !order.is_canceled && (
           <TouchableOpacity
             style={[styles.cancelOrderButton, cancelOrderLoading && styles.buttonDisabled]}
             onPress={handleCancelOrder}
@@ -803,7 +859,7 @@ const OrderDetailsScreen = ({ navigation, route }) => {
         )}
 
         {/* Accept Partial Order Button - Only show for partial orders */}
-        {order.delivery_status === 'out for delivery' &&
+        {normalizeStatus(order.delivery_status) === 'out for delivery' &&
           order.items.some(item => item.delivery_item_status === 'partial' || item.delivery_item_status === 'pending') &&
           !order.is_canceled && (
             <TouchableOpacity
@@ -819,7 +875,7 @@ const OrderDetailsScreen = ({ navigation, route }) => {
           )}
 
         {/* Review Status Indicator */}
-        {order.delivery_status === 'delivered' && (
+        {normalizeStatus(order.delivery_status) === 'delivered' && (
           <View style={styles.reviewStatusContainer}>
             {order.is_reviewed ? (
               <View style={styles.reviewedStatus}>

@@ -124,8 +124,43 @@ const MyOrdersScreen = ({ navigation }) => {
     }
   };
 
-  const getStatusIcon = (status) => {
-    switch (status.toLowerCase()) {
+  const normalizeStatus = (status = '') => {
+    return status
+      ?.toString()
+      .replace(/_/g, ' ')
+      .toLowerCase()
+      .trim();
+  };
+
+  const getFriendlyStatus = (status, context = 'generic') => {
+    const normalized = normalizeStatus(status);
+
+    switch (normalized) {
+      case 'ready for delivery':
+        return 'Ready for delivery';
+      case 'out for delivery':
+        return 'Out for delivery';
+      case 'pending':
+        return 'Pending';
+      case 'processing':
+        return 'Processing';
+      case 'delivered':
+        return 'Delivered';
+      case 'cancelled':
+        return 'Cancelled';
+      case 'partial':
+        return context === 'item' ? 'Partially delivered' : 'Partial';
+      default: {
+        if (!status) return 'Unknown';
+        const label = status.toString().replace(/_/g, ' ');
+        return label.charAt(0).toUpperCase() + label.slice(1);
+      }
+    }
+  };
+
+  const getStatusIcon = (status = '') => {
+    const normalized = normalizeStatus(status);
+    switch (normalized) {
       case 'pending':
         return 'clock-o';
       case 'processing':
@@ -141,8 +176,9 @@ const MyOrdersScreen = ({ navigation }) => {
     }
   };
 
-  const getStatusColor = (status) => {
-    switch (status.toLowerCase()) {
+  const getStatusColor = (status = '') => {
+    const normalized = normalizeStatus(status);
+    switch (normalized) {
       case 'pending':
         return '#FF9800';
       case 'processing':
@@ -182,12 +218,12 @@ const MyOrdersScreen = ({ navigation }) => {
         <View style={styles.statusSection}>
           <View style={styles.statusItem}>
             <Icon name="credit-card" size={14} color={order.is_paid ? '#4CAF50' : '#FF9800'} />
-            <Text style={styles.statusText}>{order.payment_status}</Text>
+            <Text style={styles.statusText}>{getFriendlyStatus(order.payment_status, 'payment')}</Text>
           </View>
           
           <View style={styles.statusItem}>
             <Icon name={getStatusIcon(order.delivery_status)} size={14} color={getStatusColor(order.delivery_status)} />
-            <Text style={styles.statusText}>{order.delivery_status}</Text>
+            <Text style={styles.statusText}>{getFriendlyStatus(order.delivery_status, 'delivery')}</Text>
           </View>
         </View>
 
@@ -200,7 +236,7 @@ const MyOrdersScreen = ({ navigation }) => {
         </View>
 
         {/* Cancel Order Button - Only show for cancellable orders */}
-        {order.delivery_status !== 'delivered' && !order.is_canceled && (
+        {normalizeStatus(order.delivery_status) !== 'delivered' && !order.is_canceled && (
           <View style={styles.cancelSection}>
             <TouchableOpacity 
               style={[styles.cancelButton, isThisOrderCancelling && styles.buttonDisabled]}
@@ -221,7 +257,7 @@ const MyOrdersScreen = ({ navigation }) => {
         )}
 
         {/* Review Order Button - Only show for delivered orders that haven't been reviewed */}
-        {order.delivery_status === 'delivered' && !order.is_reviewed && (
+        {normalizeStatus(order.delivery_status) === 'delivered' && !order.is_reviewed && (
           <View style={styles.reviewSection}>
             <TouchableOpacity 
               style={styles.reviewButton}
