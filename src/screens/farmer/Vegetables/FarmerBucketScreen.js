@@ -37,6 +37,7 @@ const FarmerBucketScreen = ({ navigation }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredVegetables, setFilteredVegetables] = useState([]);
   const [currentImageIndices, setCurrentImageIndices] = useState({});
+  const thumbnailScrollRefs = React.useRef({});
 
   useEffect(() => {
     // Clear any lingering success state when component mounts
@@ -180,6 +181,26 @@ const FarmerBucketScreen = ({ navigation }) => {
       ...prev,
       [vegetableId]: index
     }));
+    
+    // Auto-scroll to the selected thumbnail for card view
+    if (thumbnailScrollRefs.current[vegetableId]) {
+      const thumbnailWidth = p(40) + p(6); // thumbnail width + margin
+      const scrollOffset = index * thumbnailWidth;
+      thumbnailScrollRefs.current[vegetableId].scrollTo({ 
+        x: scrollOffset, 
+        animated: true 
+      });
+    }
+    
+    // Auto-scroll to the selected thumbnail for list view
+    if (thumbnailScrollRefs.current[`${vegetableId}_list`]) {
+      const thumbnailWidth = p(20) + p(4); // thumbnail width + margin
+      const scrollOffset = index * thumbnailWidth;
+      thumbnailScrollRefs.current[`${vegetableId}_list`].scrollTo({ 
+        x: scrollOffset, 
+        animated: true 
+      });
+    }
   };
 
   const getCurrentImageIndex = (vegetableId) => {
@@ -248,34 +269,43 @@ const FarmerBucketScreen = ({ navigation }) => {
         </View>
         
         {/* Thumbnail Images */}
-        {images.length > 1 && (
-          <ScrollView 
-            horizontal 
-            showsHorizontalScrollIndicator={false}
-            style={styles.cardThumbnailContainer}
-            contentContainerStyle={styles.cardThumbnailContent}
-          >
-            {images.map((image, index) => (
-              <TouchableOpacity
-                key={image.id || index}
-                style={[
-                  styles.cardThumbnail,
-                  index === currentIndex && styles.activeCardThumbnail
-                ]}
-                onPress={(e) => {
-                  e.stopPropagation();
-                  handleImagePress(vegetable.id, index);
-                }}
-              >
-                <Image
-                  source={{ uri: `https://kisancart.in/storage/${image.image_path}` }}
-                  style={styles.cardThumbnailImage}
-                  resizeMode="cover"
-                />
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        )}
+          {images.length > 1 && (
+            <ScrollView 
+              ref={(ref) => {
+                if (ref) {
+                  thumbnailScrollRefs.current[vegetable.id] = ref;
+                }
+              }}
+              horizontal 
+              showsHorizontalScrollIndicator={false}
+              style={styles.cardThumbnailContainer}
+              contentContainerStyle={styles.cardThumbnailContent}
+              decelerationRate="fast"
+              snapToInterval={p(46)} // Snap to each thumbnail
+              snapToAlignment="start"
+            >
+              {images.map((image, index) => (
+                <TouchableOpacity
+                  key={image.id || index}
+                  style={[
+                    styles.cardThumbnail,
+                    index === currentIndex && styles.activeCardThumbnail
+                  ]}
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    handleImagePress(vegetable.id, index);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Image
+                    source={{ uri: `https://kisancart.in/storage/${image.image_path}` }}
+                    style={styles.cardThumbnailImage}
+                    resizeMode="cover"
+                  />
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          )}
         <View style={styles.vegetableContent}>
           <View style={styles.vegetableHeader}>
             <Text style={styles.vegetableName}>{vegetable.name}</Text>
@@ -388,10 +418,18 @@ const FarmerBucketScreen = ({ navigation }) => {
           )}
           {images.length > 1 && (
             <ScrollView 
+              ref={(ref) => {
+                if (ref) {
+                  thumbnailScrollRefs.current[`${vegetable.id}_list`] = ref;
+                }
+              }}
               horizontal 
               showsHorizontalScrollIndicator={false}
               style={styles.listThumbnailContainer}
               contentContainerStyle={styles.listThumbnailContent}
+              decelerationRate="fast"
+              snapToInterval={p(24)} // Snap to each thumbnail
+              snapToAlignment="start"
             >
               {images.map((image, index) => (
                 <TouchableOpacity
@@ -404,6 +442,7 @@ const FarmerBucketScreen = ({ navigation }) => {
                     e.stopPropagation();
                     handleImagePress(vegetable.id, index);
                   }}
+                  activeOpacity={0.7}
                 >
                   <Image
                     source={{ uri: `https://kisancart.in/storage/${image.image_path}` }}
@@ -724,18 +763,27 @@ const styles = StyleSheet.create({
     paddingHorizontal: p(8),
     paddingTop: p(8),
     paddingBottom: p(4),
+    height: p(50), // Fixed height to prevent layout issues
   },
   cardThumbnailContent: {
-    paddingRight: p(8),
+    paddingHorizontal: p(4),
+    minWidth: '100%', // Ensure content takes full width
   },
   cardThumbnail: {
     marginRight: p(6),
     borderRadius: p(4),
     overflow: 'hidden',
+    borderWidth: 1.5,
+    borderColor: 'transparent', // Default transparent border
   },
   activeCardThumbnail: {
     borderWidth: 2,
     borderColor: '#019a34',
+    shadowColor: '#019a34',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 2,
   },
   cardThumbnailImage: {
     width: p(40),
@@ -903,19 +951,28 @@ const styles = StyleSheet.create({
   },
   listThumbnailContainer: {
     marginTop: p(4),
-    maxWidth: p(50),
+    height: p(26), // Fixed height to prevent layout issues
+    flex: 1,
   },
   listThumbnailContent: {
-    paddingRight: p(4),
+    paddingHorizontal: p(2),
+    minWidth: '100%', // Ensure content takes full width
   },
   listThumbnail: {
     marginRight: p(4),
     borderRadius: p(3),
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'transparent', // Default transparent border
   },
   activeListThumbnail: {
     borderWidth: 1.5,
     borderColor: '#019a34',
+    shadowColor: '#019a34',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 1,
+    elevation: 1,
   },
   listThumbnailImage: {
     width: p(20),

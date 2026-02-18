@@ -60,6 +60,54 @@ const DeliveryDashboardScreen = ({ navigation }) => {
     }
   };
 
+  // Helper function to normalize status strings
+  const normalizeStatus = (status) => {
+    return status?.toString().toLowerCase().replace(/_/g, ' ') || '';
+  };
+
+  const getFriendlyStatus = (status) => {
+    if (!status) return 'Pending';
+    
+    const normalizedStatus = normalizeStatus(status);
+    
+    switch (normalizedStatus) {
+      case 'pending':
+        return 'Pending';
+      case 'processing':
+        return 'Processing';
+      case 'ready for delivery':
+        return 'Ready for Delivery';
+      case 'out for delivery':
+        return 'Out for Delivery';
+      case 'delivered':
+        return 'Delivered';
+      case 'canceled':
+      case 'cancelled':
+        return 'Cancelled';
+      case 'in transit':
+        return 'In Transit';
+      case 'accepted':
+        return 'Accepted';
+      case 'rejected':
+        return 'Rejected';
+      case 'partial':
+        return 'Partial';
+      case 'assigned':
+        return 'Assigned';
+      case 'picked up':
+        return 'Picked Up';
+      case 'on route':
+        return 'On Route';
+      default:
+        // Capitalize first letter of each word for any other status
+        return normalizedStatus
+          .split(' ')
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(' ');
+    }
+  };
+
+
   const renderStatsCard = (title, value, icon, color, onPress) => (
     <TouchableOpacity style={styles.statCard} onPress={onPress}>
       <View style={[styles.statIcon, { backgroundColor: color + '20' }]}>
@@ -225,7 +273,7 @@ const DeliveryDashboardScreen = ({ navigation }) => {
                         {delivery.customer_name || 'Customer'} • {delivery.delivery_address?.city || 'Location'}
                       </Text>
                       <Text style={styles.deliveryStatus}>
-                        Status: {delivery.delivery_status || 'Pending'}
+                        Status: {getFriendlyStatus(delivery.delivery_status)}
                       </Text>
                     </View>
                     <View style={styles.deliveryAction}>
@@ -262,7 +310,7 @@ const DeliveryDashboardScreen = ({ navigation }) => {
                         {delivery.customer_name || 'Customer'} • {delivery.delivery_address?.city || 'Location'}
                       </Text>
                       <Text style={styles.deliveryStatus}>
-                        Status: {delivery.delivery_status || 'Pending'}
+                        Status: {getFriendlyStatus(delivery.delivery_status)}
                       </Text>
                     </View>
                     <View style={styles.deliveryAction}>

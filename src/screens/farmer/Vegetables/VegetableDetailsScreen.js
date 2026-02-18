@@ -8,7 +8,6 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
-  Alert,
 } from 'react-native';
 import { CommonHeader } from '../../../components';
 import { SkeletonLoader } from '../../../components';
@@ -31,6 +30,7 @@ const VegetableDetailsScreen = ({ navigation, route }) => {
   const [showActionModal, setShowActionModal] = useState(false);
   const [modalPosition, setModalPosition] = useState({ x: 0, y: 0 });
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const thumbnailScrollRef = React.useRef(null);
 
   const { vegetableId } = route.params;
 
@@ -132,6 +132,15 @@ const VegetableDetailsScreen = ({ navigation, route }) => {
 
   const handleImagePress = (index) => {
     setCurrentImageIndex(index);
+    // Auto-scroll to the selected thumbnail
+    if (thumbnailScrollRef.current && vegetableData?.images?.length > 1) {
+      const thumbnailWidth = p(50) + p(10); // thumbnail width + margin
+      const scrollOffset = index * thumbnailWidth;
+      thumbnailScrollRef.current.scrollTo({ 
+        x: scrollOffset, 
+        animated: true 
+      });
+    }
   };
 
   const renderVegetableImage = () => {
@@ -171,10 +180,14 @@ const VegetableDetailsScreen = ({ navigation, route }) => {
         {/* Thumbnail Images */}
         {vegetableData.images.length > 1 && (
           <ScrollView 
+            ref={thumbnailScrollRef}
             horizontal 
             showsHorizontalScrollIndicator={false}
             style={styles.thumbnailContainer}
             contentContainerStyle={styles.thumbnailContent}
+            decelerationRate="fast"
+            snapToInterval={p(60)}
+            snapToAlignment="start"
           >
             {vegetableData.images.map((image, index) => (
               <TouchableOpacity
@@ -184,6 +197,7 @@ const VegetableDetailsScreen = ({ navigation, route }) => {
                   index === currentImageIndex && styles.activeThumbnail
                 ]}
                 onPress={() => handleImagePress(index)}
+                activeOpacity={0.7}
               >
                 <Image
                   source={{ uri: `https://kisancart.in/storage/${image.image_path}` }}
@@ -339,7 +353,11 @@ const VegetableDetailsScreen = ({ navigation, route }) => {
         navigation={navigation}
       />
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.content} 
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         {renderVegetableImage()}
         {renderVegetableInfo()}
         {renderDescription()}
@@ -421,6 +439,9 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: p(12),
   },
+  scrollContent: {
+    paddingBottom: p(20),
+  },
   imageGalleryContainer: {
     backgroundColor: '#fff',
     borderRadius: p(8),
@@ -458,18 +479,28 @@ const styles = StyleSheet.create({
   },
   thumbnailContainer: {
     marginTop: p(6),
+    height: p(60), // Fixed height to prevent layout issues
   },
   thumbnailContent: {
-    paddingRight: p(12),
+    paddingHorizontal: p(6),
+    paddingVertical: p(5),
+    minWidth: '100%', // Ensure content takes full width
   },
   thumbnail: {
     marginRight: p(10),
     borderRadius: p(6),
     overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: 'transparent', // Default transparent border
   },
   activeThumbnail: {
     borderWidth: 2,
     borderColor: '#019a34',
+    shadowColor: '#019a34',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
   },
   thumbnailImage: {
     width: p(50),
