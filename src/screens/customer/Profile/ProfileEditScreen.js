@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, StatusBar, ScrollView, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, StatusBar, ScrollView, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator, Modal, FlatList } from 'react-native';
 import CommonHeader from '../../../components/CommonHeader';
 import { SuccessModal, ErrorModal, ConfirmationModal } from '../../../components';
 import Icon from 'react-native-vector-icons/FontAwesome';
@@ -9,6 +9,157 @@ import { useDispatch, useSelector } from 'react-redux';
 import { fetchProfile, updateProfile } from '../../../redux/slices/profileSlice';
 import { addAddress, updateAddress } from '../../../redux/slices/addressesSlice';
 import { ROLES } from '../../../redux/slices/authSlice';
+import { Country, State, City } from 'country-state-city';
+
+// Helper functions using country-state-city package
+const getCountries = () => {
+  return Country.getAllCountries().map(country => country.name);
+};
+
+const getStatesByCountry = (countryName) => {
+  if (!countryName) return [];
+  
+  // Find country by name
+  const country = Country.getAllCountries().find(c => c.name === countryName);
+  if (!country) return [];
+  
+  // Get states for this country
+  return State.getStatesOfCountry(country.isoCode).map(state => state.name);
+};
+
+const getDistrictsByCountryAndState = (countryName, stateName) => {
+  // For now, we'll return cities as districts since the package doesn't have district-level data
+  // You can enhance this later with a custom district mapping if needed
+  return getCitiesByCountryAndState(countryName, stateName);
+};
+
+const getCitiesByCountryAndState = (countryName, stateName) => {
+  if (!countryName || !stateName) return [];
+  
+  // Find country by name
+  const country = Country.getAllCountries().find(c => c.name === countryName);
+  if (!country) return [];
+  
+  // Find state by name
+  const state = State.getStatesOfCountry(country.isoCode).find(s => s.name === stateName);
+  if (!state) return [];
+  
+  // Get cities for this state
+  return City.getCitiesOfState(country.isoCode, state.isoCode).map(city => city.name);
+};
+
+// Custom Dropdown Component
+const CustomDropdown = ({ label, value, options, onSelect, placeholder, style }) => {
+  const [isVisible, setIsVisible] = useState(false);
+  const [searchText, setSearchText] = useState('');
+
+  // Check if dropdown should be disabled (no options available)
+  const isDisabled = !options || options.length === 0;
+
+  const filteredOptions = useMemo(() => {
+    if (!searchText.trim()) return options || [];
+    return (options || []).filter(option => 
+      option.toLowerCase().includes(searchText.toLowerCase())
+    );
+  }, [options, searchText]);
+
+  const handleSelect = (selectedValue) => {
+    onSelect(selectedValue);
+    setIsVisible(false);
+    setSearchText('');
+  };
+
+  const handlePress = () => {
+    if (!isDisabled) {
+      setIsVisible(true);
+    }
+  };
+
+  const renderItem = ({ item }) => (
+    <TouchableOpacity
+      style={styles.dropdownItem}
+      onPress={() => handleSelect(item)}
+    >
+      <Text style={styles.dropdownItemText}>{item}</Text>
+    </TouchableOpacity>
+  );
+
+  return (
+    <>
+      <TouchableOpacity
+        style={[
+          styles.dropdownButton, 
+          style,
+          isDisabled && styles.dropdownButtonDisabled
+        ]}
+        onPress={handlePress}
+        disabled={isDisabled}
+      >
+        <Text style={[
+          styles.dropdownButtonText,
+          !value && styles.dropdownPlaceholderText,
+          isDisabled && styles.dropdownDisabledText
+        ]}>
+          {value || placeholder}
+        </Text>
+        <Icon 
+          name="chevron-down" 
+          size={12} 
+          color={isDisabled ? "#ccc" : "#666"} 
+        />
+      </TouchableOpacity>
+
+      <Modal
+        visible={isVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setIsVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select {label}</Text>
+              <TouchableOpacity
+                style={styles.modalCloseButton}
+                onPress={() => {
+                  setIsVisible(false);
+                  setSearchText('');
+                }}
+              >
+                <Icon name="times" size={20} color="#666" />
+              </TouchableOpacity>
+            </View>
+            
+            {options && options.length > 0 && (
+              <TextInput
+                style={styles.searchInput}
+                value={searchText}
+                onChangeText={setSearchText}
+                placeholder={`Search ${label.toLowerCase()}...`}
+                autoCapitalize="none"
+              />
+            )}
+
+            <FlatList
+              data={filteredOptions}
+              renderItem={renderItem}
+              keyExtractor={(item, index) => index.toString()}
+              style={styles.optionsList}
+              showsVerticalScrollIndicator={true}
+              ListEmptyComponent={
+                <View style={styles.emptyContainer}>
+                  <Text style={styles.emptyText}>
+                    {searchText ? `No ${label.toLowerCase()} found` : `No ${label.toLowerCase()} available`}
+                  </Text>
+                </View>
+              }
+            />
+          </View>
+        </View>
+      </Modal>
+    </>
+  );
+};
 
 const ProfileEditScreen = ({ navigation, route }) => {
   const dispatch = useDispatch();
@@ -643,9 +794,8 @@ const ProfileEditScreen = ({ navigation, route }) => {
     setAddressData(prev => ({ ...prev, addressLine: processedText }));
   }, []);
 
-  const handleCityChange = useCallback((text) => {
-    const processedText = text.slice(0, 50);
-    setAddressData(prev => ({ ...prev, city: processedText }));
+  const handleCityChange = useCallback((selectedCity) => {
+    setAddressData(prev => ({ ...prev, city: selectedCity }));
   }, []);
 
   const handleTalukaChange = useCallback((text) => {
@@ -653,20 +803,43 @@ const ProfileEditScreen = ({ navigation, route }) => {
     setAddressData(prev => ({ ...prev, taluka: processedText }));
   }, []);
 
-  const handleDistrictChange = useCallback((text) => {
-    const processedText = text.slice(0, 50);
-    setAddressData(prev => ({ ...prev, district: processedText }));
+  const handleDistrictChange = useCallback((selectedDistrict) => {
+    setAddressData(prev => ({ ...prev, district: selectedDistrict }));
   }, []);
 
-  const handleStateChange = useCallback((text) => {
-    const processedText = text.slice(0, 50);
-    setAddressData(prev => ({ ...prev, state: processedText }));
+  const handleStateChange = useCallback((selectedState) => {
+    setAddressData(prev => ({ 
+      ...prev, 
+      state: selectedState,
+      district: '', // Reset district when state changes
+      city: '' // Reset city when state changes
+    }));
   }, []);
 
-  const handleCountryChange = useCallback((text) => {
-    const processedText = text.slice(0, 50);
-    setAddressData(prev => ({ ...prev, country: processedText }));
+  const handleCountryChange = useCallback((selectedCountry) => {
+    setAddressData(prev => ({ 
+      ...prev, 
+      country: selectedCountry,
+      state: '', // Always reset state when country changes
+      district: '', // Always reset district when country changes
+      city: '' // Always reset city when country changes
+    }));
   }, []);
+
+  // Dynamic options based on selections
+  const availableCountries = useMemo(() => getCountries(), []);
+  
+  const availableStates = useMemo(() => {
+    return getStatesByCountry(addressData.country);
+  }, [addressData.country]);
+  
+  const availableDistricts = useMemo(() => {
+    return getDistrictsByCountryAndState(addressData.country, addressData.state);
+  }, [addressData.country, addressData.state]);
+  
+  const availableCities = useMemo(() => {
+    return getCitiesByCountryAndState(addressData.country, addressData.state);
+  }, [addressData.country, addressData.state]);
 
   const handlePincodeChange = useCallback((text) => {
     // Only allow numbers and limit to 6 digits
@@ -731,72 +904,77 @@ const ProfileEditScreen = ({ navigation, route }) => {
           />
         </View>
 
+        {/* Row 1: Country and State */}
         <View style={styles.row}>
           <View style={[styles.inputGroup, { flex: 1, marginRight: p(10) }]}>
-            <Text style={styles.inputLabel}>City/Village</Text>
-            <TextInput
-              style={styles.textInput}
-              value={addressData.city}
-              onChangeText={handleCityChange}
-              placeholder="Enter City"
-              autoCapitalize="words"
-              returnKeyType="next"
-              blurOnSubmit={false}
-              maxLength={50}
+            <Text style={styles.inputLabel}>Country</Text>
+            <CustomDropdown
+              label="Country"
+              value={addressData.country}
+              options={availableCountries}
+              onSelect={handleCountryChange}
+              placeholder="Select Country"
             />
           </View>
           <View style={[styles.inputGroup, { flex: 1 }]}>
+            <Text style={styles.inputLabel}>State/Province</Text>
+            <CustomDropdown
+              label="State"
+              value={addressData.state}
+              options={availableStates}
+              onSelect={handleStateChange}
+              placeholder={
+                !addressData.country ? "Select Country first" :
+                availableStates.length === 0 ? "No states available" :
+                "Select State/Province"
+              }
+            />
+          </View>
+        </View>
+
+        {/* Row 2: District and City */}
+        <View style={styles.row}>
+          <View style={[styles.inputGroup, { flex: 1, marginRight: p(10) }]}>
+            <Text style={styles.inputLabel}>District</Text>
+            <CustomDropdown
+              label="District"
+              value={addressData.district}
+              options={availableDistricts}
+              onSelect={handleDistrictChange}
+              placeholder={
+                !addressData.country ? "Select Country first" :
+                !addressData.state ? "Select State first" :
+                availableDistricts.length === 0 ? "No districts available" :
+                "Select District"
+              }
+            />
+          </View>
+          <View style={[styles.inputGroup, { flex: 1 }]}>
+            <Text style={styles.inputLabel}>City/Village</Text>
+            <CustomDropdown
+              label="City"
+              value={addressData.city}
+              options={availableCities}
+              onSelect={handleCityChange}
+              placeholder={
+                !addressData.country ? "Select Country first" :
+                !addressData.state ? "Select State first" :
+                availableCities.length === 0 ? "No cities available" :
+                "Select City"
+              }
+            />
+          </View>
+        </View>
+
+        {/* Row 3: Taluka and Pincode */}
+        <View style={styles.row}>
+          <View style={[styles.inputGroup, { flex: 1, marginRight: p(10) }]}>
             <Text style={styles.inputLabel}>Taluka</Text>
             <TextInput
               style={styles.textInput}
               value={addressData.taluka}
               onChangeText={handleTalukaChange}
               placeholder="Enter Taluka"
-              autoCapitalize="words"
-              returnKeyType="next"
-              blurOnSubmit={false}
-              maxLength={50}
-            />
-          </View>
-        </View>
-
-        <View style={styles.row}>
-          <View style={[styles.inputGroup, { flex: 1, marginRight: p(10) }]}>
-            <Text style={styles.inputLabel}>District</Text>
-            <TextInput
-              style={styles.textInput}
-              value={addressData.district}
-              onChangeText={handleDistrictChange}
-              placeholder="Enter District"
-              autoCapitalize="words"
-              returnKeyType="next"
-              blurOnSubmit={false}
-              maxLength={50}
-            />
-          </View>
-          <View style={[styles.inputGroup, { flex: 1 }]}>
-            <Text style={styles.inputLabel}>State</Text>
-            <TextInput
-              style={styles.textInput}
-              value={addressData.state}
-              onChangeText={handleStateChange}
-              placeholder="Enter State"
-              autoCapitalize="words"
-              returnKeyType="next"
-              blurOnSubmit={false}
-              maxLength={50}
-            />
-          </View>
-        </View>
-
-        <View style={styles.row}>
-          <View style={[styles.inputGroup, { flex: 1, marginRight: p(10) }]}>
-            <Text style={styles.inputLabel}>Country</Text>
-            <TextInput
-              style={styles.textInput}
-              value={addressData.country}
-              onChangeText={handleCountryChange}
-              placeholder="Enter Country"
               autoCapitalize="words"
               returnKeyType="next"
               blurOnSubmit={false}
@@ -873,7 +1051,12 @@ const ProfileEditScreen = ({ navigation, route }) => {
     updateLoading,
     isCustomer,
     handleAddNewAddress,
-    editingAddressId
+    editingAddressId,
+    updateAddressLoading,
+    availableCountries,
+    availableStates,
+    availableDistricts,
+    availableCities
   ]);
 
   return (
@@ -887,7 +1070,7 @@ const ProfileEditScreen = ({ navigation, route }) => {
         showNotification={false}
       />
 
-      {loading ? (
+      {false ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#019a34" />
           <Text style={styles.loadingText}>Loading profile...</Text>
@@ -1256,6 +1439,107 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: fontSizes.sm,
     fontFamily: 'Poppins-Bold',
+  },
+
+  // Custom Dropdown Styles
+  dropdownButton: {
+    fontSize: fontSizes.sm,
+    color: '#333',
+    paddingVertical: p(12),
+    paddingHorizontal: p(16),
+    backgroundColor: '#f8f9fa',
+    borderRadius: p(8),
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  dropdownButtonText: {
+    fontSize: fontSizes.sm,
+    color: '#333',
+    fontFamily: 'Poppins-Regular',
+    flex: 1,
+  },
+  dropdownPlaceholderText: {
+    color: '#999',
+  },
+  dropdownButtonDisabled: {
+    backgroundColor: '#f5f5f5',
+    borderColor: '#ddd',
+    opacity: 0.6,
+  },
+  dropdownDisabledText: {
+    color: '#ccc',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderRadius: p(12),
+    width: '85%',
+    maxHeight: '70%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: p(16),
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  modalTitle: {
+    fontSize: fontSizes.md,
+    fontFamily: 'Poppins-SemiBold',
+    color: '#333',
+  },
+  modalCloseButton: {
+    padding: p(4),
+  },
+  searchInput: {
+    margin: p(16),
+    marginBottom: p(8),
+    paddingVertical: p(10),
+    paddingHorizontal: p(12),
+    backgroundColor: '#f8f9fa',
+    borderRadius: p(8),
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+    fontSize: fontSizes.sm,
+    fontFamily: 'Poppins-Regular',
+  },
+  optionsList: {
+    maxHeight: p(300),
+    paddingHorizontal: p(16),
+  },
+  dropdownItem: {
+    paddingVertical: p(12),
+    paddingHorizontal: p(8),
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  dropdownItemText: {
+    fontSize: fontSizes.sm,
+    color: '#333',
+    fontFamily: 'Poppins-Regular',
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    padding: p(20),
+  },
+  emptyText: {
+    fontSize: fontSizes.sm,
+    color: '#999',
+    fontFamily: 'Poppins-Regular',
   },
 });
 
