@@ -381,6 +381,7 @@ const styles = StyleSheet.create({
   },
   productInfo: {
     marginBottom: p(8),
+    width: '100%',
   },
   productNameContainer: {
     flexDirection: 'row',
@@ -396,11 +397,11 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   productName: {
-    fontSize: fontSizes.sm,
+    fontSize: p(13),
     color: '#1a1a1a',
     textAlign: 'left',
     fontFamily: 'Poppins-Bold',
-    // flex: 1,
+    flex: 1,
   },
   // starRating: {
   //   flexDirection: 'row',
@@ -408,24 +409,24 @@ const styles = StyleSheet.create({
   //   gap: p(2),
   // },
   productPrice: {
-    fontSize: fontSizes.sm,
+    fontSize: p(13),
     color: '#019a34',
     textAlign: 'left',
     fontFamily: 'Poppins-Bold',
-    // marginTop: p(4),
+    marginTop: p(2),
   },
   stockText: {
-    fontSize: 12,
+    fontSize: p(11),
     fontFamily: 'Poppins-SemiBold',
     color: '#dc3545',
     marginTop: p(4),
     alignSelf: 'flex-start',
     backgroundColor: 'rgba(220, 53, 69, 0.08)',
     paddingHorizontal: p(6),
-    paddingVertical: p(1.2),
+    paddingVertical: p(2),
     borderRadius: p(4),
     maxWidth: '100%',
-    flexShrink: 1,
+    overflow: 'hidden',
   },
   addToCartButton: {
     position: 'absolute',

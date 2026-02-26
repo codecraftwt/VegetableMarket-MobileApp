@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -144,7 +144,11 @@ const BucketScreen = ({ navigation, route }) => {
     return categoryMatch;
   });
 
-  const CategoriesSection = () => {
+  const handleProductPress = useCallback((item) => {
+    navigation.navigate('ProductDetail', { product: item });
+  }, [navigation]);
+
+  const renderCategoriesSection = () => {
     if (categoriesLoading) {
       return (
         <View style={styles.categoriesContainer}>
@@ -154,7 +158,6 @@ const BucketScreen = ({ navigation, route }) => {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.categoriesScrollContent}
           >
-            {/* Skeleton loaders for categories */}
             {[1, 2, 3, 4, 5].map((item) => (
               <View key={item} style={styles.skeletonCategoryWrapper}>
                 <SkeletonLoader type="category" width={p(60)} height={p(60)} />
@@ -174,14 +177,12 @@ const BucketScreen = ({ navigation, route }) => {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.categoriesScrollContent}
         >
-          {/* Add "All" category */}
           <CategoryItem
             category={{ id: 'all', name: 'All' }}
             isSelected={selectedCategory === 'all'}
             onPress={() => setSelectedCategory('all')}
             size="medium"
           />
-          {/* Map through API categories */}
           {categories.map(category => (
             <CategoryItem
               key={category.id}
@@ -196,11 +197,7 @@ const BucketScreen = ({ navigation, route }) => {
     );
   };
 
-  const VegetablesSection = () => {
-    const handleProductPress = (item) => {
-      navigation.navigate('ProductDetail', { product: item });
-    };
-
+  const renderVegetablesSection = () => {
     if (loading) {
       return (
         <View style={styles.vegetablesContainer}>
@@ -210,7 +207,6 @@ const BucketScreen = ({ navigation, route }) => {
               : `${categories.find(c => c.id === selectedCategory)?.name} Products`}
           </Text>
           <View style={styles.vegetablesGrid}>
-            {/* Skeleton loaders for products */}
             {[1, 2, 3, 4, 5, 6].map((item) => (
               <View key={item} style={styles.productCardWrapper}>
                 <View style={styles.skeletonCard}>
@@ -314,8 +310,8 @@ const BucketScreen = ({ navigation, route }) => {
       />
 
       <View style={styles.content}>
-        {!searchQuery && <CategoriesSection />}
-        <VegetablesSection />
+        {!searchQuery && renderCategoriesSection()}
+        {renderVegetablesSection()}
       </View>
 
       {/* Success Modal */}

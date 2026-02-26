@@ -277,11 +277,12 @@ const FarmerBucketScreen = ({ navigation }) => {
                 }
               }}
               horizontal 
+              nestedScrollEnabled
               showsHorizontalScrollIndicator={false}
               style={styles.cardThumbnailContainer}
               contentContainerStyle={styles.cardThumbnailContent}
               decelerationRate="fast"
-              snapToInterval={p(46)} // Snap to each thumbnail
+              snapToInterval={p(46)}
               snapToAlignment="start"
             >
               {images.map((image, index) => (
@@ -424,11 +425,12 @@ const FarmerBucketScreen = ({ navigation }) => {
                 }
               }}
               horizontal 
+              nestedScrollEnabled
               showsHorizontalScrollIndicator={false}
               style={styles.listThumbnailContainer}
               contentContainerStyle={styles.listThumbnailContent}
               decelerationRate="fast"
-              snapToInterval={p(24)} // Snap to each thumbnail
+              snapToInterval={p(24)}
               snapToAlignment="start"
             >
               {images.map((image, index) => (
@@ -761,13 +763,17 @@ const styles = StyleSheet.create({
   },
   cardThumbnailContainer: {
     paddingHorizontal: p(8),
-    paddingTop: p(8),
+    paddingTop: p(6),
     paddingBottom: p(4),
-    height: p(50), // Fixed height to prevent layout issues
+    height: p(56),
+    maxHeight: p(56),
+    flexGrow: 0,
+    flexShrink: 0,
+    overflow: 'hidden',
   },
   cardThumbnailContent: {
     paddingHorizontal: p(4),
-    minWidth: '100%', // Ensure content takes full width
+    alignItems: 'center',
   },
   cardThumbnail: {
     marginRight: p(6),
@@ -927,6 +933,7 @@ const styles = StyleSheet.create({
   },
   listItemImageContainer: {
     position: 'relative',
+    alignSelf: 'flex-start',
   },
   listItemImage: {
     width: p(50),
@@ -951,12 +958,15 @@ const styles = StyleSheet.create({
   },
   listThumbnailContainer: {
     marginTop: p(4),
-    height: p(26), // Fixed height to prevent layout issues
-    flex: 1,
+    height: p(28),
+    maxHeight: p(28),
+    flexGrow: 0,
+    flexShrink: 0,
+    overflow: 'hidden',
   },
   listThumbnailContent: {
     paddingHorizontal: p(2),
-    minWidth: '100%', // Ensure content takes full width
+    alignItems: 'center',
   },
   listThumbnail: {
     marginRight: p(4),

@@ -483,6 +483,7 @@ const ProductDetailScreen = ({ navigation, route }) => {
                         index === currentImageIndex && styles.activeThumbnail
                       ]}
                       onPress={() => handleImagePress(index)}
+                      activeOpacity={0.7}
                     >
                       <Image
                         source={{ uri: `https://kisancart.in/storage/${image.image_path}` }}
@@ -694,22 +695,32 @@ const styles = StyleSheet.create({
   },
   thumbnailContainer: {
     marginTop: p(6),
+    height: p(60),
   },
   thumbnailContent: {
-    paddingRight: p(16),
+    paddingHorizontal: p(6),
+    paddingVertical: p(5),
+    minWidth: '100%',
   },
   thumbnail: {
     marginRight: p(10),
     borderRadius: p(6),
     overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: 'transparent',
   },
   activeThumbnail: {
     borderWidth: 2,
     borderColor: '#019a34',
+    shadowColor: '#019a34',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
   },
   thumbnailImage: {
-    width: p(60),
-    height: p(60),
+    width: p(50),
+    height: p(50),
     borderRadius: p(4),
     backgroundColor: '#f0f0f0',
   },

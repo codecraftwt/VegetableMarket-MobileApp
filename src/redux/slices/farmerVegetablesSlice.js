@@ -1,13 +1,54 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import api from '../../api/axiosInstance';
 
-// Async thunk to fetch all farmer vegetables
+// Async thunk to fetch all farmer vegetables with pagination
 export const fetchFarmerVegetables = createAsyncThunk(
   'farmerVegetables/fetchFarmerVegetables',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await api.get('/farmer/vegetables');
-      return response.data;
+      let allVegetables = [];
+      let currentPage = 1;
+      let lastPage = 1;
+
+      do {
+        const response = await api.get(`/farmer/vegetables?page=${currentPage}`);
+
+        let paginationObj = null;
+        let pageItems = [];
+
+        if (response.data?.data?.data && Array.isArray(response.data.data.data)) {
+          // Wrapped: { data: { data: [...], last_page: N, ... }, success: true }
+          paginationObj = response.data.data;
+          pageItems = response.data.data.data;
+        } else if (response.data?.data && Array.isArray(response.data.data)) {
+          // Direct Laravel pagination: { data: [...], last_page: N, ... }
+          paginationObj = response.data;
+          pageItems = response.data.data;
+        } else if (Array.isArray(response.data)) {
+          // Plain array (no pagination)
+          allVegetables = response.data;
+          break;
+        } else {
+          console.log('FarmerVegetables: unexpected response structure', response.data);
+          break;
+        }
+
+        allVegetables = [...allVegetables, ...pageItems];
+        lastPage = paginationObj?.last_page || 1;
+
+        console.log(`FarmerVegetables page ${currentPage}/${lastPage}: ${pageItems.length} items, total so far: ${allVegetables.length}`);
+
+        currentPage++;
+      } while (currentPage <= lastPage);
+
+      console.log('FarmerVegetables final total:', allVegetables.length);
+
+      return {
+        data: {
+          data: allVegetables
+        },
+        success: true
+      };
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || 'Failed to fetch vegetables'

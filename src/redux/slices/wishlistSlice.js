@@ -474,13 +474,6 @@ const wishlistSlice = createSlice({
         if (guestMode && action.payload.guestWishlist) {
           // Use the complete guest wishlist data returned from the action
           state.items = action.payload.guestWishlist || [];
-        } else if (guestMode) {
-          // If guest mode but no wishlist data in payload, reload from AsyncStorage
-          getGuestWishlist().then(guestWishlist => {
-            state.items = guestWishlist || [];
-          }).catch(err => {
-            console.error('Failed to reload guest wishlist in reducer:', err);
-          });
         } else {
           // For logged-in users, handle state updates normally
           if (wishlisted) {
@@ -494,15 +487,8 @@ const wishlistSlice = createSlice({
           }
         }
         
-        // If in guest mode, refresh from AsyncStorage to get complete data
-        if (guestMode) {
-          // Load guest wishlist to ensure we have complete data
-          getGuestWishlist().then(guestWishlist => {
-            state.items = guestWishlist || [];
-          }).catch(err => {
-            console.error('Failed to refresh guest wishlist:', err);
-          });
-        }
+        // If in guest mode, the guest wishlist data is already provided in the action payload
+        // No additional async operations needed in the reducer
         
         state.toggleError = null;
       })
