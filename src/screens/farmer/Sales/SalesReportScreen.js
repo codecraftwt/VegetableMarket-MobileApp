@@ -653,7 +653,7 @@ const SalesReportScreen = ({ navigation }) => {
             <Icon name="rupee" size={20} color="#019a34" />
           </View>
           <Text style={styles.statValue}>₹{totalRevenue}</Text>
-          <Text style={styles.statLabel}>Total Revenuenpm install react-native-fs</Text>
+          <Text style={styles.statLabel}>Total Revenue</Text>
         </View>
       </View>
     );
